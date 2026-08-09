@@ -1175,7 +1175,8 @@ async function approveContentItem(id, btn) {
             { id: 'FB', name: 'Facebook' },
             { id: 'X', name: 'X (تويتر)' },
             { id: 'TT', name: 'TikTok' },
-            { id: 'TH', name: 'Threads' }
+            { id: 'TH', name: 'Threads' },
+            { id: 'LI', name: 'LinkedIn' }
         ];
         
         const activeStyle = "padding:8px 18px; border-radius:30px; background:var(--teal); border:1px solid var(--teal); color:#000; font-size:14px; font-weight:700; transition:all 0.2s; box-shadow:0 4px 12px rgba(20,184,166,0.3); display:inline-flex; align-items:center; gap:6px;";
