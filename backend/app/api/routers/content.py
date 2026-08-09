@@ -109,7 +109,22 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                         raise HTTPException(status_code=400, detail=f"FB: {res}")
                     fb_published = True
 
-        if ig_published or fb_published:
+        # Check TH
+        th_published = False
+        if is_th:
+            th_service = ThreadsService()
+            status = th_service.get_status(db)
+            if status.get("connected"):
+                gen = item.generated_content
+                caption = gen.get("instagram_caption", gen.get("facebook_post", gen.get("title", "")))
+                access_token = await th_service.check_and_refresh_token(db)
+                if access_token and status.get("account_id"):
+                    res = await th_service.publish_text(caption, access_token, status.get("account_id"))
+                    if not res.get("success"):
+                        raise HTTPException(status_code=400, detail=f"Threads: {res}")
+                    th_published = True
+
+        if ig_published or fb_published or th_published:
             item.status = "PUBLISHED"
         else:
             item.status = "APPROVED"
