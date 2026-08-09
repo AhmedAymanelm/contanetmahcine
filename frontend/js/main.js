@@ -1257,7 +1257,9 @@ document.getElementById('btn-approve-direct').onclick = async function() {
             fetchDashboardStats();
             fetchAllContent();
         } else {
-            showToast("حدث خطأ", "error");
+            const errData = await res.json().catch(() => ({}));
+            const errMsg = errData.detail || "حدث خطأ أثناء الاعتماد";
+            showToast(errMsg, "error");
             btn.innerText = orig;
             btn.disabled = false;
         }
