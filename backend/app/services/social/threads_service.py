@@ -1,5 +1,6 @@
 import logging
 import httpx
+import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -114,6 +115,9 @@ class ThreadsService:
             container_id = create_res.json().get("id")
             if not container_id:
                 return {"success": False, "error": "No container ID returned"}
+
+            # Wait briefly for Meta's servers to process the container
+            await asyncio.sleep(3)
 
             # 2. Publish Container
             publish_url = f"{self.base_url}/{user_id}/threads_publish"
