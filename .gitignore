@@ -1,0 +1,46 @@
+# Environment variables
+.env
+.env.test
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Database
+*.sqlite3
+*.db
+backend/content_machine.db
+backend/database.db
+
+# Logs
+*.log
+backend/uvicorn_dev.log
+backend/uvicorn_error.log
+frontend/frontend.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Temp files
+backend/scratch_test*.py
+backend/render_test.py
+backend/check_*.py
+backend/test_*.py
+backend/test*.html
+backend/test*.js
+backend/all.json
+backend/review.json

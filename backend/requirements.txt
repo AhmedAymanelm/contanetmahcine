@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+sqlalchemy
+alembic
+psycopg2-binary
+anthropic
+apscheduler
+python-dotenv
+httpx
+beautifulsoup4
+feedparser
+trafilatura
+playwright
