@@ -6,9 +6,21 @@ PLAYWRIGHT_BROWSERS_PATH = "0"
 
 [phases.setup]
 nixPkgs = ["python311", "ffmpeg"]
+aptPkgs = [
+    "libgbm-dev",
+    "libnss3",
+    "libatk-bridge2.0-0",
+    "libgtk-3-0",
+    "libasound2"
+]
 
-[phases.build]
-cmds = ["python -m playwright install chromium --with-deps"]
+[phases.install]
+cmds = [
+    "python -m venv /opt/venv",
+    ". /opt/venv/bin/activate",
+    "pip install -r backend/requirements.txt",
+    "playwright install --with-deps chromium"
+]
 
 [start]
-cmd = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+cmd = "export PLAYWRIGHT_BROWSERS_PATH=0 && . /opt/venv/bin/activate && cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
