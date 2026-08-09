@@ -67,4 +67,4 @@ async def auth_threads_callback(
     
     db.commit()
     
-    return RedirectResponse("http://localhost:8000/?threads_connected=true")
+    return RedirectResponse("/?threads_connected=true")
