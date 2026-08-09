@@ -11,6 +11,8 @@ import asyncio
 import random
 from pathlib import Path
 from typing import List, Dict, Any
+import os
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
 from playwright.async_api import async_playwright
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "static" / "carousel_output"
