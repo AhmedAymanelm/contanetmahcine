@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     SNAPCHAT_CLIENT_SECRET: Optional[str] = None
     SNAPCHAT_REDIRECT_URI: str = "https://contanetmahcine.up.railway.app/auth/snapchat/callback"
     
+    # Twitter (X) Auth
+    TWITTER_API_KEY: Optional[str] = None
+    TWITTER_API_SECRET: Optional[str] = None
+    TWITTER_ACCESS_TOKEN: Optional[str] = None
+    TWITTER_ACCESS_SECRET: Optional[str] = None
+    
     model_config = SettingsConfigDict(env_file=str(Path(__file__).resolve().parent.parent.parent / ".env"), env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()

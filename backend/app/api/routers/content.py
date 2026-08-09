@@ -100,6 +100,7 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
     is_ig = any("IG" in p.upper() or "INSTAGRAM" in p.upper() for p in platforms)
     is_fb = any("FB" in p.upper() or "FACEBOOK" in p.upper() for p in platforms)
     is_th = any("TH" in p.upper() or "THREADS" in p.upper() for p in platforms)
+    is_tw = any("TW" in p.upper() or "X" in p.upper() or "TWITTER" in p.upper() for p in platforms)
     is_li = any("LI" in p.upper() or "LINKEDIN" in p.upper() for p in platforms)
     is_sc = any("SC" in p.upper() or "SNAPCHAT" in p.upper() for p in platforms)
     
@@ -108,7 +109,7 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
         db.commit()
         db.refresh(item)
     
-    if (is_ig or is_fb or is_th or is_li or is_sc) and item.generated_content:
+    if (is_ig or is_fb or is_th or is_li or is_sc or is_tw) and item.generated_content:
         # Check IG
         ig_published = False
         if is_ig:
@@ -153,7 +154,7 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                         raise HTTPException(status_code=400, detail=f"FB: {res}")
                     fb_published = True
 
-        # Check TH
+        # Check Threads
         th_published = False
         if is_th:
             th_service = ThreadsService()
@@ -172,6 +173,26 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                     if not res.get("success"):
                         raise HTTPException(status_code=400, detail=f"Threads: {res}")
                     th_published = True
+
+        # Check Twitter (X)
+        tw_published = False
+        if is_tw:
+            from app.services.social.twitter_service import TwitterService
+            tw_service = TwitterService()
+            if tw_service._is_configured():
+                gen = item.generated_content
+                # Use x_tweet if available, else fallback
+                caption = gen.get("x_tweet", gen.get("title", ""))
+                
+                # X limits to 280 chars
+                if len(caption) > 280:
+                    caption = caption[:277] + "..."
+                    
+                # Twitter service is sync (tweepy), but we can call it here since it's fast
+                res = tw_service.publish_text(caption)
+                if not res.get("success"):
+                    raise HTTPException(status_code=400, detail=f"X/Twitter: {res}")
+                tw_published = True
 
         # Check LinkedIn
         li_published = False
@@ -216,7 +237,7 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                     raise HTTPException(status_code=400, detail=f"Snapchat: {res}")
                 sc_published = True
 
-        if ig_published or fb_published or th_published or li_published or sc_published:
+        if ig_published or fb_published or th_published or li_published or sc_published or tw_published:
             item.status = "PUBLISHED"
         else:
             item.status = "APPROVED"
