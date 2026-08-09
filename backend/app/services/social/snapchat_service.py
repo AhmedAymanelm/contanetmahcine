@@ -27,7 +27,7 @@ class SnapchatService:
             "response_type": "code",
             "client_id": self.client_id,
             "redirect_uri": self.redirect_uri,
-            "scope": "https://auth.snapchat.com/oauth2/api/user.display_name snapchat-profile-api snapchat-marketing-api"
+            "scope": "https://auth.snapchat.com/oauth2/api/user.display_name"
         }
         return f"{self.auth_url}?{urlencode(params)}"
         
