@@ -1566,9 +1566,23 @@ async function fetchPlatformStatus() {
         console.error("Failed to fetch Facebook status", e);
     }
 
+    let thConnected = false;
+    let thDesc = 'غير مربوط';
+    try {
+        const res = await fetch(`${API_BASE}/threads/status`);
+        if (res.ok) {
+            const data = await res.json();
+            thConnected = data.connected;
+            thDesc = thConnected ? 'حساب مربوط' : 'فشل الاتصال';
+        }
+    } catch (e) {
+        console.error("Failed to fetch Threads status", e);
+    }
+
     let html = `
         <div class="src-item"><div><div class="n">Instagram</div><div class="u" style="font-size:11px">${instaDesc}</div></div><span class="badge ${instaConnected ? 'approved' : 'draft'}">${instaConnected ? 'متصل' : 'غير مربوط'}</span></div>
         <div class="src-item"><div><div class="n">Facebook</div><div class="u" style="font-size:11px">${fbDesc}</div></div><span class="badge ${fbConnected ? 'approved' : 'draft'}">${fbConnected ? 'متصل' : 'غير مربوط'}</span></div>
+        <div class="src-item"><div><div class="n">Threads</div><div class="u" style="font-size:11px">${thDesc}</div></div><span class="badge ${thConnected ? 'approved' : 'draft'}">${thConnected ? 'متصل' : 'غير مربوط'}</span></div>
     `;
 
     Object.values(platforms).forEach(p => {
