@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Any
 from pathlib import Path
 from datetime import datetime
 from pydantic import BaseModel
 import os
+import copy
+import re
+from sqlalchemy.orm.attributes import flag_modified
+from app.ai.agents.base_agent import AgentClient, AgentConfig
 
 from app.api.deps import get_db
 from app.models.content_item import ContentItem
@@ -47,6 +51,37 @@ from app.models.oauth_token import OAuthToken
 from app.services.social.threads_service import ThreadsService
 from app.services.social.linkedin_service import LinkedInService
 
+def _ensure_english_linkedin(item: ContentItem):
+    if not item.generated_content:
+        return
+    gen = item.generated_content
+    if isinstance(gen, str):
+        import json
+        try:
+            gen = json.loads(gen)
+        except:
+            return
+            
+    caption = gen.get("linkedin_post", "")
+    import re
+    if caption and re.search(r"[\u0600-\u06FF]", caption):
+        client = AgentClient()
+        config = AgentConfig(
+            name="Translator",
+            role="Professional translator",
+            goal="Translate text to English",
+            backstory="Expert at translating social media posts to professional English."
+        )
+        translated = client.execute_task(config, f"Translate the following LinkedIn post to professional English. Return ONLY the English translation without quotes or introductory text:\n\n{caption}")
+        
+        import copy
+        new_content = copy.deepcopy(gen)
+        new_content["linkedin_post"] = translated.strip()
+        item.generated_content = new_content
+        
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(item, "generated_content")
+
 class ApproveRequest(BaseModel):
     platforms: Optional[List[str]] = None
 
@@ -66,6 +101,11 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
     is_fb = any("FB" in p.upper() or "FACEBOOK" in p.upper() for p in platforms)
     is_th = any("TH" in p.upper() or "THREADS" in p.upper() for p in platforms)
     is_li = any("LI" in p.upper() or "LINKEDIN" in p.upper() for p in platforms)
+    
+    if is_li:
+        _ensure_english_linkedin(item)
+        db.commit()
+        db.refresh(item)
     
     if (is_ig or is_fb or is_th or is_li) and item.generated_content:
         # Check IG
@@ -172,6 +212,14 @@ def schedule_content(item_id: int, req: ScheduleRequest, db: Session = Depends(g
     item.scheduled_at = req.scheduled_at
     if req.platforms is not None:
         item.platforms = req.platforms
+        
+    platforms = item.platforms or []
+    if isinstance(platforms, str):
+        platforms = platforms.split(",")
+    is_li = any("LI" in p.upper() or "LINKEDIN" in p.upper() for p in platforms)
+    if is_li:
+        _ensure_english_linkedin(item)
+        
     db.commit()
     db.refresh(item)
     return item
