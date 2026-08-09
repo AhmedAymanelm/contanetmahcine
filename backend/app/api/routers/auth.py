@@ -7,6 +7,7 @@ from app.api.deps import get_db
 from app.models.oauth_token import OAuthToken
 from app.services.social.threads_service import ThreadsService
 from app.services.social.linkedin_service import LinkedInService
+from app.services.social.snapchat_service import SnapchatService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -129,3 +130,37 @@ async def auth_linkedin_callback(
     db.commit()
     
     return RedirectResponse("/?linkedin_connected=true")
+
+# --- Snapchat OAuth ---
+@router.get("/snapchat")
+def auth_snapchat():
+    """Redirects the user to Snapchat's OAuth login page."""
+    try:
+        snapchat_service = SnapchatService()
+        auth_url = snapchat_service.get_auth_url()
+        return RedirectResponse(auth_url)
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+
+@router.get("/snapchat/callback")
+async def auth_snapchat_callback(
+    code: Optional[str] = Query(None, description="Authorization code from Snapchat"),
+    error: Optional[str] = Query(None),
+    error_description: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Handles the OAuth callback from Snapchat."""
+    if error:
+        logger.error(f"Snapchat OAuth Error: {error} - {error_description}")
+        return JSONResponse(status_code=400, content={"status": "error", "message": error_description})
+
+    if not code:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Missing authorization code. Did you visit the callback URL directly?"})
+
+    snapchat_service = SnapchatService()
+    exchange_res = await snapchat_service.exchange_code(code)
+    if not exchange_res.get("success"):
+        return JSONResponse(status_code=400, content={"status": "error", "message": exchange_res.get("message")})
+        
+    snapchat_service.save_token(db, exchange_res.get("data", {}))
+    return RedirectResponse("/?snapchat_connected=true")

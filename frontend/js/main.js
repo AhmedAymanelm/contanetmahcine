@@ -1176,7 +1176,8 @@ async function approveContentItem(id, btn) {
             { id: 'X', name: 'X (تويتر)' },
             { id: 'TT', name: 'TikTok' },
             { id: 'TH', name: 'Threads' },
-            { id: 'LI', name: 'LinkedIn' }
+            { id: 'LI', name: 'LinkedIn' },
+            { id: 'SC', name: 'Snapchat' }
         ];
         
         const activeStyle = "padding:8px 18px; border-radius:30px; background:var(--teal); border:1px solid var(--teal); color:#000; font-size:14px; font-weight:700; transition:all 0.2s; box-shadow:0 4px 12px rgba(20,184,166,0.3); display:inline-flex; align-items:center; gap:6px;";
@@ -1589,11 +1590,25 @@ async function fetchPlatformStatus() {
         console.error("Failed to fetch LinkedIn status", e);
     }
 
+    let scConnected = false;
+    let scDesc = 'غير مربوط';
+    try {
+        const res = await fetch(`${API_BASE}/social/snapchat/status`);
+        if (res.ok) {
+            const data = await res.json();
+            scConnected = data.connected;
+            scDesc = scConnected ? 'حساب مربوط' : 'فشل الاتصال';
+        }
+    } catch (e) {
+        console.error("Failed to fetch Snapchat status", e);
+    }
+
     let html = `
         <div class="src-item"><div><div class="n">Instagram</div><div class="u" style="font-size:11px">${instaDesc}</div></div><span class="badge ${instaConnected ? 'approved' : 'draft'}">${instaConnected ? 'متصل' : 'غير مربوط'}</span></div>
         <div class="src-item"><div><div class="n">Facebook</div><div class="u" style="font-size:11px">${fbDesc}</div></div><span class="badge ${fbConnected ? 'approved' : 'draft'}">${fbConnected ? 'متصل' : 'غير مربوط'}</span></div>
         <div class="src-item"><div><div class="n">Threads</div><div class="u" style="font-size:11px">${thDesc}</div></div><span class="badge ${thConnected ? 'approved' : 'draft'}">${thConnected ? 'متصل' : 'غير مربوط'}</span></div>
         <div class="src-item"><div><div class="n">LinkedIn</div><div class="u" style="font-size:11px">${liDesc}</div></div><span class="badge ${liConnected ? 'approved' : 'draft'}">${liConnected ? 'متصل' : 'غير مربوط'}</span></div>
+        <div class="src-item"><div><div class="n">Snapchat</div><div class="u" style="font-size:11px">${scDesc}</div></div><span class="badge ${scConnected ? 'approved' : 'draft'}">${scConnected ? 'متصل' : 'غير مربوط'}</span></div>
     `;
 
     Object.values(platforms).forEach(p => {

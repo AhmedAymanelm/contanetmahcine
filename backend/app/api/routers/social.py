@@ -4,6 +4,8 @@ from typing import Dict, Any
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
 from app.services.social.linkedin_service import LinkedInService
+from app.services.social.threads_service import ThreadsService
+from app.services.social.snapchat_service import SnapchatService
 from app.api.deps import get_db
 from sqlalchemy.orm import Session
 
@@ -62,3 +64,12 @@ async def publish_to_instagram(
         )
         
     return result
+
+@router.get("/snapchat/status")
+async def get_snapchat_status(db: Session = Depends(get_db)):
+    """Check Snapchat connection status"""
+    try:
+        service = SnapchatService()
+        return service.get_status(db)
+    except Exception as e:
+        return {"connected": False, "error": str(e)}

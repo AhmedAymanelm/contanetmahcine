@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     LINKEDIN_CLIENT_SECRET: Optional[str] = None
     LINKEDIN_REDIRECT_URI: str = "https://contanetmahcine.up.railway.app/auth/linkedin/callback"
     
+    # Snapchat OAuth
+    SNAPCHAT_CLIENT_ID: Optional[str] = None
+    SNAPCHAT_CLIENT_SECRET: Optional[str] = None
+    SNAPCHAT_REDIRECT_URI: str = "https://contanetmahcine.up.railway.app/auth/snapchat/callback"
+    
     model_config = SettingsConfigDict(env_file=str(Path(__file__).resolve().parent.parent.parent / ".env"), env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()
