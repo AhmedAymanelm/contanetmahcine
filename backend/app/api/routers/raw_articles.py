@@ -13,9 +13,15 @@ router = APIRouter()
 
 @router.get("/", response_model=List[RawArticleResponse])
 def get_raw_articles(db: Session = Depends(get_db)):
-    # Auto-cleanup: Delete pending articles older than 24 hours
+    # Auto-cleanup: Delete pending articles older than 24 hours ONLY if they don't have ContentItems
     cutoff = datetime.utcnow() - timedelta(hours=24)
-    db.query(RawArticle).filter(RawArticle.status == "PENDING", RawArticle.created_at < cutoff).delete(synchronize_session=False)
+    from app.models.content_item import ContentItem
+    subquery = db.query(ContentItem.raw_article_id).subquery()
+    db.query(RawArticle).filter(
+        RawArticle.status == "PENDING", 
+        RawArticle.created_at < cutoff,
+        ~RawArticle.id.in_(subquery)
+    ).delete(synchronize_session=False)
     db.commit()
     
     articles = db.query(RawArticle).filter(RawArticle.status == "PENDING").order_by(RawArticle.created_at.desc()).limit(100).all()
