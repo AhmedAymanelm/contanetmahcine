@@ -13,3 +13,9 @@ beautifulsoup4
 feedparser
 trafilatura
 playwright
+pymupdf
+cloudinary
+pillow
+colorgram.py
+python-multipart
+google-genai
