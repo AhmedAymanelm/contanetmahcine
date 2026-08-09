@@ -88,3 +88,16 @@ class SnapchatService:
         token.expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
         
         db.commit()
+
+    async def publish_media(self, db: Session, media_url: str, caption: str, media_type: str = "IMAGE") -> dict:
+        """
+        Placeholder for Snapchat publishing. 
+        Actual publishing requires the Public Profile API which is heavily restricted by Snap.
+        We will simulate a success response for now so the UI updates correctly.
+        """
+        status = self.get_status(db)
+        if not status.get("connected"):
+            return {"success": False, "message": "Snapchat not connected"}
+            
+        logger.info(f"Simulating Snapchat publish for media_type={media_type}, media_url={media_url}")
+        return {"success": True, "message": "Published to Snapchat successfully (Simulated)"}

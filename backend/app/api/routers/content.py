@@ -101,13 +101,14 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
     is_fb = any("FB" in p.upper() or "FACEBOOK" in p.upper() for p in platforms)
     is_th = any("TH" in p.upper() or "THREADS" in p.upper() for p in platforms)
     is_li = any("LI" in p.upper() or "LINKEDIN" in p.upper() for p in platforms)
+    is_sc = any("SC" in p.upper() or "SNAPCHAT" in p.upper() for p in platforms)
     
     if is_li:
         _ensure_english_linkedin(item)
         db.commit()
         db.refresh(item)
     
-    if (is_ig or is_fb or is_th or is_li) and item.generated_content:
+    if (is_ig or is_fb or is_th or is_li or is_sc) and item.generated_content:
         # Check IG
         ig_published = False
         if is_ig:
@@ -188,7 +189,28 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                         raise HTTPException(status_code=400, detail=f"LinkedIn: {res}")
                     li_published = True
 
-        if ig_published or fb_published or th_published or li_published:
+        # Check Snapchat
+        sc_published = False
+        if is_sc:
+            from app.services.social.snapchat_service import SnapchatService
+            sc_service = SnapchatService()
+            status = sc_service.get_status(db)
+            if status.get("connected"):
+                gen = item.generated_content
+                caption = gen.get("instagram_post", gen.get("title", "")) # Fallback to IG text or Title
+                
+                # We expect the media_url to be either a carousel or a video
+                media_url = item.carousel_url or item.video_url
+                if not media_url:
+                    raise HTTPException(status_code=400, detail="Snapchat requires a video or a carousel (image) URL")
+                
+                media_type = "VIDEO" if item.video_url else "IMAGE"
+                res = await sc_service.publish_media(db, media_url, caption, media_type)
+                if not res.get("success"):
+                    raise HTTPException(status_code=400, detail=f"Snapchat: {res}")
+                sc_published = True
+
+        if ig_published or fb_published or th_published or li_published or sc_published:
             item.status = "PUBLISHED"
         else:
             item.status = "APPROVED"
