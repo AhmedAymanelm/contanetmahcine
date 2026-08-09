@@ -116,7 +116,12 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
             status = th_service.get_status(db)
             if status.get("connected"):
                 gen = item.generated_content
-                caption = gen.get("instagram_caption", gen.get("facebook_post", gen.get("title", "")))
+                caption = gen.get("x_tweet", gen.get("instagram_caption", gen.get("title", "")))
+                
+                # Truncate to 500 characters just in case, since Threads API strictly fails over 500
+                if len(caption) > 500:
+                    caption = caption[:497] + "..."
+                    
                 access_token = await th_service.check_and_refresh_token(db)
                 if access_token and status.get("account_id"):
                     res = await th_service.publish_text(caption, access_token, status.get("account_id"))

@@ -160,7 +160,11 @@ def publish_scheduled_content():
                 status = th_service.get_status(db)
                 if status.get("connected"):
                     gen = item.generated_content
-                    caption = gen.get("instagram_caption", gen.get("facebook_post", gen.get("title", "")))
+                    caption = gen.get("x_tweet", gen.get("instagram_caption", gen.get("title", "")))
+                    
+                    if len(caption) > 500:
+                        caption = caption[:497] + "..."
+                        
                     access_token = await th_service.check_and_refresh_token(db)
                     if access_token and status.get("account_id"):
                         res = await th_service.publish_text(caption, access_token, status.get("account_id"))
