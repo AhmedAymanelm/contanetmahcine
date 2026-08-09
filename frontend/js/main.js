@@ -60,7 +60,6 @@ async function fetchDashboardStats() {
             
             const pColors = {
                 'Instagram': 'var(--red)',
-                'LinkedIn': 'var(--violet)',
                 'Facebook': 'var(--amber)',
                 'X': 'var(--muted)',
                 'TikTok': 'var(--teal)'
@@ -730,7 +729,6 @@ async function fetchReviewContent() {
                 let snippetHtml = '';
                 
                 if (item.content_type === 'POST') {
-                    snippetHtml = `<b>X:</b> ${generated.x_tweet || ''}<br><br><b>LinkedIn:</b> ${generated.linkedin_post || ''}`;
                 } else if (item.content_type === 'CAROUSEL') {
                     snippetHtml = `<b>العنوان:</b> ${generated.title || ''}<br><br><b>الشريحة 1:</b> ${generated.slides && generated.slides[0] ? generated.slides[0].heading : ''}`;
                 } else if (item.content_type === 'VIDEO_SCRIPT') {
@@ -1175,7 +1173,6 @@ async function approveContentItem(id, btn) {
         const allPlatforms = [
             { id: 'IG', name: 'Instagram' },
             { id: 'FB', name: 'Facebook' },
-            { id: 'LI', name: 'LinkedIn' },
             { id: 'X', name: 'X (تويتر)' },
             { id: 'TT', name: 'TikTok' },
             { id: 'TH', name: 'Threads' }
@@ -1535,7 +1532,6 @@ async function fetchPlatformStatus() {
 
     // Default states for platforms we haven't implemented APIs for yet
     const platforms = {
-        'LinkedIn': { name: 'LinkedIn', desc: 'يتطلب تفعيل صلاحية النشر', status: 'غير مربوط', isConnected: false },
         'X': { name: 'X (تويتر)', desc: 'يتطلب تفعيل صلاحية النشر', status: 'غير مربوط', isConnected: false },
         'TikTok': { name: 'TikTok', desc: 'يتطلب تفعيل صلاحية النشر', status: 'غير مربوط', isConnected: false }
     };
@@ -1579,10 +1575,24 @@ async function fetchPlatformStatus() {
         console.error("Failed to fetch Threads status", e);
     }
 
+    let liConnected = false;
+    let liDesc = 'غير مربوط';
+    try {
+        const res = await fetch(`${API_BASE}/social/linkedin/status`);
+        if (res.ok) {
+            const data = await res.json();
+            liConnected = data.connected;
+            liDesc = liConnected ? 'حساب مربوط' : 'فشل الاتصال';
+        }
+    } catch (e) {
+        console.error("Failed to fetch LinkedIn status", e);
+    }
+
     let html = `
         <div class="src-item"><div><div class="n">Instagram</div><div class="u" style="font-size:11px">${instaDesc}</div></div><span class="badge ${instaConnected ? 'approved' : 'draft'}">${instaConnected ? 'متصل' : 'غير مربوط'}</span></div>
         <div class="src-item"><div><div class="n">Facebook</div><div class="u" style="font-size:11px">${fbDesc}</div></div><span class="badge ${fbConnected ? 'approved' : 'draft'}">${fbConnected ? 'متصل' : 'غير مربوط'}</span></div>
         <div class="src-item"><div><div class="n">Threads</div><div class="u" style="font-size:11px">${thDesc}</div></div><span class="badge ${thConnected ? 'approved' : 'draft'}">${thConnected ? 'متصل' : 'غير مربوط'}</span></div>
+        <div class="src-item"><div><div class="n">LinkedIn</div><div class="u" style="font-size:11px">${liDesc}</div></div><span class="badge ${liConnected ? 'approved' : 'draft'}">${liConnected ? 'متصل' : 'غير مربوط'}</span></div>
     `;
 
     Object.values(platforms).forEach(p => {

@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     THREADS_CLIENT_SECRET: Optional[str] = None
     THREADS_REDIRECT_URI: str = "https://contanetmahcine.up.railway.app/auth/threads/callback"
     
+    # LinkedIn OAuth
+    LINKEDIN_CLIENT_ID: Optional[str] = None
+    LINKEDIN_CLIENT_SECRET: Optional[str] = None
+    LINKEDIN_REDIRECT_URI: str = "https://contanetmahcine.up.railway.app/auth/linkedin/callback"
+    
     model_config = SettingsConfigDict(env_file=str(Path(__file__).resolve().parent.parent.parent / ".env"), env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()

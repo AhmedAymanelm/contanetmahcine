@@ -43,7 +43,9 @@ def update_content(item_id: int, content_update: ContentItemUpdate, db: Session 
 from typing import List, Optional, Any
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
+from app.models.oauth_token import OAuthToken
 from app.services.social.threads_service import ThreadsService
+from app.services.social.linkedin_service import LinkedInService
 
 class ApproveRequest(BaseModel):
     platforms: Optional[List[str]] = None
@@ -63,8 +65,9 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
     is_ig = any("IG" in p.upper() or "INSTAGRAM" in p.upper() for p in platforms)
     is_fb = any("FB" in p.upper() or "FACEBOOK" in p.upper() for p in platforms)
     is_th = any("TH" in p.upper() or "THREADS" in p.upper() for p in platforms)
+    is_li = any("LI" in p.upper() or "LINKEDIN" in p.upper() for p in platforms)
     
-    if (is_ig or is_fb or is_th) and item.generated_content:
+    if (is_ig or is_fb or is_th or is_li) and item.generated_content:
         # Check IG
         ig_published = False
         if is_ig:
@@ -129,7 +132,23 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                         raise HTTPException(status_code=400, detail=f"Threads: {res}")
                     th_published = True
 
-        if ig_published or fb_published or th_published:
+        # Check LinkedIn
+        li_published = False
+        if is_li:
+            li_service = LinkedInService()
+            status = li_service.get_status(db)
+            if status.get("connected"):
+                gen = item.generated_content
+                caption = gen.get("linkedin_post", gen.get("title", ""))
+                
+                access_token = token_entry.access_token if (token_entry := db.query(OAuthToken).filter(OAuthToken.platform == "linkedin").first()) else None
+                if access_token and status.get("account_id"):
+                    res = await li_service.publish_text(caption, access_token, status.get("account_id"))
+                    if not res.get("success"):
+                        raise HTTPException(status_code=400, detail=f"LinkedIn: {res}")
+                    li_published = True
+
+        if ig_published or fb_published or th_published or li_published:
             item.status = "PUBLISHED"
         else:
             item.status = "APPROVED"

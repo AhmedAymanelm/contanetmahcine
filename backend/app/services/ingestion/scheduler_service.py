@@ -12,6 +12,8 @@ from app.models.content_item import ContentItem
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
 from app.services.social.threads_service import ThreadsService
+from app.services.social.linkedin_service import LinkedInService
+from app.models.oauth_token import OAuthToken
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -103,8 +105,9 @@ def publish_scheduled_content():
             if isinstance(platforms, str):
                 platforms = platforms.split(",")
             is_ig = any("IG" in p.upper() or "INSTAGRAM" in p.upper() for p in platforms)
-            is_fb = any("FB" in p.upper() or "FACEBOOK" in p.upper() for p in platforms)
-            is_th = any("TH" in p.upper() or "THREADS" in p.upper() for p in platforms)
+            is_fb = any("FB" in str(p).upper() or "FACEBOOK" in str(p).upper() for p in platforms)
+            is_th = any("TH" in str(p).upper() or "THREADS" in str(p).upper() for p in platforms)
+            is_li = any("LI" in str(p).upper() or "LINKEDIN" in str(p).upper() for p in platforms)
             
             ig_published = False
             if is_ig and item.generated_content:
@@ -173,10 +176,26 @@ def publish_scheduled_content():
                         else:
                             logger.error(f"Threads Scheduled publish failed for item {item.id}: {res}")
 
-            if ig_published or fb_published or th_published:
+            li_published = False
+            if is_li and item.generated_content:
+                li_service = LinkedInService()
+                status = li_service.get_status(db)
+                if status.get("connected"):
+                    gen = item.generated_content
+                    caption = gen.get("linkedin_post", gen.get("title", ""))
+                    
+                    access_token = token_entry.access_token if (token_entry := db.query(OAuthToken).filter(OAuthToken.platform == "linkedin").first()) else None
+                    if access_token and status.get("account_id"):
+                        res = await li_service.publish_text(caption, access_token, status.get("account_id"))
+                        if res.get("success"):
+                            li_published = True
+                        else:
+                            logger.error(f"LinkedIn Scheduled publish failed for item {item.id}: {res}")
+
+            if ig_published or fb_published or th_published or li_published:
                 return True
-            elif not is_ig and not is_fb and not is_th:
-                # If neither IG nor FB nor TH are selected, just mark published (e.g. mock publishing)
+            elif not is_ig and not is_fb and not is_th and not is_li:
+                # If neither IG nor FB nor TH nor LI are selected, just mark published (e.g. mock publishing)
                 return True
             return False
             

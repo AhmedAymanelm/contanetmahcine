@@ -3,6 +3,9 @@ from pydantic import BaseModel
 from typing import Dict, Any
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
+from app.services.social.linkedin_service import LinkedInService
+from app.api.deps import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -19,6 +22,15 @@ async def get_facebook_status():
     try:
         service = FacebookService()
         return await service.check_status()
+    except Exception as e:
+        return {"connected": False, "error": str(e)}
+
+@router.get("/linkedin/status")
+async def get_linkedin_status(db: Session = Depends(get_db)):
+    """Check LinkedIn connection status"""
+    try:
+        service = LinkedInService()
+        return service.get_status(db)
     except Exception as e:
         return {"connected": False, "error": str(e)}
 
