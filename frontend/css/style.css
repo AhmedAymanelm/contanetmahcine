@@ -220,6 +220,7 @@
   .cal-slot.plat-tt::after { background: #00f2fe; }
   .cal-slot.plat-li::after { background: #0A66C2; }
   .cal-slot.plat-x::after  { background: #ffffff; }
+  .cal-slot.plat-th::after { background: #ffffff; }
 
   .cal-slot-top {
     display: flex;
@@ -258,6 +259,7 @@
   .cal-slot-plat.tt { color: #00f2fe; background: rgba(0, 242, 254, 0.15); border: 1px solid rgba(0, 242, 254, 0.2); }
   .cal-slot-plat.li { color: #0A66C2; background: rgba(10, 102, 194, 0.15); border: 1px solid rgba(10, 102, 194, 0.2); }
   .cal-slot-plat.x  { color: #ffffff; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); }
+  .cal-slot-plat.th { color: #ffffff; background: rgba(0, 0, 0, 0.8); border: 1px solid rgba(255, 255, 255, 0.2); }
 
   .cal-slot-title {
     font-size: 13px;

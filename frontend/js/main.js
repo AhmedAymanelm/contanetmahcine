@@ -903,6 +903,7 @@ async function fetchScheduledContent() {
                 else if (platforms.includes('facebook') || platforms.includes('fb')) { platClass = 'fb'; platShort = 'FB'; }
                 else if (platforms.includes('linkedin') || platforms.includes('li')) { platClass = 'li'; platShort = 'LI'; }
                 else if (platforms.includes('x') || platforms.includes('twitter')) { platClass = 'x'; platShort = 'X'; }
+                else if (platforms.includes('th') || platforms.includes('threads')) { platClass = 'th'; platShort = 'TH'; }
                 else { platClass = 'fb'; platShort = platforms.substring(0,2).toUpperCase(); }
                 
                 // Content type badge
@@ -1288,10 +1289,11 @@ document.getElementById('btn-schedule-confirm').onclick = async function() {
     this.disabled = true;
     
     try {
+        const selectedPlatforms = Array.from(document.querySelectorAll('.approve-platform-cb:checked')).map(cb => cb.value);
         const res = await fetch(`${API_BASE}/content/${id}/schedule`, { 
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ scheduled_at: scheduledAt })
+            body: JSON.stringify({ scheduled_at: scheduledAt, platforms: selectedPlatforms })
         });
         if (res.ok) {
             closeApproveModal();
