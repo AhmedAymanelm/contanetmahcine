@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Optional
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -24,8 +25,8 @@ def auth_threads():
 
 @router.get("/threads/callback")
 async def auth_threads_callback(
-    code: str = Query(..., description="Authorization code from Threads"),
-    error: str = Query(None),
+    code: Optional[str] = Query(None, description="Authorization code from Threads"),
+    error: Optional[str] = Query(None),
     error_reason: str = Query(None),
     error_description: str = Query(None),
     db: Session = Depends(get_db)
@@ -34,6 +35,9 @@ async def auth_threads_callback(
     if error:
         logger.error(f"Threads OAuth Error: {error} - {error_reason} - {error_description}")
         return JSONResponse(status_code=400, content={"status": "error", "message": error_description})
+
+    if not code:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Missing authorization code."})
 
     # 1. Exchange code for short-lived token
     exchange_res = await threads_service.exchange_code(code)
@@ -82,15 +86,18 @@ def auth_linkedin():
 
 @router.get("/linkedin/callback")
 async def auth_linkedin_callback(
-    code: str = Query(..., description="Authorization code from LinkedIn"),
-    error: str = Query(None),
-    error_description: str = Query(None),
+    code: Optional[str] = Query(None, description="Authorization code from LinkedIn"),
+    error: Optional[str] = Query(None),
+    error_description: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """Handles the OAuth callback from LinkedIn."""
     if error:
         logger.error(f"LinkedIn OAuth Error: {error} - {error_description}")
         return JSONResponse(status_code=400, content={"status": "error", "message": error_description})
+
+    if not code:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Missing authorization code. Did you visit the callback URL directly?"})
 
     # 1. Exchange code for token
     exchange_res = await linkedin_service.exchange_code(code)
