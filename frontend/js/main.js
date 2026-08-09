@@ -973,6 +973,12 @@ async function renderCarouselImages(id, templateId, textColor = null, accentColo
             const r2 = await fetch(`${API_BASE}/content/${id}/carousel-slides`);
             const slides = await r2.json();
             if (slides.ready) {
+                if (slides.error) {
+                    btn.innerHTML = '❌ خطأ في المعالجة';
+                    btn.style.background = '#b91c1c';
+                    showToast(`فشل توليد الصور: ${slides.error}`, 'error');
+                    return;
+                }
                 if (window.reviewItemsData && window.reviewItemsData[id]) {
                     window.reviewItemsData[id].carousel_urls = slides.slides;
                 }

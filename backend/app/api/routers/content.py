@@ -265,25 +265,34 @@ def _do_render(item_id: int, carousel_data: dict, template_id: Optional[int] = N
     from app.db.session import SessionLocal
     from app.models.content_item import ContentItem
     import copy
-
-    output_urls = render_carousel_sync(item_id, carousel_data, template_id, "zayedtech", custom_text_color, custom_accent_color)
     
     db = SessionLocal()
     item = db.query(ContentItem).filter(ContentItem.id == item_id).first()
-    if item:
-        # generated_content is a dict, but modifying it directly might not trigger SQLAlchemy update
-        new_content = copy.deepcopy(item.generated_content)
-        if isinstance(new_content, str):
-            import json
-            new_content = json.loads(new_content)
-            
+    if not item:
+        db.close()
+        return
+
+    new_content = copy.deepcopy(item.generated_content)
+    if isinstance(new_content, str):
+        import json
+        new_content = json.loads(new_content)
+
+    try:
+        output_urls = render_carousel_sync(item_id, carousel_data, template_id, "zayedtech", custom_text_color, custom_accent_color)
         new_content["carousel_urls"] = output_urls
-        item.generated_content = new_content
+        new_content.pop("carousel_error", None) # Clear any previous error
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        print(f"Carousel Render Error for item {item_id}: {error_msg}")
+        traceback.print_exc()
+        new_content["carousel_error"] = error_msg
         
-        from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(item, "generated_content")
-        
-        db.commit()
+    item.generated_content = new_content
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(item, "generated_content")
+    
+    db.commit()
     db.close()
 
 @router.post("/{item_id}/render-carousel")
@@ -330,6 +339,11 @@ def get_carousel_slides(item_id: int, db: Session = Depends(get_db)):
         expected_count = len(data.get("slides", []))
 
     carousel_urls = data.get("carousel_urls", [])
+    carousel_error = data.get("carousel_error")
+    
+    if carousel_error:
+        return {"slides": [], "ready": True, "error": carousel_error, "count": 0}
+        
     is_ready = len(carousel_urls) >= expected_count if expected_count > 0 else len(carousel_urls) > 0
     
     return {"slides": carousel_urls, "ready": is_ready, "count": len(carousel_urls)}
