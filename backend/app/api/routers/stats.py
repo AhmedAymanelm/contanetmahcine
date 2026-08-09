@@ -14,9 +14,7 @@ from sqlalchemy import func
 def get_dashboard_stats(db: Session = Depends(get_db)):
     today = datetime.utcnow().date()
     
-    # 1. Articles Scraped Today
-    # For now we just count all since we don't have a date filter setup in models easily, but let's try
-    total_articles = db.query(RawArticle).count()
+    total_articles = db.query(RawArticle).filter(func.lower(RawArticle.status) == 'pending').count()
     
     # 2. Pending Reviews
     pending_count = db.query(ContentItem).filter(func.lower(ContentItem.status) == 'pending_review').count()

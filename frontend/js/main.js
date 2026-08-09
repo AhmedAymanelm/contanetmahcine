@@ -371,6 +371,18 @@ async function fetchRawArticles() {
         const rawList = document.getElementById('raw-articles-list');
         if(rawList) {
             rawList.innerHTML = '';
+            
+            if (data.length === 0) {
+                rawList.innerHTML = `
+                    <div style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 60px 20px; text-align:center; background:var(--panel); border-radius:12px; border:1px dashed var(--line);">
+                        <div style="font-size:48px; margin-bottom:16px;">📰</div>
+                        <h3 style="margin-bottom:8px; font-weight:600; color:#fff;">لا توجد أخبار جديدة اليوم</h3>
+                        <p style="color:var(--muted); font-size:14px; max-width:300px; line-height:1.5;">جميع الأخبار تم سحبها مسبقاً أو لم تنشر المصادر أي أخبار جديدة بعد. انتظر حتى يتم سحب أخبار جديدة.</p>
+                    </div>
+                `;
+                return;
+            }
+            
             data.forEach((art, idx) => {
                 // Generate a random gradient for the image placeholder based on ID or index
                 const hue = (idx * 137.5) % 360;
