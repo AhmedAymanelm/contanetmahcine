@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # Threads OAuth
     THREADS_CLIENT_ID: Optional[str] = None
     THREADS_CLIENT_SECRET: Optional[str] = None
-    THREADS_REDIRECT_URI: str = "https://9c03-41-235-75-7.ngrok-free.app/auth/threads/callback"
+    THREADS_REDIRECT_URI: str = "https://contanetmahcine.up.railway.app/auth/threads/callback"
     
     model_config = SettingsConfigDict(env_file=str(Path(__file__).resolve().parent.parent.parent / ".env"), env_file_encoding="utf-8", extra="ignore")
 
