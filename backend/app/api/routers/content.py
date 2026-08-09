@@ -201,10 +201,16 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                 
                 # We expect the media_url to be either a carousel or a video
                 media_url = item.carousel_url or item.video_url
+                media_type = "VIDEO" if item.video_url else "IMAGE"
+                
+                # If it's a carousel but the url is stored in generated_content
+                if not media_url and "carousel_urls" in gen and gen["carousel_urls"]:
+                    media_url = gen["carousel_urls"][0] # Take first slide
+                    media_type = "IMAGE"
+
                 if not media_url:
                     raise HTTPException(status_code=400, detail="Snapchat requires a video or a carousel (image) URL")
                 
-                media_type = "VIDEO" if item.video_url else "IMAGE"
                 res = await sc_service.publish_media(db, media_url, caption, media_type)
                 if not res.get("success"):
                     raise HTTPException(status_code=400, detail=f"Snapchat: {res}")
