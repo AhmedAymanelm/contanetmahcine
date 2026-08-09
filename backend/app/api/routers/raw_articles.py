@@ -5,6 +5,7 @@ from typing import List
 from app.api.deps import get_db
 from app.models.raw_article import RawArticle
 from app.schemas.raw_article import RawArticleResponse
+from datetime import datetime, timedelta
 from app.services.ingestion.runner import ingest_all_active_sources
 from app.services.generation.runner import process_article_generation
 
@@ -12,6 +13,11 @@ router = APIRouter()
 
 @router.get("/", response_model=List[RawArticleResponse])
 def get_raw_articles(db: Session = Depends(get_db)):
+    # Auto-cleanup: Delete pending articles older than 24 hours
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    db.query(RawArticle).filter(RawArticle.status == "PENDING", RawArticle.created_at < cutoff).delete(synchronize_session=False)
+    db.commit()
+    
     articles = db.query(RawArticle).filter(RawArticle.status == "PENDING").order_by(RawArticle.created_at.desc()).limit(100).all()
     return articles
 
