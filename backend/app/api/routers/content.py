@@ -43,6 +43,7 @@ def update_content(item_id: int, content_update: ContentItemUpdate, db: Session 
 from typing import List, Optional, Any
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
+from app.services.social.threads_service import ThreadsService
 
 class ApproveRequest(BaseModel):
     platforms: Optional[List[str]] = None
@@ -61,8 +62,9 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
         platforms = platforms.split(",")
     is_ig = any("IG" in p.upper() or "INSTAGRAM" in p.upper() for p in platforms)
     is_fb = any("FB" in p.upper() or "FACEBOOK" in p.upper() for p in platforms)
+    is_th = any("TH" in p.upper() or "THREADS" in p.upper() for p in platforms)
     
-    if (is_ig or is_fb) and item.generated_content:
+    if (is_ig or is_fb or is_th) and item.generated_content:
         # Check IG
         ig_published = False
         if is_ig:

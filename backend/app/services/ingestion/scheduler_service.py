@@ -11,6 +11,7 @@ import asyncio
 from app.models.content_item import ContentItem
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
+from app.services.social.threads_service import ThreadsService
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -103,6 +104,7 @@ def publish_scheduled_content():
                 platforms = platforms.split(",")
             is_ig = any("IG" in p.upper() or "INSTAGRAM" in p.upper() for p in platforms)
             is_fb = any("FB" in p.upper() or "FACEBOOK" in p.upper() for p in platforms)
+            is_th = any("TH" in p.upper() or "THREADS" in p.upper() for p in platforms)
             
             ig_published = False
             if is_ig and item.generated_content:
@@ -152,10 +154,25 @@ def publish_scheduled_content():
                         else:
                             logger.error(f"FB Scheduled publish failed for item {item.id}: {res}")
 
-            if ig_published or fb_published:
+            th_published = False
+            if is_th and item.generated_content:
+                th_service = ThreadsService()
+                status = th_service.get_status(db)
+                if status.get("connected"):
+                    gen = item.generated_content
+                    caption = gen.get("instagram_caption", gen.get("facebook_post", gen.get("title", "")))
+                    access_token = await th_service.check_and_refresh_token(db)
+                    if access_token and status.get("account_id"):
+                        res = await th_service.publish_text(caption, access_token, status.get("account_id"))
+                        if res.get("success"):
+                            th_published = True
+                        else:
+                            logger.error(f"Threads Scheduled publish failed for item {item.id}: {res}")
+
+            if ig_published or fb_published or th_published:
                 return True
-            elif not is_ig and not is_fb:
-                # If neither IG nor FB are selected, just mark published (e.g. mock publishing)
+            elif not is_ig and not is_fb and not is_th:
+                # If neither IG nor FB nor TH are selected, just mark published (e.g. mock publishing)
                 return True
             return False
             
