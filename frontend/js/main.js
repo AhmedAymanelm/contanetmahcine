@@ -1884,7 +1884,8 @@ async function loadTrends() {
             btnGen.style.cssText = 'flex:1; background:var(--teal); border:none; font-size:13px; padding:8px;';
             btnGen.innerHTML = '<span class="ic">🤖</span> اصنع محتوى';
             btnGen.onclick = () => {
-                try { generateTrendContent(safeTitle, safeSnippet); } catch(e) { console.error('generateTrendContent error', e); }
+                console.log('Trend generate button clicked for index', index);
+                try { generateTrendContent(safeTitle, safeSnippet); } catch(e) { console.error('generateTrendContent error', e); showToast('خطأ محلي: ' + e.message, 'error'); }
             };
 
             controls.appendChild(btnRead);
@@ -1992,28 +1993,35 @@ function showCustomConfirm(msg, onConfirm) {
 }
 
 async function generateTrendContent(title, snippet) {
-    showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async (formats) => {
-        showToast(`بدأ توليد المحتوى لترند: ${title}`);
+    console.log('generateTrendContent called for title:', title);
     try {
-        const token = localStorage.getItem('cm_token');
-        const res = await fetch(`${API_BASE}/trends/generate`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ title, snippet, formats })
+        showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async (formats) => {
+            console.log('generate confirmed, formats:', formats);
+            showToast(`بدأ توليد المحتوى لترند: ${title}`);
+            try {
+                const token = localStorage.getItem('cm_token');
+                const res = await fetch(`${API_BASE}/trends/generate`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ title, snippet, formats })
+                });
+                if (res.ok) {
+                    showToast(`تم إرسال الطلب لـ Claude بنجاح! سيظهر قريباً في المراجعة`, 'success');
+                } else {
+                    showToast('حدث خطأ أثناء إرسال الطلب', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('خطأ في الاتصال بالسيرفر', 'error');
+            }
         });
-        if (res.ok) {
-            showToast(`تم إرسال الطلب لـ Claude بنجاح! سيظهر قريباً في المراجعة`, 'success');
-        } else {
-            showToast('حدث خطأ أثناء إرسال الطلب', 'error');
-        }
-        } catch (err) {
-            console.error(err);
-            showToast('خطأ في الاتصال بالسيرفر', 'error');
-        }
-    });
+    } catch (err) {
+        console.error('generateTrendContent failed:', err);
+        showToast('خطأ داخلي أثناء محاولة فتح مربع التأكيد', 'error');
+    }
 }
 
 async function openNewsModal(url, title, safeTitle, safeSnippet) {
