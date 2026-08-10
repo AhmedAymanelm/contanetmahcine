@@ -187,12 +187,13 @@ def publish_scheduled_content():
                     access_token = token_entry.access_token if (token_entry := db.query(OAuthToken).filter(OAuthToken.platform == "linkedin").first()) else None
                     if access_token and status.get("account_id"):
                         res = None
-                        if item.generated_images and isinstance(item.generated_images, list) and len(item.generated_images) > 0:
+                        carousel_urls = item.generated_content.get("carousel_urls", [])
+                        if carousel_urls and isinstance(carousel_urls, list) and len(carousel_urls) > 0:
                             import tempfile, os, httpx
                             from PIL import Image
                             from io import BytesIO
                             images = []
-                            for img_url in item.generated_images:
+                            for img_url in carousel_urls:
                                 try:
                                     resp = httpx.get(img_url, timeout=30.0)
                                     if resp.status_code == 200:
