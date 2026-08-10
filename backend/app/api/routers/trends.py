@@ -23,11 +23,12 @@ class TrendGenerateRequest(BaseModel):
     title: str
     snippet: str
 
-@router.get("/", response_model=List[TrendItem])
-def get_trends(geo: str = "EG"):
+def fetch_trends_for_geo(geo: str) -> List[TrendItem]:
     """
-    Fetches real-time technology news from Google News for a specific country.
+    Core function to fetch trends for a specific geo so it can be called by both API and background workers.
     """
+    import feedparser
+    import httpx
     import urllib.parse
     
     # Niche topics specifically for a tech/finance/crypto content creator
@@ -75,6 +76,13 @@ def get_trends(geo: str = "EG"):
         ))
         
     return trends
+
+@router.get("/", response_model=List[TrendItem])
+def get_trends(geo: str = "EG"):
+    """
+    Fetches real-time technology news from Google News for a specific country.
+    """
+    return fetch_trends_for_geo(geo)
 
 class ReadRequest(BaseModel):
     url: str

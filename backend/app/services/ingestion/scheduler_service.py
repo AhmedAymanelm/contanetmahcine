@@ -217,6 +217,94 @@ def publish_scheduled_content():
     finally:
         db.close()
 
+def auto_scrape_trend_radar():
+    """
+    Background job to automatically fetch the top trending tech/crypto news
+    from Google News and AITnews every 2 hours and save them as RawArticles.
+    """
+    db = SessionLocal()
+    try:
+        source = db.query(Source).filter(Source.name == "Trend Radar (Auto Pilot)").first()
+        if not source:
+            source = Source(
+                name="Trend Radar (Auto Pilot)",
+                url="https://news.google.com/rss/",
+                scraping_type="RSS",
+                interval_mins=120,
+                is_active=True
+            )
+            db.add(source)
+            db.commit()
+            db.refresh(source)
+            
+        from app.api.routers.trends import fetch_trends_for_geo
+        import trafilatura
+        import json
+        from googlenewsdecoder import new_decoderv1
+        from bs4 import BeautifulSoup
+        
+        geos = ["AITNEWS", "GLOBAL"]
+        total_new = 0
+        
+        for geo in geos:
+            logger.info(f"Auto-Trend: Fetching trends for {geo}")
+            try:
+                trends = fetch_trends_for_geo(geo)
+                for trend in trends:
+                    # Check if already in DB
+                    exists = db.query(RawArticle).filter(RawArticle.url == trend.news_url).first()
+                    if exists:
+                        continue
+                        
+                    # Scrape content
+                    try:
+                        decoded_res = new_decoderv1(trend.news_url)
+                        real_url = decoded_res.get('decoded_url') if decoded_res.get('status') else trend.news_url
+                        
+                        downloaded = trafilatura.fetch_url(real_url)
+                        if not downloaded:
+                            continue
+                            
+                        result = trafilatura.extract(downloaded, output_format="json", include_comments=False, include_tables=False, include_images=True)
+                        if not result:
+                            continue
+                            
+                        data = json.loads(result)
+                        content = data.get("text", "")
+                        image_url = data.get("image", "")
+                        
+                        if not image_url:
+                            try:
+                                soup = BeautifulSoup(downloaded, "html.parser")
+                                meta_img = soup.find("meta", property="og:image")
+                                if meta_img and meta_img.get("content"):
+                                    image_url = meta_img["content"]
+                            except Exception:
+                                pass
+                                
+                        if len(content) > 100:
+                            new_art = RawArticle(
+                                source_id=source.id,
+                                title=trend.title,
+                                url=trend.news_url,
+                                content=content,
+                                image_url=image_url,
+                                published_at=None
+                            )
+                            db.add(new_art)
+                            db.commit()
+                            total_new += 1
+                    except Exception as scrape_err:
+                        logger.error(f"Auto-Trend: Error scraping {trend.news_url}: {scrape_err}")
+            except Exception as geo_err:
+                logger.error(f"Auto-Trend: Error fetching trends for {geo}: {geo_err}")
+                
+        logger.info(f"Auto-Trend: Saved {total_new} new trend articles.")
+    except Exception as e:
+        logger.error(f"Auto-Trend: Critical error: {e}")
+    finally:
+        db.close()
+
 def start_scheduler():
     if not scheduler.running:
         # Run every 5 minutes to check schedules
@@ -243,6 +331,15 @@ def start_scheduler():
             trigger=IntervalTrigger(minutes=1),
             id='publish_scheduled_job',
             name='Publish Scheduled Job',
+            replace_existing=True
+        )
+        
+        # Run every 2 hours to auto-scrape trend radar
+        scheduler.add_job(
+            auto_scrape_trend_radar,
+            trigger=IntervalTrigger(hours=2),
+            id='auto_scrape_trend_radar_job',
+            name='Auto Scrape Trend Radar Job',
             replace_existing=True
         )
         
