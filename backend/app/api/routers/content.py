@@ -10,6 +10,8 @@ import copy
 import re
 from sqlalchemy.orm.attributes import flag_modified
 from app.ai.agents.base_agent import AgentClient, AgentConfig
+import logging
+logger = logging.getLogger(__name__)
 
 from app.api.deps import get_db
 from app.models.content_item import ContentItem
@@ -221,7 +223,43 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                 
                 access_token = token_entry.access_token if (token_entry := db.query(OAuthToken).filter(OAuthToken.platform == "linkedin").first()) else None
                 if access_token and status.get("account_id"):
-                    res = await li_service.publish_text(caption, access_token, status.get("account_id"))
+                    res = None
+                    carousel_urls = gen.get("carousel_urls", [])
+                    if carousel_urls and isinstance(carousel_urls, list) and len(carousel_urls) > 0:
+                        import tempfile, os as _os, httpx as _httpx
+                        from PIL import Image as _Image
+                        from io import BytesIO as _BytesIO
+                        images = []
+                        for img_url in carousel_urls:
+                            try:
+                                resp = _httpx.get(img_url, timeout=30.0)
+                                if resp.status_code == 200:
+                                    img = _Image.open(_BytesIO(resp.content)).convert('RGB')
+                                    images.append(img)
+                            except Exception as e:
+                                logger.error(f"Failed to download carousel image {img_url}: {e}")
+                        if images:
+                            with tempfile.TemporaryDirectory() as tmpdirname:
+                                img_paths = []
+                                for i, img in enumerate(images):
+                                    path = _os.path.join(tmpdirname, f"slide_{i}.jpg")
+                                    img.save(path, format="JPEG")
+                                    img_paths.append(path)
+                                res = await li_service.publish_media(caption, img_paths, "IMAGE", access_token, status.get("account_id"))
+                    elif item.raw_article and item.raw_article.image_url:
+                        import tempfile, os as _os, httpx as _httpx
+                        try:
+                            resp = _httpx.get(item.raw_article.image_url, timeout=30.0)
+                            if resp.status_code == 200:
+                                with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
+                                    temp_img_path = f.name
+                                    f.write(resp.content)
+                                res = await li_service.publish_media(caption, [temp_img_path], "IMAGE", access_token, status.get("account_id"))
+                                _os.remove(temp_img_path)
+                        except Exception as e:
+                            logger.error(f"Failed to download cover image for LinkedIn: {e}")
+                    if not res:
+                        res = await li_service.publish_text(caption, access_token, status.get("account_id"))
                     if not res.get("success"):
                         raise HTTPException(status_code=400, detail=f"LinkedIn: {res}")
                     li_published = True
