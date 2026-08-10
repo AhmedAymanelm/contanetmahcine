@@ -55,6 +55,13 @@ app.include_router(trends.router, prefix="/api/trends", tags=["Trends Radar"], d
 def health_check():
     return {"status": "ok", "environment": settings.ENVIRONMENT}
 
+# ── TikTok URL-prefix ownership verification ──────────────────────────────────
+from fastapi.responses import PlainTextResponse
+
+@app.get("/tiktokUl3sqscByg3q8nXurtLOC7HXdiExDMDf.txt", response_class=PlainTextResponse, include_in_schema=False)
+def tiktok_verification():
+    return "tiktok-developers-site-verification=Ul3sqscByg3q8nXurtLOC7HXdiExDMDf"
+
 # Serve frontend HTML/JS/CSS (Must be after API routes)
 FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
