@@ -813,20 +813,40 @@ async function fetchDashboardStats() {
 
         const data = await res.json();
 
-        // Try updating common dashboard/count elements if they exist
-        Object.keys(data || {}).forEach(key => {
-            const val = data[key];
-            const ids = [
-                `dashboard-${key}`,
-                `stat-${key}`,
-                `sidebar-count-${key}`,
-                `${key}-count`
-            ];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.innerText = (typeof val === 'number' ? val : String(val || ''));
+        // data expected shape: { stats: {...}, sidebar_counts: {...}, pipeline_counts: {...} }
+        if (data.stats) {
+            const s = data.stats;
+            const map = {
+                articles_today: 'stat-articles',
+                pending_reviews: 'stat-pending',
+                approval_rate: 'stat-approved',
+                scheduled: 'stat-scheduled'
+            };
+            Object.keys(map).forEach(k => {
+                const el = document.getElementById(map[k]);
+                if (el) el.innerText = s[k] !== undefined ? s[k] : '-';
             });
-        });
+        }
+
+        if (data.sidebar_counts) {
+            const sc = data.sidebar_counts;
+            Object.entries(sc).forEach(([k, v]) => {
+                // Support both raw and raw_articles keys
+                const idCandidates = [`sidebar-count-${k}`, `sidebar-count-${k.replace(/raw_articles/, 'raw')}`];
+                idCandidates.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = typeof v === 'number' ? v : String(v || '');
+                });
+            });
+        }
+
+        if (data.pipeline_counts) {
+            const pc = data.pipeline_counts;
+            Object.entries(pc).forEach(([k, v]) => {
+                const el = document.getElementById(`pipeline-count-${k}`);
+                if (el) el.innerText = typeof v === 'number' ? v : String(v || '');
+            });
+        }
     } catch (err) {
         console.error('fetchDashboardStats error', err);
     }
