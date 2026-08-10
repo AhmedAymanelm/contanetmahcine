@@ -26,61 +26,40 @@ class TrendGenerateRequest(BaseModel):
 @router.get("/", response_model=List[TrendItem])
 def get_trends(geo: str = "EG"):
     """
-    Fetches real-time daily search trends from Google Trends for a specific country.
-    Available Geos: EG (Egypt), SA (Saudi Arabia), AE (UAE), US, etc.
+    Fetches real-time technology news from Google News for a specific country.
     """
-    url = f"https://trends.google.com/trending/rss?geo={geo}"
+    if geo == "GLOBAL":
+        url = "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ar&gl=AE&ceid=AE:ar" # Default to Arabic global tech news
+    else:
+        url = f"https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ar&gl={geo}&ceid={geo}:ar"
+        
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     
     # Fetch using httpx to bypass basic blocks
-    response = httpx.get(url, headers=headers)
+    response = httpx.get(url, headers=headers, follow_redirects=True)
     
     if response.status_code != 200:
         return []
 
-    feed = feedparser.parse(response.content)
+    feed = feedparser.parse(response.text)
     
     trends = []
-    for entry in feed.entries:
-        # Extract traffic (e.g. "50K+")
-        traffic = entry.get("ht_approx_traffic", "")
-        
-        # Extract related news
-        news_title = ""
-        news_url = ""
-        news_snippet = ""
-        
-        # Google Trends RSS puts news inside ht_news_item
-        if hasattr(entry, "ht_news_item"):
-            news_item = entry.ht_news_item
-            if isinstance(news_item, dict):
-                news_title = news_item.get("ht_news_item_title", "")
-                news_url = news_item.get("ht_news_item_url", "")
-                news_snippet = news_item.get("ht_news_item_snippet", "")
-            elif hasattr(entry, 'ht_news_item_title'):
-                news_title = entry.get("ht_news_item_title", "")
-                news_snippet = entry.get("ht_news_item_snippet", "")
-                news_url = entry.get("ht_news_item_url", "")
-            elif isinstance(news_item, str):
-                news_snippet = news_item
-                
-        # Fallback to standard description if snippet is empty
-        description = entry.get("description", "")
-        
-        # Clean HTML from snippets
-        clean_snippet = re.sub(r'<[^>]+>', '', news_snippet) if news_snippet else ""
-        clean_desc = re.sub(r'<[^>]+>', '', description) if description else ""
-        
+    for entry in feed.entries[:15]:  # Limit to top 15 tech news
+        # Google News RSS puts source inside 'source' tag
+        source_name = ""
+        if hasattr(entry, 'source') and hasattr(entry.source, 'title'):
+            source_name = entry.source.title
+            
         trends.append(TrendItem(
             title=entry.title,
-            traffic=traffic,
-            description=clean_desc,
+            traffic=source_name, # Use traffic field to show the news source
+            description="أخبار تكنولوجية عاجلة",
             pub_date=entry.get("published", ""),
-            news_title=news_title,
-            news_url=news_url,
-            news_snippet=clean_snippet or clean_desc
+            news_title=entry.title,
+            news_url=entry.link,
+            news_snippet=entry.title
         ))
         
     return trends

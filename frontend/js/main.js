@@ -1798,7 +1798,7 @@ async function loadTrends() {
             card.innerHTML = `
                 <div style="position: absolute; top: -10px; right: 20px; background: var(--red); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">#${index + 1}</div>
                 <h3 style="margin-top: 5px; margin-bottom: 10px; font-size: 18px; color: var(--text);">${trend.title}</h3>
-                <div style="font-size: 12px; color: var(--muted); margin-bottom: 15px;">🔍 عمليات البحث: <strong style="color: var(--amber);">${trend.traffic}</strong></div>
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 15px;">📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong></div>
                 <p style="font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 20px; min-height: 42px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${trend.news_snippet || trend.description}</p>
                 <button class="btn" style="width: 100%; background: var(--teal); border: none;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}')">
                     <span class="ic">🤖</span> اصنع محتوى
