@@ -70,6 +70,7 @@ from app.services.social.threads_service import ThreadsService
 from app.services.social.linkedin_service import LinkedInService
 
 def _ensure_english_linkedin(item: ContentItem):
+    """Translate linkedin_post and carousel slides to English if they contain Arabic."""
     if not item.generated_content:
         return
     gen = item.generated_content
@@ -79,24 +80,82 @@ def _ensure_english_linkedin(item: ContentItem):
             gen = json.loads(gen)
         except:
             return
-            
+    
+    import re, copy
+    changed = False
+    new_content = copy.deepcopy(gen)
+    client = AgentClient()
+    config = AgentConfig(
+        name="Translator",
+        role="Professional translator",
+        goal="Translate text to English",
+        backstory="Expert at translating social media posts to professional English."
+    )
+
+    # 1. Translate linkedin_post text
     caption = gen.get("linkedin_post", "")
-    import re
     if caption and re.search(r"[\u0600-\u06FF]", caption):
-        client = AgentClient()
-        config = AgentConfig(
-            name="Translator",
-            role="Professional translator",
-            goal="Translate text to English",
-            backstory="Expert at translating social media posts to professional English."
-        )
         translated = client.execute_task(config, f"Translate the following LinkedIn post to professional English. Return ONLY the English translation without quotes or introductory text:\n\n{caption}")
-        
-        import copy
-        new_content = copy.deepcopy(gen)
         new_content["linkedin_post"] = translated.strip()
+        changed = True
+
+    # 2. Translate carousel slides if they contain Arabic → store as linkedin_slides
+    slides = gen.get("slides", [])
+    if slides and item.content_type == "CAROUSEL":
+        has_arabic = any(
+            re.search(r"[\u0600-\u06FF]", str(s.get("heading", "")) + str(s.get("body", "")))
+            for s in slides
+        )
+        if has_arabic:
+            english_slides = []
+            for slide in slides:
+                en_slide = {}
+                for field in ["heading", "body"]:
+                    val = slide.get(field, "")
+                    if val and re.search(r"[\u0600-\u06FF]", val):
+                        translated = client.execute_task(config, f"Translate to professional English. Return ONLY the translation:\n\n{val}")
+                        en_slide[field] = translated.strip()
+                    else:
+                        en_slide[field] = val
+                # Translate tips_list if present
+                tips = slide.get("tips_list")
+                if tips:
+                    en_tips = []
+                    for tip in tips:
+                        if re.search(r"[\u0600-\u06FF]", tip):
+                            t = client.execute_task(config, f"Translate to professional English. Return ONLY the translation:\n\n{tip}")
+                            en_tips.append(t.strip())
+                        else:
+                            en_tips.append(tip)
+                    en_slide["tips_list"] = en_tips
+                # Translate column fields if present
+                for col_field in ["left_column_title", "right_column_title"]:
+                    val = slide.get(col_field)
+                    if val and re.search(r"[\u0600-\u06FF]", val):
+                        t = client.execute_task(config, f"Translate to professional English. Return ONLY the translation:\n\n{val}")
+                        en_slide[col_field] = t.strip()
+                    elif val:
+                        en_slide[col_field] = val
+                for col_field in ["left_column_items", "right_column_items"]:
+                    items_list = slide.get(col_field)
+                    if items_list:
+                        en_items = []
+                        for it in items_list:
+                            if re.search(r"[\u0600-\u06FF]", it):
+                                t = client.execute_task(config, f"Translate to professional English. Return ONLY the translation:\n\n{it}")
+                                en_items.append(t.strip())
+                            else:
+                                en_items.append(it)
+                        en_slide[col_field] = en_items
+                english_slides.append(en_slide)
+            # Store English slides separately — arabic slides stay for other platforms
+            new_content["linkedin_slides"] = english_slides
+            # Clear any old linkedin carousel urls so they get re-rendered
+            new_content.pop("linkedin_carousel_urls", None)
+            changed = True
+
+    if changed:
         item.generated_content = new_content
-        
         from sqlalchemy.orm.attributes import flag_modified
         flag_modified(item, "generated_content")
 
@@ -224,7 +283,31 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                 access_token = token_entry.access_token if (token_entry := db.query(OAuthToken).filter(OAuthToken.platform == "linkedin").first()) else None
                 if access_token and status.get("account_id"):
                     res = None
-                    carousel_urls = gen.get("carousel_urls", [])
+                    # Prefer English-rendered carousel for LinkedIn
+                    li_carousel_urls = gen.get("linkedin_carousel_urls", [])
+                    carousel_urls = li_carousel_urls if li_carousel_urls else gen.get("carousel_urls", [])
+                    
+                    # If we have linkedin_slides (English) but no linkedin_carousel_urls yet → render them now
+                    if not li_carousel_urls and gen.get("linkedin_slides") and item.content_type == "CAROUSEL":
+                        try:
+                            from app.services.carousel_renderer import render_carousel_sync
+                            import copy as _copy
+                            li_data = _copy.deepcopy(gen)
+                            li_data["slides"] = gen["linkedin_slides"]
+                            li_data["title"] = gen.get("title", "")
+                            li_urls = render_carousel_sync(item.id, li_data, None, "zayedtech", None, None)
+                            # Store for future use
+                            import copy as _copy2
+                            new_gen = _copy2.deepcopy(item.generated_content)
+                            new_gen["linkedin_carousel_urls"] = li_urls
+                            item.generated_content = new_gen
+                            from sqlalchemy.orm.attributes import flag_modified
+                            flag_modified(item, "generated_content")
+                            db.commit()
+                            carousel_urls = li_urls
+                        except Exception as e:
+                            logger.error(f"Failed to render English LinkedIn carousel: {e}")
+                    
                     if carousel_urls and isinstance(carousel_urls, list) and len(carousel_urls) > 0:
                         import tempfile, os as _os, httpx as _httpx
                         from PIL import Image as _Image

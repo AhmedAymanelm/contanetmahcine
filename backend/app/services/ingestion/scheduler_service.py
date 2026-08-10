@@ -188,7 +188,9 @@ def publish_scheduled_content():
                     access_token = token_entry.access_token if (token_entry := db.query(OAuthToken).filter(OAuthToken.platform == "linkedin").first()) else None
                     if access_token and status.get("account_id"):
                         res = None
-                        carousel_urls = item.generated_content.get("carousel_urls", [])
+                        # Prefer English-rendered carousel for LinkedIn
+                        li_carousel_urls = item.generated_content.get("linkedin_carousel_urls", [])
+                        carousel_urls = li_carousel_urls if li_carousel_urls else item.generated_content.get("carousel_urls", [])
                         if carousel_urls and isinstance(carousel_urls, list) and len(carousel_urls) > 0:
                             import tempfile, os, httpx
                             from PIL import Image
