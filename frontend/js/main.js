@@ -5,117 +5,113 @@ const API_BASE = '/api';
     try {
         if (!document.getElementById('cm-error-overlay')) {
             const ov = document.createElement('div');
-            ov.id = 'cm-error-overlay';
-            ov.style.cssText = 'position:fixed; bottom:20px; right:20px; max-width:420px; background:rgba(220,38,38,0.95); color:white; padding:12px 16px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.5); font-family:Arial, Helvetica, sans-serif; font-size:13px; z-index:20000; display:none; white-space:pre-wrap; line-height:1.3;';
-            ov.innerText = '';
-            const close = document.createElement('button');
-            close.innerText = '×';
-            close.style.cssText = 'position:absolute; top:6px; right:8px; background:none; border:none; color:white; font-size:16px; cursor:pointer;';
-            close.onclick = () => ov.style.display = 'none';
-            ov.appendChild(close);
-            const content = document.createElement('div');
-            content.id = 'cm-error-overlay-content';
-            content.style.marginTop = '6px';
-            ov.appendChild(content);
-            document.addEventListener('DOMContentLoaded', () => document.body.appendChild(ov));
-        }
-    } catch(e) {
-        console.error('Failed to setup error overlay', e);
-    }
-    // Global handlers
-    window.addEventListener('error', function(ev) {
-        try {
-            const msg = `${ev.message} at ${ev.filename}:${ev.lineno}:${ev.colno}`;
-            console.error(msg, ev.error);
-            const el = document.getElementById('cm-error-overlay-content');
-            if (el) { el.innerText = msg + '\n' + (ev.error && ev.error.stack ? ev.error.stack : ''); document.getElementById('cm-error-overlay').style.display = 'block'; }
-        } catch(e) { console.error(e); }
-    });
-    window.addEventListener('unhandledrejection', function(ev) {
-        try {
-            const reason = ev.reason && ev.reason.stack ? ev.reason.stack : String(ev.reason);
-            console.error('UnhandledRejection', reason);
-            const el = document.getElementById('cm-error-overlay-content');
-            if (el) { el.innerText = 'UnhandledRejection:\n' + reason; document.getElementById('cm-error-overlay').style.display = 'block'; }
-        } catch(e) { console.error(e); }
-    });
-})();
+            function showCustomConfirm(msg, onConfirm) {
+                // Dedicated generation modal to avoid colliding with the static delete modal
+                let modal = document.getElementById('cm-gen-confirm-modal');
 
-function go(element) {
-    document.querySelectorAll('nav a').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
-    
-    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
-    const targetId = element.getAttribute('data-page');
-    if (targetId) {
-        const targetPage = document.getElementById(targetId);
-        if (targetPage) {
-            targetPage.classList.add('active');
-            if (targetId === 'page-trends') {
-                loadTrends();
-            }
-        }
-    }
-}
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'cm-gen-confirm-modal';
+                    modal.style.cssText = 'display:none; opacity:0; transition:opacity 0.18s ease; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px); pointer-events:none;';
+                    modal.innerHTML = `
+                        <div id="cm-gen-confirm-content" style="background:var(--panel-2); width:90%; max-width:420px; border-radius:16px; border: 1px solid var(--line); display:flex; flex-direction:column; padding:25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align:center; transform:scale(0.96); transition:transform 0.18s ease;">
+                            <div style="font-size:40px; margin-bottom:15px;">🤖</div>
+                            <h3 style="margin:0 0 15px 0; font-size:18px; color:var(--text);">تأكيد صناعة المحتوى</h3>
+                            <p id="cm-gen-confirm-msg" style="color:var(--muted); font-size:15px; margin-bottom:16px; line-height:1.6;"></p>
+                            <div style="text-align:right; margin-bottom:14px; background:rgba(0,0,0,0.02); padding:12px; border-radius:10px; border:1px solid var(--line);">
+                                <div style="margin-bottom:8px; color:var(--text); font-weight:700; font-size:14px;">اختر صيغ المحتوى المطلوبة (اختر واحد أو أكثر):</div>
+                                <label style="display:flex; align-items:center; gap:10px; margin-bottom:6px; cursor:pointer; color:var(--text); font-size:14px;">
+                                    <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" style="width:16px; height:16px; accent-color:var(--teal);">
+                                    <span>📱 كاروسيل</span>
+                                </label>
+                                <label style="display:flex; align-items:center; gap:10px; margin-bottom:6px; cursor:pointer; color:var(--text); font-size:14px;">
+                                    <input type="checkbox" id="chk-format-post" value="POST" style="width:16px; height:16px; accent-color:var(--teal);">
+                                    <span>📝 بوست</span>
+                                </label>
+                                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:var(--text); font-size:14px;">
+                                    <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" style="width:16px; height:16px; accent-color:var(--teal);">
+                                    <span>🎬 سكريبت فيديو</span>
+                                </label>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button id="cm-gen-confirm-yes" class="btn" style="flex:1; background:var(--teal); border:none; padding:12px; font-size:15px; border-radius:8px;">نعم، ابدأ الصنع</button>
+                                <button id="cm-gen-confirm-no" class="btn ghost" style="flex:1; padding:12px; font-size:15px; border-radius:8px; background: rgba(255,255,255,0.04);">إلغاء</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
 
-function goId(pageId) {
-    const link = document.querySelector(`nav a[data-page="${pageId}"]`);
-    if (link) go(link);
-}
+                    modal.querySelector('#cm-gen-confirm-no')?.addEventListener('click', () => {
+                        modal.style.opacity = '0';
+                        modal.style.pointerEvents = 'none';
+                        const content = document.getElementById('cm-gen-confirm-content');
+                        if (content) content.style.transform = 'scale(0.96)';
+                        setTimeout(() => { modal.style.display = 'none'; }, 220);
+                    });
+                }
 
-// ---------------- API Fetching ----------------
+                const dynMsg = document.getElementById('cm-gen-confirm-msg');
+                if (dynMsg) dynMsg.innerText = msg;
 
-async function fetchDashboardStats() {
-    try {
-        const res = await fetch(`${API_BASE}/stats/`);
-        if (!res.ok) throw new Error('Failed to fetch stats');
-        const data = await res.json();
-        
-        // Update stats blocks
-        document.getElementById('stat-articles').innerText = data.stats.articles_today;
-        document.getElementById('stat-pending').innerText = data.stats.pending_reviews;
-        document.getElementById('stat-approved').innerText = data.stats.approval_rate;
-        document.getElementById('stat-scheduled').innerText = data.stats.scheduled;
+                // Restore last selection if available
+                try {
+                    const last = localStorage.getItem('cm_last_gen_formats');
+                    const defaults = last ? JSON.parse(last) : [];
+                    const chkCar = document.getElementById('chk-format-carousel');
+                    const chkPost = document.getElementById('chk-format-post');
+                    const chkVid = document.getElementById('chk-format-video');
+                    if (chkCar) chkCar.checked = Array.isArray(defaults) && defaults.includes('CAROUSEL');
+                    if (chkPost) chkPost.checked = Array.isArray(defaults) && defaults.includes('POST');
+                    if (chkVid) chkVid.checked = Array.isArray(defaults) && defaults.includes('VIDEO_SCRIPT');
+                } catch (e) { console.error('restore last gen formats failed', e); }
 
-        document.getElementById('stat-articles-sub').innerText = 'تم التحديث للتو';
-        document.getElementById('stat-pending-sub').innerText = data.stats.pending_reviews > 0 ? 'يتطلب إجراء' : 'لا يوجد مهام';
-        document.getElementById('stat-approved-sub').innerText = 'معدل الموافقة الكلي';
-        document.getElementById('stat-scheduled-sub').innerText = 'جاهز للنشر';
+                modal.style.display = 'flex';
+                setTimeout(() => {
+                    modal.style.opacity = '1';
+                    modal.style.pointerEvents = 'auto';
+                    const content = document.getElementById('cm-gen-confirm-content');
+                    if (content) content.style.transform = 'scale(1)';
+                }, 10);
 
-        // Update Sidebar Counts
-        document.getElementById('sidebar-count-sources').innerText = data.sidebar_counts.sources;
-        document.getElementById('sidebar-count-raw').innerText = data.sidebar_counts.raw_articles;
-        document.getElementById('sidebar-count-content').innerText = data.sidebar_counts.content;
-        document.getElementById('sidebar-count-review').innerText = data.sidebar_counts.review;
+                const dynYes = document.getElementById('cm-gen-confirm-yes');
+                const dynNo = document.getElementById('cm-gen-confirm-no');
 
-        // Update Pipeline Counts
-        document.getElementById('pipeline-count-raw').innerText = data.pipeline_counts.raw;
-        document.getElementById('pipeline-count-draft').innerText = data.pipeline_counts.draft;
-        document.getElementById('pipeline-count-review').innerText = data.pipeline_counts.review;
-        document.getElementById('pipeline-count-scheduled').innerText = data.pipeline_counts.scheduled;
-        document.getElementById('pipeline-count-published').innerText = data.pipeline_counts.published;
+                if (dynNo) dynNo.onclick = () => {
+                    modal.style.opacity = '0';
+                    modal.style.pointerEvents = 'none';
+                    const content = document.getElementById('cm-gen-confirm-content');
+                    if (content) content.style.transform = 'scale(0.96)';
+                    setTimeout(() => { modal.style.display = 'none'; }, 200);
+                };
 
-        // Update Platform Performance
-        const perfList = document.getElementById('platform-performance-list');
-        if (perfList && data.platform_performance) {
-            const perf = data.platform_performance;
-            let maxCount = Math.max(...Object.values(perf));
-            if (maxCount === 0) maxCount = 1; // prevent division by zero
-            
-            const pColors = {
-                'Instagram': 'var(--red)',
-                'Facebook': 'var(--amber)',
-                'X': 'var(--muted)',
-                'TikTok': 'var(--teal)',
-                'Snapchat': 'var(--yellow)',
-                'Threads': 'var(--foreground)'
-            };
-            
-            let html = '';
-            for (const [platform, count] of Object.entries(perf)) {
-                const width = (count / maxCount) * 100;
-                const color = pColors[platform] || 'var(--teal)';
-                html += `<div class="bar-row"><div class="l">${platform}</div><div class="bar-track"><div class="bar-fill" style="width:${width}%; background:${color}"></div></div><div class="v">${count}</div></div>`;
+                if (dynYes) dynYes.onclick = () => {
+                    const formats = [];
+                    const chkCar = document.getElementById('chk-format-carousel');
+                    const chkPost = document.getElementById('chk-format-post');
+                    const chkVid = document.getElementById('chk-format-video');
+
+                    if (chkCar && chkPost && chkVid) {
+                        if(chkCar.checked) formats.push('CAROUSEL');
+                        if(chkPost.checked) formats.push('POST');
+                        if(chkVid.checked) formats.push('VIDEO_SCRIPT');
+                    }
+
+                    if (formats.length === 0) {
+                        showToast('يجب اختيار صيغة واحدة على الأقل', 'error');
+                        return;
+                    }
+
+                    try { localStorage.setItem('cm_last_gen_formats', JSON.stringify(formats)); } catch(e) { console.error('persist formats failed', e); }
+
+                    modal.style.opacity = '0';
+                    modal.style.pointerEvents = 'none';
+                    const content = document.getElementById('cm-gen-confirm-content');
+                    if (content) content.style.transform = 'scale(0.96)';
+                    setTimeout(() => {
+                        modal.style.display = 'none';
+                        try { if (onConfirm) onConfirm(formats); } catch(e){ console.error('onConfirm handler error', e); }
+                    }, 200);
+                };
             }
             perfList.innerHTML = html;
         }
