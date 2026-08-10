@@ -676,7 +676,7 @@ function renderContentList() {
                     } catch(e) {}
                 }
                 if (title === 'بدون عنوان' && item.raw_article) title = item.raw_article.title;
-                if (item.generated_content.trend_title) title = `🔥 ترند: ${item.generated_content.trend_title}`;
+                if (gen && gen.trend_title) title = `🔥 ترند: ${gen.trend_title}`;
 
                 const d = new Date(item.created_at);
                 const dateStr = d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
@@ -750,8 +750,8 @@ async function fetchReviewContent() {
                 window.reviewItemsDataRaw[item.id] = item;
                 
                 let title = item.raw_article ? item.raw_article.title : 'بدون عنوان';
-                if (item.generated_content && item.generated_content.trend_title) {
-                    title = `🔥 ترند: ${item.generated_content.trend_title}`;
+                if (generated && generated.trend_title) {
+                    title = `🔥 ترند: ${generated.trend_title}`;
                 }
                 let sourceName = item.raw_article && item.raw_article.source ? item.raw_article.source.name : 'AI';
                 let typeText = item.content_type;
@@ -904,8 +904,8 @@ async function fetchScheduledContent() {
             if (container) {
                 let generated = typeof item.generated_content === 'string' ? JSON.parse(item.generated_content) : (item.generated_content || {});
                 let title = item.raw_article ? item.raw_article.title : 'بدون عنوان';
-                if (item.generated_content && item.generated_content.trend_title) {
-                    title = `🔥 ترند: ${item.generated_content.trend_title}`;
+                if (generated && generated.trend_title) {
+                    title = `🔥 ترند: ${generated.trend_title}`;
                 }
                 if (item.content_type === 'CAROUSEL' && generated.title) {
                     title = generated.title;
