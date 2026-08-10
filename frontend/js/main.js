@@ -1255,9 +1255,11 @@ function closeApproveModal() {
     setTimeout(() => modal.style.display = 'none', 200);
 }
 
-document.getElementById('btn-approve-cancel').onclick = closeApproveModal;
+const _btnApproveCancel = document.getElementById('btn-approve-cancel');
+if (_btnApproveCancel) _btnApproveCancel.onclick = closeApproveModal;
 
-document.getElementById('btn-approve-direct').onclick = async function() {
+const _btnApproveDirect = document.getElementById('btn-approve-direct');
+if (_btnApproveDirect) _btnApproveDirect.onclick = async function() {
     if (!currentApproveId || !currentApproveBtn) return;
     const btn = currentApproveBtn;
     const id = currentApproveId;
@@ -1296,19 +1298,22 @@ document.getElementById('btn-approve-direct').onclick = async function() {
     }
 };
 
-document.getElementById('btn-approve-schedule-show').onclick = function() {
+const _btnApproveScheduleShow = document.getElementById('btn-approve-schedule-show');
+if (_btnApproveScheduleShow) _btnApproveScheduleShow.onclick = function() {
     document.getElementById('approve-buttons-container').style.display = 'none';
     document.getElementById('schedule-picker-container').style.display = 'block';
     document.getElementById('schedule-submit-container').style.display = 'flex';
 };
 
-document.getElementById('btn-schedule-cancel').onclick = function() {
+const _btnScheduleCancel = document.getElementById('btn-schedule-cancel');
+if (_btnScheduleCancel) _btnScheduleCancel.onclick = function() {
     document.getElementById('schedule-picker-container').style.display = 'none';
     document.getElementById('schedule-submit-container').style.display = 'none';
     document.getElementById('approve-buttons-container').style.display = 'flex';
 };
 
-document.getElementById('btn-schedule-confirm').onclick = async function() {
+const _btnScheduleConfirm = document.getElementById('btn-schedule-confirm');
+if (_btnScheduleConfirm) _btnScheduleConfirm.onclick = async function() {
     if (!currentApproveId || !currentApproveBtn) return;
     const dateVal = document.getElementById('schedule-date-input').value;
     const timeVal = document.getElementById('schedule-time-input').value;
@@ -1860,15 +1865,17 @@ function showCustomConfirm(msg, onConfirm) {
         `;
         document.body.appendChild(modal);
         
-        document.getElementById('custom-confirm-no').onclick = () => {
-            modal.style.display = 'none';
-        };
+            const _customConfirmNo = document.getElementById('custom-confirm-no');
+            if (_customConfirmNo) _customConfirmNo.onclick = () => {
+                modal.style.display = 'none';
+            };
     }
     
     document.getElementById('custom-confirm-msg').innerText = msg;
     modal.style.display = 'flex';
     
-    document.getElementById('custom-confirm-yes').onclick = () => {
+    const _customConfirmYes = document.getElementById('custom-confirm-yes');
+    if (_customConfirmYes) _customConfirmYes.onclick = () => {
         const formats = [];
         const chkCar = document.getElementById('chk-format-carousel');
         const chkPost = document.getElementById('chk-format-post');
@@ -1929,7 +1936,8 @@ async function openNewsModal(url, title, safeTitle, safeSnippet) {
     document.getElementById('news-modal-text').innerHTML = '';
     
     document.getElementById('news-modal').style.display = 'flex';
-    document.getElementById('news-modal-generate').onclick = () => {
+    const _newsModalGenerate = document.getElementById('news-modal-generate');
+    if (_newsModalGenerate) _newsModalGenerate.onclick = () => {
         closeNewsModal();
         generateTrendContent(safeTitle, safeSnippet);
     };
