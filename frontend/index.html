@@ -499,6 +499,446 @@
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="js/main.js?v=9"></script>
+
+<!-- ════════════════════════════════ ANALYTICS PAGE ════════════════════════════ -->
+<style>
+/* ── Analytics Layout ─────────────────────────────────────────────────────── */
+#page-analytics { display: none; padding-bottom: 60px; }
+#page-analytics.active { display: block; }
+
+.an-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.an-kpi {
+  background: var(--panel-2, #1a1a2e);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 22px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+}
+.an-kpi:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+.an-kpi::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:3px;
+  background: var(--kpi-color, #6366f1);
+  border-radius: 16px 16px 0 0;
+}
+.an-kpi .kpi-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+.an-kpi .kpi-val {
+  font-size: 2.2rem; font-weight: 800; line-height: 1;
+  color: var(--kpi-color, #6366f1);
+  margin-bottom: 6px;
+}
+.an-kpi .kpi-label { font-size: 0.82rem; color: var(--muted, #94a3b8); font-weight: 500; }
+.an-kpi .kpi-sub { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+
+.an-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.an-chart-card {
+  background: var(--panel-2, #1a1a2e);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 24px;
+}
+.an-chart-card h3 {
+  font-size: 1rem; font-weight: 700; margin: 0 0 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.an-chart-card canvas { max-height: 260px; }
+
+.an-full-card {
+  background: var(--panel-2, #1a1a2e);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.an-full-card h3 {
+  font-size: 1rem; font-weight: 700; margin: 0 0 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.an-full-card canvas { max-height: 220px; }
+
+.an-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.an-table th {
+  text-align: right; padding: 10px 14px;
+  background: rgba(255,255,255,0.03);
+  color: var(--muted, #94a3b8); font-weight: 600;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.an-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text, #e2e8f0);
+  vertical-align: middle;
+}
+.an-table tr:last-child td { border-bottom: none; }
+.an-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.an-badge {
+  display: inline-block;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing:.04em;
+}
+.an-badge.POST { background: rgba(99,102,241,.2); color: #818cf8; }
+.an-badge.CAROUSEL { background: rgba(16,185,129,.2); color: #34d399; }
+.an-badge.VIDEO_SCRIPT { background: rgba(245,158,11,.2); color: #fbbf24; }
+.an-badge.UNKNOWN { background: rgba(148,163,184,.15); color: #94a3b8; }
+
+.an-platform-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px; padding: 2px 8px;
+  font-size: 0.72rem; margin: 1px;
+}
+.an-section-title {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted, #94a3b8);
+  margin: 0 0 12px; border-right: 3px solid #6366f1; padding-right: 10px;
+}
+.an-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.an-loading {
+  text-align: center; padding: 60px 0; color: var(--muted, #94a3b8);
+  font-size: 1rem; display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.an-spin { font-size: 2rem; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 900px) {
+  .an-charts-row { grid-template-columns: 1fr; }
+  .an-row-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .an-kpi-grid { grid-template-columns: 1fr 1fr; }
+  .an-row-3 { grid-template-columns: 1fr; }
+}
+</style>
+
+<section class="page" id="page-analytics">
+  <div class="topline">
+    <div>
+      <h1>📈 التحليلات</h1>
+      <p>نظرة شاملة على أداء ماكينة المحتوى</p>
+    </div>
+    <button class="btn" id="an-refresh-btn" onclick="loadAnalytics()" style="background:rgba(99,102,241,.15); border:1px solid rgba(99,102,241,.3); color:#818cf8; padding:10px 20px; border-radius:10px; font-size:0.9rem;">🔄 تحديث</button>
+  </div>
+
+  <div id="an-loading-state" class="an-loading">
+    <span class="an-spin">⚙️</span>
+    <span>جاري تحميل البيانات...</span>
+  </div>
+
+  <div id="an-content" style="display:none;">
+
+    <!-- ── KPI Cards ─────────────────────────────────────────────────────── -->
+    <p class="an-section-title">📊 مؤشرات الأداء الرئيسية</p>
+    <div class="an-kpi-grid" id="an-kpis"></div>
+
+    <!-- ── Trends Row ─────────────────────────────────────────────────────── -->
+    <p class="an-section-title">📅 اتجاهات آخر 14 يوم</p>
+    <div class="an-full-card">
+      <h3>📰 الأخبار المسحوبة يومياً</h3>
+      <canvas id="chart-scrape-trend"></canvas>
+    </div>
+    <div class="an-full-card">
+      <h3>✍️ المحتوى المُنشأ يومياً</h3>
+      <canvas id="chart-content-trend"></canvas>
+    </div>
+
+    <!-- ── Platform + Type charts ─────────────────────────────────────────── -->
+    <p class="an-section-title">🌐 توزيع المنصات والمحتوى</p>
+    <div class="an-charts-row">
+      <div class="an-chart-card">
+        <h3>🌐 البوستات المنشورة لكل منصة</h3>
+        <canvas id="chart-platforms"></canvas>
+      </div>
+      <div class="an-chart-card">
+        <h3>🗂️ نوع المحتوى المُنشأ</h3>
+        <canvas id="chart-types"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Pipeline donut + Sources bar ──────────────────────────────────── -->
+    <div class="an-charts-row">
+      <div class="an-chart-card">
+        <h3>⚙️ حالة المحتوى في الـ Pipeline</h3>
+        <canvas id="chart-pipeline"></canvas>
+      </div>
+      <div class="an-chart-card">
+        <h3>📡 أكثر المصادر نشاطاً</h3>
+        <canvas id="chart-sources"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Top Content Table ──────────────────────────────────────────────── -->
+    <p class="an-section-title">🏆 أفضل المحتوى المنشور</p>
+    <div class="an-full-card">
+      <h3>🚀 آخر البوستات المنشورة</h3>
+      <div style="overflow-x:auto;">
+        <table class="an-table" id="an-top-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>العنوان</th>
+              <th>النوع</th>
+              <th>المنصات</th>
+              <th>تاريخ النشر</th>
+            </tr>
+          </thead>
+          <tbody id="an-top-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /an-content -->
+</section>
+
+<script>
+// ── Analytics Controller ───────────────────────────────────────────────────
+let _anCharts = {};
+
+function destroyAnCharts() {
+  Object.values(_anCharts).forEach(c => { try { c.destroy(); } catch(e){} });
+  _anCharts = {};
+}
+
+const PLATFORM_COLORS = {
+  'Instagram': '#e1306c',
+  'Facebook':  '#1877f2',
+  'LinkedIn':  '#0a66c2',
+  'X (Twitter)': '#1da1f2',
+  'TikTok':    '#69c9d0',
+  'Threads':   '#a855f7',
+  'Snapchat':  '#fffc00',
+};
+const PLATFORM_ICONS = {
+  'Instagram': '📸', 'Facebook': '👤', 'LinkedIn': '💼',
+  'X (Twitter)': '🐦', 'TikTok': '🎵', 'Threads': '🧵', 'Snapchat': '👻',
+};
+
+function anColor(i, alpha = 0.85) {
+  const palette = [
+    `rgba(99,102,241,${alpha})`, `rgba(16,185,129,${alpha})`,
+    `rgba(245,158,11,${alpha})`, `rgba(239,68,68,${alpha})`,
+    `rgba(6,182,212,${alpha})`,  `rgba(168,85,247,${alpha})`,
+    `rgba(251,146,60,${alpha})`, `rgba(20,184,166,${alpha})`,
+  ];
+  return palette[i % palette.length];
+}
+
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: {
+    legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 }, boxWidth: 14 } }
+  },
+  scales: {
+    x: { ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+    y: { ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+  }
+};
+
+async function loadAnalytics() {
+  destroyAnCharts();
+  document.getElementById('an-loading-state').style.display = 'flex';
+  document.getElementById('an-content').style.display = 'none';
+
+  try {
+    const res = await apiFetch('/api/analytics/overview');
+    if (!res || res.error) throw new Error(res?.error || 'فشل التحميل');
+    renderAnalytics(res);
+    document.getElementById('an-loading-state').style.display = 'none';
+    document.getElementById('an-content').style.display = 'block';
+  } catch(e) {
+    document.getElementById('an-loading-state').innerHTML =
+      `<span style="font-size:2rem;">😞</span><span style="color:#ef4444;">خطأ في تحميل البيانات: ${e.message}</span>`;
+  }
+}
+
+function renderAnalytics(data) {
+  const { scraping, pipeline, platforms, content_types, trends, top_sources, top_content } = data;
+
+  // ── KPI Cards ──────────────────────────────────────────────────────────
+  const kpis = [
+    { icon:'📰', val: scraping.total_scraped,  label:'إجمالي الأخبار المسحوبة', sub: `${scraping.scraped_7d} آخر 7 أيام`, color:'#6366f1' },
+    { icon:'📡', val: scraping.active_sources, label:'مصادر نشطة', sub: `${scraping.total_sources} إجمالي`, color:'#06b6d4' },
+    { icon:'✅', val: pipeline.published,       label:'منشور', sub:`من ${pipeline.total_content} محتوى`, color:'#10b981' },
+    { icon:'📅', val: pipeline.scheduled,       label:'مجدول', sub:'في انتظار النشر', color:'#8b5cf6' },
+    { icon:'⏳', val: pipeline.pending_review,  label:'ينتظر المراجعة', sub:'', color:'#f59e0b' },
+    { icon:'💯', val: `${pipeline.approval_rate}%`, label:'معدل الاعتماد', sub:'', color:'#ec4899' },
+    { icon:'🚫', val: pipeline.rejected,        label:'مرفوض', sub:'', color:'#ef4444' },
+    { icon:'📝', val: pipeline.draft,           label:'مسودة', sub:'', color:'#64748b' },
+  ];
+
+  const kpiGrid = document.getElementById('an-kpis');
+  kpiGrid.innerHTML = kpis.map(k => `
+    <div class="an-kpi" style="--kpi-color:${k.color}">
+      <span class="kpi-icon">${k.icon}</span>
+      <div class="kpi-val">${k.val}</div>
+      <div class="kpi-label">${k.label}</div>
+      ${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ''}
+    </div>
+  `).join('');
+
+  // ── Scraping Trend Line ────────────────────────────────────────────────
+  const scrapeDates = trends.daily_scrape.map(d => d.date);
+  const scrapeVals  = trends.daily_scrape.map(d => d.articles);
+  _anCharts.scrape = new Chart(document.getElementById('chart-scrape-trend'), {
+    type: 'line',
+    data: {
+      labels: scrapeDates,
+      datasets: [{
+        label: 'أخبار مسحوبة',
+        data: scrapeVals,
+        borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)',
+        tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#6366f1',
+      }]
+    },
+    options: { ...chartDefaults }
+  });
+
+  // ── Content Generation Trend Line ──────────────────────────────────────
+  const contentDates = trends.daily_content.map(d => d.date);
+  const contentVals  = trends.daily_content.map(d => d.content);
+  _anCharts.contentTrend = new Chart(document.getElementById('chart-content-trend'), {
+    type: 'line',
+    data: {
+      labels: contentDates,
+      datasets: [{
+        label: 'محتوى مُنشأ',
+        data: contentVals,
+        borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.12)',
+        tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#10b981',
+      }]
+    },
+    options: { ...chartDefaults }
+  });
+
+  // ── Platform Published Bar ──────────────────────────────────────────────
+  const pubPlatforms = platforms.published_per_platform;
+  const platLabels = Object.keys(pubPlatforms);
+  const platVals   = Object.values(pubPlatforms);
+  const platColors = platLabels.map(l => PLATFORM_COLORS[l] || '#6366f1');
+  _anCharts.platforms = new Chart(document.getElementById('chart-platforms'), {
+    type: 'bar',
+    data: {
+      labels: platLabels.map(l => `${PLATFORM_ICONS[l] || '🌐'} ${l}`),
+      datasets: [{ label:'بوستات منشورة', data: platVals, backgroundColor: platColors, borderRadius: 8, borderSkipped: false }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: { ...chartDefaults.plugins, legend: { display: false } },
+      indexAxis: platVals.length > 4 ? 'y' : 'x',
+    }
+  });
+
+  // ── Content Type Doughnut ────────────────────────────────────────────────
+  const typeLabels = content_types.map(d => d.type);
+  const typeVals   = content_types.map(d => d.count);
+  _anCharts.types = new Chart(document.getElementById('chart-types'), {
+    type: 'doughnut',
+    data: {
+      labels: typeLabels,
+      datasets: [{ data: typeVals, backgroundColor: typeLabels.map((_, i) => anColor(i)), borderWidth: 2, borderColor: '#0d0f1a' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 }, boxWidth: 14 } } }
+    }
+  });
+
+  // ── Pipeline Doughnut ─────────────────────────────────────────────────
+  const pipeKeys = ['published','scheduled','pending_review','approved','draft','rejected'];
+  const pipeLabels = { published:'منشور', scheduled:'مجدول', pending_review:'قيد المراجعة', approved:'معتمد', draft:'مسودة', rejected:'مرفوض' };
+  const pipeColors = ['#10b981','#8b5cf6','#f59e0b','#06b6d4','#64748b','#ef4444'];
+  const pipeVals = pipeKeys.map(k => pipeline[k] || 0).filter((v,i) => v > 0);
+  const pipeL    = pipeKeys.filter(k => (pipeline[k]||0) > 0).map(k => pipeLabels[k]);
+  const pipeC    = pipeKeys.map((k,i) => pipeColors[i]).filter((c,i) => (pipeline[pipeKeys[i]]||0) > 0);
+  _anCharts.pipeline = new Chart(document.getElementById('chart-pipeline'), {
+    type: 'doughnut',
+    data: {
+      labels: pipeL,
+      datasets: [{ data: pipeVals, backgroundColor: pipeC, borderWidth: 2, borderColor: '#0d0f1a' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true, cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 }, boxWidth: 14 } } }
+    }
+  });
+
+  // ── Top Sources Bar ───────────────────────────────────────────────────
+  const srcLabels = top_sources.map(s => s.source);
+  const srcVals   = top_sources.map(s => s.articles);
+  _anCharts.sources = new Chart(document.getElementById('chart-sources'), {
+    type: 'bar',
+    data: {
+      labels: srcLabels,
+      datasets: [{
+        label: 'أخبار',
+        data: srcVals,
+        backgroundColor: srcLabels.map((_, i) => anColor(i, 0.75)),
+        borderRadius: 6, borderSkipped: false,
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      indexAxis: 'y',
+      plugins: { ...chartDefaults.plugins, legend: { display: false } },
+    }
+  });
+
+  // ── Top Content Table ─────────────────────────────────────────────────
+  const tbody = document.getElementById('an-top-tbody');
+  if (!top_content.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b; padding:30px;">لا يوجد محتوى منشور بعد</td></tr>';
+  } else {
+    tbody.innerHTML = top_content.map((item, idx) => {
+      const typeClass = item.type?.toUpperCase().replace(' ','_') || 'UNKNOWN';
+      const typeLabels = { POST:'بوست', CAROUSEL:'كاروسيل', VIDEO_SCRIPT:'سكريبت فيديو' };
+      const typeLbl = typeLabels[item.type?.toUpperCase()] || item.type || '-';
+      const platBadges = (item.platforms || []).map(p =>
+        `<span class="an-platform-pill">${PLATFORM_ICONS[p] || '🌐'} ${p}</span>`
+      ).join('');
+      const date = item.published_at ? new Date(item.published_at).toLocaleDateString('ar-EG') : '-';
+      return `
+        <tr>
+          <td style="color:#64748b; font-size:.8rem;">${idx+1}</td>
+          <td style="max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</td>
+          <td><span class="an-badge ${typeClass}">${typeLbl}</span></td>
+          <td>${platBadges}</td>
+          <td style="color:#64748b; font-size:.82rem; white-space:nowrap;">${date}</td>
+        </tr>`;
+    }).join('');
+  }
+}
+
+// ── Auto-load when page is activated ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const anLink = document.querySelector('[data-page="page-analytics"]');
+  if (anLink) {
+    anLink.addEventListener('click', () => {
+      setTimeout(loadAnalytics, 80);
+    });
+  }
+});
+</script>
+
 </body>
 </html>
