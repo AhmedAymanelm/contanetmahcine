@@ -208,7 +208,20 @@ def publish_scheduled_content():
                                     images[0].save(temp_pdf_path, save_all=True, append_images=images[1:])
                                 res = await li_service.publish_media(caption, temp_pdf_path, "DOCUMENT", access_token, status.get("account_id"))
                                 os.remove(temp_pdf_path)
-                        
+                        elif item.raw_article and item.raw_article.image_url:
+                            # It's a normal POST, upload the article's cover image
+                            import tempfile, os, httpx
+                            try:
+                                resp = httpx.get(item.raw_article.image_url, timeout=30.0)
+                                if resp.status_code == 200:
+                                    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
+                                        temp_img_path = f.name
+                                        f.write(resp.content)
+                                    res = await li_service.publish_media(caption, temp_img_path, "IMAGE", access_token, status.get("account_id"))
+                                    os.remove(temp_img_path)
+                            except Exception as e:
+                                logger.error(f"Failed to download cover image for LinkedIn Post: {e}")
+
                         if not res:
                             res = await li_service.publish_text(caption, access_token, status.get("account_id"))
                         if res.get("success"):
