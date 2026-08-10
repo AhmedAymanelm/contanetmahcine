@@ -225,15 +225,24 @@
             <h1>رادار الترند <span class="count new">مباشر</span></h1>
             <p>مراقبة المواضيع الأكثر بحثاً وتداولاً الآن لتوليد محتوى سريع منها</p>
           </div>
-          <div style="display:flex; gap:10px; align-items:center;">
-            <select id="trend-geo-select" style="padding: 10px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; outline:none;" onchange="loadTrends()">
-              <option value="EG">مصر 🇪🇬</option>
-              <option value="SA">السعودية 🇸🇦</option>
-              <option value="AE">الإمارات 🇦🇪</option>
-              <option value="GLOBAL">العالم كله 🌍 (لغات مختلفة)</option>
-              <option value="US">أمريكا 🇺🇸 (ترند أجنبي)</option>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <!-- Hidden native select for JS compatibility -->
+            <select id="trend-geo-select" style="display:none;" onchange="loadTrends()">
+              <option value="EG">مصر</option>
+              <option value="SA">السعودية</option>
+              <option value="AE">الإمارات</option>
+              <option value="GLOBAL">العالم</option>
+              <option value="US">أمريكا</option>
             </select>
-            <button class="btn ghost" onclick="loadTrends()">تحديث <span class="ic">🔄</span></button>
+            <!-- Custom pill buttons -->
+            <div id="geo-pills" style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="geo-pill active" data-geo="EG" onclick="selectGeo(this,'EG')">🇪🇬 مصر</button>
+              <button class="geo-pill" data-geo="SA" onclick="selectGeo(this,'SA')">🇸🇦 السعودية</button>
+              <button class="geo-pill" data-geo="AE" onclick="selectGeo(this,'AE')">🇦🇪 الإمارات</button>
+              <button class="geo-pill" data-geo="GLOBAL" onclick="selectGeo(this,'GLOBAL')">🌍 العالم</button>
+              <button class="geo-pill" data-geo="US" onclick="selectGeo(this,'US')">🇺🇸 أمريكا</button>
+            </div>
+            <button class="btn ghost" onclick="loadTrends()" style="white-space:nowrap;">تحديث ↺</button>
           </div>
         </div>
 
@@ -1193,6 +1202,32 @@
 .trend-btn-create:hover {
   opacity: 0.88;
   transform: scale(1.02);
+}
+
+/* ── Geo Pills ─────────────────────────────── */
+.geo-pill {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  padding: 7px 14px;
+  border-radius: 99px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.geo-pill:hover {
+  background: rgba(99,102,241,0.12);
+  border-color: rgba(99,102,241,0.4);
+  color: #818cf8;
+}
+.geo-pill.active {
+  background: linear-gradient(135deg,#6366f1,#8b5cf6);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.35);
 }
 </style>
 

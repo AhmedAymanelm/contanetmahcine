@@ -1797,6 +1797,18 @@ if (typeof flatpickr !== 'undefined') {
     });
 }
 
+// ---------------- Geo Pill Selector ----------------
+function selectGeo(btn, geo) {
+    // Update pills active state
+    document.querySelectorAll('.geo-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    // Sync hidden select
+    const sel = document.getElementById('trend-geo-select');
+    if (sel) sel.value = geo;
+    // Load trends
+    loadTrends();
+}
+
 // ---------------- Trends ----------------
 async function loadTrends() {
     let geoSelect = document.getElementById('trend-geo-select');
