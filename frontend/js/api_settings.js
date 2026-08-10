@@ -1,14 +1,14 @@
 // api_settings.js
 
 const platformsMeta = {
-    anthropic: { title: "Claude AI", icon: "🧠", type: "ai" },
-    facebook: { title: "Facebook", icon: "📘", type: "social" },
-    instagram: { title: "Instagram", icon: "📸", type: "social" },
-    twitter: { title: "X (Twitter)", icon: "🐦", type: "social" },
-    linkedin: { title: "LinkedIn", icon: "💼", type: "social" },
-    threads: { title: "Threads", icon: "🧵", type: "social" },
-    tiktok: { title: "TikTok", icon: "🎵", type: "social" },
-    snapchat: { title: "Snapchat", icon: "👻", type: "social" },
+    anthropic: { title: "Claude AI", type: "ai" },
+    facebook: { title: "Facebook", type: "social" },
+    instagram: { title: "Instagram", type: "social" },
+    twitter: { title: "X (Twitter)", type: "social" },
+    linkedin: { title: "LinkedIn", type: "social" },
+    threads: { title: "Threads", type: "social" },
+    tiktok: { title: "TikTok", type: "social" },
+    snapchat: { title: "Snapchat", type: "social" },
 };
 
 async function loadApiSettings() {
@@ -56,7 +56,6 @@ function renderApiCards(containerId, platformsData) {
         <div style="background:var(--panel); border:1px solid ${borderColor}; border-radius:12px; padding:20px; transition:0.2s;" class="api-card">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="font-size:2rem; background:rgba(255,255,255,0.05); width:50px; height:50px; display:flex; align-items:center; justify-content:center; border-radius:12px;">${meta.icon}</div>
                     <div>
                         <h3 style="margin:0; font-size:1.1rem; color:var(--text);">${meta.title}</h3>
                         <div style="font-size:0.75rem; color:${statusColor}; font-weight:700; margin-top:4px; display:flex; align-items:center; gap:4px;">
@@ -109,7 +108,7 @@ function openApiModal(platformKey, keysJsonEncoded) {
     modal.innerHTML = `
     <div style="background:var(--panel); width:90%; max-width:500px; border-radius:16px; border:1px solid var(--line); padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.4); transform:scale(0.95); transition:transform 0.2s;" id="api-modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h3 style="margin:0; display:flex; align-items:center; gap:8px;">${meta.icon} إعدادات ${meta.title}</h3>
+            <h3 style="margin:0;">إعدادات ${meta.title}</h3>
             <button onclick="closeApiModal()" style="background:none; border:none; color:var(--muted); font-size:1.5rem; cursor:pointer;">×</button>
         </div>
         
