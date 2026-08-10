@@ -35,7 +35,9 @@ def get_trends(geo: str = "EG"):
     query = '(الذكاء الاصطناعي OR بيتكوين OR انفيديا OR مايكروسوفت OR جوجل OR OpenAI OR عملات رقمية OR تداول OR آبل OR ايلون ماسك) when:2d'
     encoded_query = urllib.parse.quote(query)
     
-    if geo == "GLOBAL":
+    if geo == "AITNEWS":
+        url = "https://aitnews.com/feed/"
+    elif geo == "GLOBAL":
         url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ar&gl=AE&ceid=AE:ar"
     else:
         url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ar&gl={geo}&ceid={geo}:ar"
@@ -53,11 +55,14 @@ def get_trends(geo: str = "EG"):
     feed = feedparser.parse(response.text)
     
     trends = []
-    for entry in feed.entries[:15]:  # Limit to top 15 tech news
-        # Google News RSS puts source inside 'source' tag
-        source_name = ""
-        if hasattr(entry, 'source') and hasattr(entry.source, 'title'):
-            source_name = entry.source.title
+    for entry in feed.entries[:15]:  # Limit to top 15 news
+        # Handle source name for Google News vs AITnews
+        if geo == "AITNEWS":
+            source_name = "البوابة العربية للأخبار التقنية"
+        else:
+            source_name = ""
+            if hasattr(entry, 'source') and hasattr(entry.source, 'title'):
+                source_name = entry.source.title
             
         trends.append(TrendItem(
             title=entry.title,
