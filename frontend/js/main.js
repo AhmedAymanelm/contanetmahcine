@@ -1,26 +1,28 @@
 const API_BASE = '/api';
 
+// ── Page map: which pages need auto-load on activation ──────────────────────
+const PAGE_LOADERS = {
+    'page-trends':    () => loadTrends(),
+    'page-analytics': () => { loadAnalytics(); loadEngagement(); },
+    'page-recs':      () => loadRecs(),
+};
+
+// ── Navigate to a page ────────────────────────────────────────────────────
 function go(element) {
     document.querySelectorAll('nav a').forEach(el => el.classList.remove('active'));
     element.classList.add('active');
-    
+
     document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
     const targetId = element.getAttribute('data-page');
-    if (targetId) {
-        const targetPage = document.getElementById(targetId);
-        if (targetPage) {
-            targetPage.classList.add('active');
-            if (targetId === 'page-trends') {
-                loadTrends();
-            }
-            if (targetId === 'page-analytics') {
-                loadAnalytics();
-                loadEngagement();
-            }
-            if (targetId === 'page-recs') {
-                loadRecs();
-            }
-        }
+    if (!targetId) return;
+
+    const targetPage = document.getElementById(targetId);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        // Update URL hash — enables refresh to restore page
+        history.replaceState(null, '', '#' + targetId);
+        // Auto-load data if needed
+        if (PAGE_LOADERS[targetId]) PAGE_LOADERS[targetId]();
     }
 }
 
@@ -28,6 +30,20 @@ function goId(pageId) {
     const link = document.querySelector(`nav a[data-page="${pageId}"]`);
     if (link) go(link);
 }
+
+// ── Restore page on refresh via hash ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const hash = window.location.hash.replace('#', '') || 'page-dashboard';
+    const link = document.querySelector(`nav a[data-page="${hash}"]`);
+    if (link) {
+        go(link);
+    } else {
+        // fallback to dashboard
+        const dash = document.querySelector('nav a[data-page="page-dashboard"]');
+        if (dash) go(dash);
+    }
+});
+
 
 // ---------------- API Fetching ----------------
 
