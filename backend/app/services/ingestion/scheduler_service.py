@@ -203,11 +203,13 @@ def publish_scheduled_content():
                                     logger.error(f"Failed to download image {img_url} for LinkedIn Carousel: {e}")
                             
                             if images:
-                                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
-                                    temp_pdf_path = f.name
-                                    images[0].save(temp_pdf_path, save_all=True, append_images=images[1:])
-                                res = await li_service.publish_media(caption, temp_pdf_path, "DOCUMENT", access_token, status.get("account_id"))
-                                os.remove(temp_pdf_path)
+                                with tempfile.TemporaryDirectory() as tmpdirname:
+                                    img_paths = []
+                                    for i, img in enumerate(images):
+                                        path = os.path.join(tmpdirname, f"slide_{i}.jpg")
+                                        img.save(path, format="JPEG")
+                                        img_paths.append(path)
+                                    res = await li_service.publish_media(caption, img_paths, "IMAGE", access_token, status.get("account_id"))
                         elif item.raw_article and item.raw_article.image_url:
                             # It's a normal POST, upload the article's cover image
                             import tempfile, os, httpx
@@ -217,7 +219,7 @@ def publish_scheduled_content():
                                     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
                                         temp_img_path = f.name
                                         f.write(resp.content)
-                                    res = await li_service.publish_media(caption, temp_img_path, "IMAGE", access_token, status.get("account_id"))
+                                    res = await li_service.publish_media(caption, [temp_img_path], "IMAGE", access_token, status.get("account_id"))
                                     os.remove(temp_img_path)
                             except Exception as e:
                                 logger.error(f"Failed to download cover image for LinkedIn Post: {e}")
