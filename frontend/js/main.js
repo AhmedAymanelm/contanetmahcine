@@ -5,68 +5,41 @@ const API_BASE = '/api';
     try {
         if (!document.getElementById('cm-error-overlay')) {
             const ov = document.createElement('div');
-            
-            perfList.innerHTML = html;
+            ov.id = 'cm-error-overlay';
+            ov.style.cssText = 'position:fixed; bottom:20px; right:20px; max-width:420px; background:rgba(220,38,38,0.95); color:white; padding:12px 16px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.5); font-family:Arial, Helvetica, sans-serif; font-size:13px; z-index:20000; display:none; white-space:pre-wrap; line-height:1.3;';
+            ov.innerText = '';
+            const close = document.createElement('button');
+            close.innerText = '×';
+            close.style.cssText = 'position:absolute; top:6px; right:8px; background:none; border:none; color:white; font-size:16px; cursor:pointer;';
+            close.onclick = () => ov.style.display = 'none';
+            ov.appendChild(close);
+            const content = document.createElement('div');
+            content.id = 'cm-error-overlay-content';
+            content.style.marginTop = '6px';
+            ov.appendChild(content);
+            document.addEventListener('DOMContentLoaded', () => document.body.appendChild(ov));
         }
-
-        // Update Recent Content
-        const recentList = document.getElementById('recent-content-list');
-        if(recentList) {
-            recentList.innerHTML = '';
-            data.recent_content.forEach(item => {
-                let s = item.status.toLowerCase();
-                let badgeClass = 'draft';
-                let statusAr = item.status;
-                if (s === 'approved') { badgeClass = 'approved'; statusAr = 'معتمد'; }
-                else if (s === 'pending_review') { badgeClass = 'review'; statusAr = 'قيد المراجعة'; }
-                else if (s === 'scheduled') { badgeClass = 'scheduled'; statusAr = 'مجدول'; }
-                else if (s === 'published') { badgeClass = 'published'; statusAr = 'منشور'; }
-                else if (s === 'expired') { badgeClass = 'draft'; statusAr = 'منتهي الصلاحية'; }
-
-                let cType = item.content_type || 'POST';
-                let cTypeAr = 'بوست';
-                if (cType.toUpperCase() === 'CAROUSEL') cTypeAr = 'كاروسيل';
-                else if (cType.toUpperCase() === 'VIDEO' || cType.toUpperCase() === 'VIDEO_SCRIPT') cTypeAr = 'فيديو';
-
-                let platformsArr = item.platforms || [];
-                let platforms = platformsArr.map(p => `<span>${p}</span>`).join('');
-                recentList.innerHTML += `
-                    <tr>
-                        <td><div class="src"><span class="dot" style="background:var(--amber)"></span>${item.source_name}</div></td>
-                        <td class="title-cell"><span class="t">${item.title || 'بدون عنوان'}</span><span class="m cal-slot-type type-${cType.toLowerCase()}" style="display:inline-block; margin-top:4px">${cTypeAr}</span></td>
-                        <td><span class="badge ${badgeClass}">${statusAr}</span></td>
-                        <td><div class="plats">${platforms}</div></td>
-                    </tr>
-                `;
-            });
-        }
-
-        // Update Pending Reviews
-        const pendingList = document.getElementById('pending-reviews-list');
-        if(pendingList) {
-            pendingList.innerHTML = '';
-            data.pending_content.forEach(item => {
-                pendingList.innerHTML += `
-                    <div class="review-item">
-                        <div class="thumb" style="font-size:10px">${item.source_name}</div>
-                        <div class="review-body">
-                            <div class="t">${item.title}</div>
-                            <div class="m">${item.content_type}</div>
-                            <div class="review-actions">
-                                <button class="reject">رفض</button>
-                                <button>تعديل</button>
-                                <button class="approve">موافقة</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-    } catch (err) {
-        console.error(err);
+    } catch(e) {
+        console.error('Failed to setup error overlay', e);
     }
-}
+    // Global handlers
+    window.addEventListener('error', function(ev) {
+        try {
+            const msg = `${ev.message} at ${ev.filename}:${ev.lineno}:${ev.colno}`;
+            console.error(msg, ev.error);
+            const el = document.getElementById('cm-error-overlay-content');
+            if (el) { el.innerText = msg + '\n' + (ev.error && ev.error.stack ? ev.error.stack : ''); document.getElementById('cm-error-overlay').style.display = 'block'; }
+        } catch(e) { console.error(e); }
+    });
+    window.addEventListener('unhandledrejection', function(ev) {
+        try {
+            const reason = ev.reason && ev.reason.stack ? ev.reason.stack : String(ev.reason);
+            console.error('UnhandledRejection', reason);
+            const el = document.getElementById('cm-error-overlay-content');
+            if (el) { el.innerText = 'UnhandledRejection:\n' + reason; document.getElementById('cm-error-overlay').style.display = 'block'; }
+        } catch(e) { console.error(e); }
+    });
+})();
 
 async function fetchSources() {
     try {
