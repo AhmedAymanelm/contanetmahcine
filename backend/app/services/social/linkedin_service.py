@@ -61,10 +61,81 @@ class LinkedInService:
             
             return {"success": True, "data": res.json()}
 
+    async def publish_media(self, text: str, file_path: str, media_type: str, access_token: str, person_urn: str) -> dict:
+        import os
+        if not os.path.exists(file_path):
+            return await self.publish_text(text, access_token, person_urn)
+
+        # 1. Register Upload
+        recipe = "urn:li:digitalmediaRecipe:feedshare-image" if media_type == "IMAGE" else "urn:li:digitalmediaRecipe:feedshare-document"
+        register_url = f"{self.api_url}/assets?action=registerUpload"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Content-Type": "application/json"
+        }
+        register_payload = {
+            "registerUploadRequest": {
+                "recipes": [recipe],
+                "owner": f"urn:li:person:{person_urn}",
+                "serviceRelationships": [{"relationshipType": "OWNER", "identifier": "urn:li:userGeneratedContent"}]
+            }
+        }
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            reg_res = await client.post(register_url, json=register_payload, headers=headers)
+            if reg_res.status_code != 200:
+                logger.error(f"Failed to register LinkedIn upload: {reg_res.text}")
+                return await self.publish_text(text, access_token, person_urn)
+            
+            reg_data = reg_res.json()
+            upload_url = reg_data["value"]["uploadMechanism"]["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]["uploadUrl"]
+            asset_urn = reg_data["value"]["asset"]
+            
+            # 2. Upload Binary
+            with open(file_path, 'rb') as f:
+                file_data = f.read()
+            
+            upload_headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/octet-stream"}
+            upload_res = await client.put(upload_url, content=file_data, headers=upload_headers)
+            if upload_res.status_code not in (200, 201):
+                logger.error(f"Failed to upload LinkedIn binary: {upload_res.text}")
+                return await self.publish_text(text, access_token, person_urn)
+
+            # 3. Create UGC Post
+            post_url = f"{self.api_url}/ugcPosts"
+            post_payload = {
+                "author": f"urn:li:person:{person_urn}",
+                "lifecycleState": "PUBLISHED",
+                "specificContent": {
+                    "com.linkedin.ugc.ShareContent": {
+                        "shareCommentary": {"text": text},
+                        "shareMediaCategory": media_type,
+                        "media": [
+                            {
+                                "status": "READY",
+                                "media": asset_urn,
+                                "title": {"text": "Media attachment"} if media_type == "DOCUMENT" else None
+                            }
+                        ]
+                    }
+                },
+                "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
+            }
+            if media_type != "DOCUMENT":
+                del post_payload["specificContent"]["com.linkedin.ugc.ShareContent"]["media"][0]["title"]
+
+            res = await client.post(post_url, json=post_payload, headers=headers)
+            if res.status_code not in (200, 201):
+                logger.error(f"Failed to publish LinkedIn media post: {res.text}")
+                return {"success": False, "error": res.json() if res.text else "Unknown error"}
+            
+            return {"success": True, "data": res.json()}
+
     async def publish_text(self, text: str, access_token: str, person_urn: str) -> dict:
         """Publishes a text post to LinkedIn."""
         url = f"{self.api_url}/ugcPosts"
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "X-Restli-Protocol-Version": "2.0.0",

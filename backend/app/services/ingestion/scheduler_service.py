@@ -186,7 +186,30 @@ def publish_scheduled_content():
                     
                     access_token = token_entry.access_token if (token_entry := db.query(OAuthToken).filter(OAuthToken.platform == "linkedin").first()) else None
                     if access_token and status.get("account_id"):
-                        res = await li_service.publish_text(caption, access_token, status.get("account_id"))
+                        res = None
+                        if item.generated_images and isinstance(item.generated_images, list) and len(item.generated_images) > 0:
+                            import tempfile, os, httpx
+                            from PIL import Image
+                            from io import BytesIO
+                            images = []
+                            for img_url in item.generated_images:
+                                try:
+                                    resp = httpx.get(img_url, timeout=30.0)
+                                    if resp.status_code == 200:
+                                        img = Image.open(BytesIO(resp.content)).convert('RGB')
+                                        images.append(img)
+                                except Exception as e:
+                                    logger.error(f"Failed to download image {img_url} for LinkedIn Carousel: {e}")
+                            
+                            if images:
+                                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
+                                    temp_pdf_path = f.name
+                                    images[0].save(temp_pdf_path, save_all=True, append_images=images[1:])
+                                res = await li_service.publish_media(caption, temp_pdf_path, "DOCUMENT", access_token, status.get("account_id"))
+                                os.remove(temp_pdf_path)
+                        
+                        if not res:
+                            res = await li_service.publish_text(caption, access_token, status.get("account_id"))
                         if res.get("success"):
                             li_published = True
                         else:
