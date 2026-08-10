@@ -1910,9 +1910,9 @@ function showCustomConfirm(msg, onConfirm) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'custom-confirm-modal';
-        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px);';
+        modal.style.cssText = 'display:none; opacity:0; transition:opacity 0.18s ease; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px); pointer-events:none;';
         modal.innerHTML = `
-            <div style="background:var(--panel-2); width:90%; max-width:400px; border-radius:16px; border: 1px solid var(--line); display:flex; flex-direction:column; padding:25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align:center;">
+            <div id="custom-confirm-content" style="background:var(--panel-2); width:90%; max-width:400px; border-radius:16px; border: 1px solid var(--line); display:flex; flex-direction:column; padding:25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align:center; transform:scale(0.96); transition:transform 0.18s ease;">
                 <div style="font-size:40px; margin-bottom:15px;">🤖</div>
                 <h3 style="margin:0 0 15px 0; font-size:18px; color:var(--text);">تأكيد صناعة المحتوى</h3>
                 <p id="custom-confirm-msg" style="color:var(--muted); font-size:15px; margin-bottom:20px; line-height:1.6;"></p>
@@ -1938,11 +1938,15 @@ function showCustomConfirm(msg, onConfirm) {
             </div>
         `;
         document.body.appendChild(modal);
-        
-            const _customConfirmNo = document.getElementById('custom-confirm-no');
-            if (_customConfirmNo) _customConfirmNo.onclick = () => {
-                modal.style.display = 'none';
-            };
+
+        // Attach a safe cancel handler (will be overridden later if static modal exists)
+        modal.querySelector('#custom-confirm-no')?.addEventListener('click', () => {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            const content = document.getElementById('custom-confirm-content');
+            if (content) content.style.transform = 'scale(0.96)';
+            setTimeout(() => { modal.style.display = 'none'; }, 220);
+        });
     }
     
     // Support either the dynamic modal (custom-confirm-msg, custom-confirm-yes/no)
@@ -1952,14 +1956,28 @@ function showCustomConfirm(msg, onConfirm) {
     if (dynMsg) dynMsg.innerText = msg;
     else if (statMsg) statMsg.innerText = msg;
 
+    // Ensure modal is visible and interactive
     modal.style.display = 'flex';
+    // small delay to allow layout, then fade in
+    setTimeout(() => {
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
+        const content = document.getElementById('custom-confirm-content');
+        if (content) content.style.transform = 'scale(1)';
+    }, 10);
 
     const dynYes = document.getElementById('custom-confirm-yes');
     const dynNo = document.getElementById('custom-confirm-no');
     const statOk = document.getElementById('custom-confirm-ok');
     const statCancel = document.getElementById('custom-confirm-cancel');
 
-    if (dynNo) dynNo.onclick = () => { modal.style.display = 'none'; };
+    if (dynNo) dynNo.onclick = () => {
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        const content = document.getElementById('custom-confirm-content');
+        if (content) content.style.transform = 'scale(0.96)';
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+    };
     if (statCancel) statCancel.onclick = () => { modal.style.display = 'none'; };
 
     if (dynYes) dynYes.onclick = () => {
@@ -1981,8 +1999,15 @@ function showCustomConfirm(msg, onConfirm) {
             return;
         }
 
-        modal.style.display = 'none';
-        if (onConfirm) onConfirm(formats);
+        // Animate out then callback
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        const content = document.getElementById('custom-confirm-content');
+        if (content) content.style.transform = 'scale(0.96)';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            try { if (onConfirm) onConfirm(formats); } catch(e){ console.error('onConfirm handler error', e); }
+        }, 200);
     };
 
     if (statOk) statOk.onclick = () => {
