@@ -411,8 +411,8 @@
 .hamburger {
   display: none;
   position: fixed;
-  top: 44px;
-  right: 16px;
+  top: 12px;
+  left: 12px;
   z-index: 1100;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -461,6 +461,9 @@
   /* Show hamburger */
   .hamburger { display: flex; }
 
+  /* Ticker hidden on mobile to save space */
+  .ticker { display: none; }
+
   /* Sidebar: slide in from right, hidden by default */
   .sidebar {
     position: fixed;
@@ -478,10 +481,15 @@
     display: block;
   }
 
-  /* Main content full width */
+  /* Main content full width, padded top for hamburger */
   main {
-    padding: 16px;
-    padding-top: 60px; /* room for hamburger */
+    padding: 64px 14px 20px 14px;
+    width: 100%;
+  }
+
+  /* Shell: block layout (no flex row) */
+  .shell {
+    display: block;
   }
 
   /* Grid layouts */
@@ -526,8 +534,10 @@
     grid-template-columns: 1fr !important;
   }
 
-  /* General settings 2-col → 1-col */
-  .page section > div[style*="grid-template-columns:1fr 1fr"] {
+  /* General settings + any inline 2-col grids → 1-col on mobile */
+  #page-settings > div,
+  [style*="grid-template-columns:1fr 1fr"],
+  .settings-grid {
     grid-template-columns: 1fr !important;
   }
 
