@@ -1,5 +1,46 @@
 const API_BASE = '/api';
 
+// Global error overlay for easier debugging when DevTools is not open
+(function setupErrorOverlay(){
+    try {
+        if (!document.getElementById('cm-error-overlay')) {
+            const ov = document.createElement('div');
+            ov.id = 'cm-error-overlay';
+            ov.style.cssText = 'position:fixed; bottom:20px; right:20px; max-width:420px; background:rgba(220,38,38,0.95); color:white; padding:12px 16px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.5); font-family:Arial, Helvetica, sans-serif; font-size:13px; z-index:20000; display:none; white-space:pre-wrap; line-height:1.3;';
+            ov.innerText = '';
+            const close = document.createElement('button');
+            close.innerText = '×';
+            close.style.cssText = 'position:absolute; top:6px; right:8px; background:none; border:none; color:white; font-size:16px; cursor:pointer;';
+            close.onclick = () => ov.style.display = 'none';
+            ov.appendChild(close);
+            const content = document.createElement('div');
+            content.id = 'cm-error-overlay-content';
+            content.style.marginTop = '6px';
+            ov.appendChild(content);
+            document.addEventListener('DOMContentLoaded', () => document.body.appendChild(ov));
+        }
+    } catch(e) {
+        console.error('Failed to setup error overlay', e);
+    }
+    // Global handlers
+    window.addEventListener('error', function(ev) {
+        try {
+            const msg = `${ev.message} at ${ev.filename}:${ev.lineno}:${ev.colno}`;
+            console.error(msg, ev.error);
+            const el = document.getElementById('cm-error-overlay-content');
+            if (el) { el.innerText = msg + '\n' + (ev.error && ev.error.stack ? ev.error.stack : ''); document.getElementById('cm-error-overlay').style.display = 'block'; }
+        } catch(e) { console.error(e); }
+    });
+    window.addEventListener('unhandledrejection', function(ev) {
+        try {
+            const reason = ev.reason && ev.reason.stack ? ev.reason.stack : String(ev.reason);
+            console.error('UnhandledRejection', reason);
+            const el = document.getElementById('cm-error-overlay-content');
+            if (el) { el.innerText = 'UnhandledRejection:\n' + reason; document.getElementById('cm-error-overlay').style.display = 'block'; }
+        } catch(e) { console.error(e); }
+    });
+})();
+
 function go(element) {
     document.querySelectorAll('nav a').forEach(el => el.classList.remove('active'));
     element.classList.add('active');
@@ -1421,39 +1462,45 @@ async function runIngestion() {
 
 // Load data on start
 document.addEventListener('DOMContentLoaded', async () => {
-    // Set current date
-    const dateDisplay = document.getElementById('current-date-display');
-    if (dateDisplay) {
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        dateDisplay.innerText = "اليوم: " + new Date().toLocaleDateString('ar-EG', options);
-    }
+    try {
+        // Set current date
+        const dateDisplay = document.getElementById('current-date-display');
+        if (dateDisplay) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateDisplay.innerText = "اليوم: " + new Date().toLocaleDateString('ar-EG', options);
+        }
 
-    // Setup Content Filters
-    document.querySelectorAll('#content-filters .chip').forEach(chip => {
-        chip.addEventListener('click', function() {
-            document.querySelectorAll('#content-filters .chip').forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            renderContentList();
+        // Setup Content Filters
+        document.querySelectorAll('#content-filters .chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('#content-filters .chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                renderContentList();
+            });
         });
-    });
 
-    loadTemplates(); // Load async without blocking
-    fetchDashboardStats();
-    fetchSources();
-    fetchRawArticles();
-    fetchAllContent();
-    fetchReviewContent();
-    fetchScheduledContent();
-    fetchPlatformStatus();
-
-    // Refresh data every 30 seconds
-    setInterval(() => {
+        loadTemplates(); // Load async without blocking
         fetchDashboardStats();
+        fetchSources();
         fetchRawArticles();
+        fetchAllContent();
         fetchReviewContent();
         fetchScheduledContent();
         fetchPlatformStatus();
-    }, 30000);
+
+        // Refresh data every 30 seconds
+        setInterval(() => {
+            fetchDashboardStats();
+            fetchRawArticles();
+            fetchReviewContent();
+            fetchScheduledContent();
+            fetchPlatformStatus();
+        }, 30000);
+    } catch (err) {
+        console.error('Error during DOMContentLoaded initialization:', err);
+        const el = document.getElementById('cm-error-overlay-content');
+        if (el) { el.innerText = 'Init error:\n' + (err && err.stack ? err.stack : String(err)); document.getElementById('cm-error-overlay').style.display = 'block'; }
+    }
 });
 
 let swiperInstance = null;
@@ -1871,16 +1918,29 @@ function showCustomConfirm(msg, onConfirm) {
             };
     }
     
-    document.getElementById('custom-confirm-msg').innerText = msg;
+    // Support either the dynamic modal (custom-confirm-msg, custom-confirm-yes/no)
+    // or a static modal present in index.html (custom-confirm-message, custom-confirm-ok/cancel)
+    const dynMsg = document.getElementById('custom-confirm-msg');
+    const statMsg = document.getElementById('custom-confirm-message');
+    if (dynMsg) dynMsg.innerText = msg;
+    else if (statMsg) statMsg.innerText = msg;
+
     modal.style.display = 'flex';
-    
-    const _customConfirmYes = document.getElementById('custom-confirm-yes');
-    if (_customConfirmYes) _customConfirmYes.onclick = () => {
+
+    const dynYes = document.getElementById('custom-confirm-yes');
+    const dynNo = document.getElementById('custom-confirm-no');
+    const statOk = document.getElementById('custom-confirm-ok');
+    const statCancel = document.getElementById('custom-confirm-cancel');
+
+    if (dynNo) dynNo.onclick = () => { modal.style.display = 'none'; };
+    if (statCancel) statCancel.onclick = () => { modal.style.display = 'none'; };
+
+    if (dynYes) dynYes.onclick = () => {
         const formats = [];
         const chkCar = document.getElementById('chk-format-carousel');
         const chkPost = document.getElementById('chk-format-post');
         const chkVid = document.getElementById('chk-format-video');
-        
+
         if (chkCar && chkPost && chkVid) {
             if(chkCar.checked) formats.push('CAROUSEL');
             if(chkPost.checked) formats.push('POST');
@@ -1888,13 +1948,19 @@ function showCustomConfirm(msg, onConfirm) {
         } else {
             formats.push('CAROUSEL', 'POST', 'VIDEO_SCRIPT');
         }
-        
+
         if (formats.length === 0) {
             showToast('يجب اختيار صيغة واحدة على الأقل', 'error');
             return;
         }
-        
+
         modal.style.display = 'none';
+        if (onConfirm) onConfirm(formats);
+    };
+
+    if (statOk) statOk.onclick = () => {
+        modal.style.display = 'none';
+        const formats = ['CAROUSEL','POST','VIDEO_SCRIPT'];
         if (onConfirm) onConfirm(formats);
     };
 }
