@@ -19,11 +19,26 @@ function go(element) {
     const targetPage = document.getElementById(targetId);
     if (targetPage) {
         targetPage.classList.add('active');
-        // Update URL hash — enables refresh to restore page
         history.replaceState(null, '', '#' + targetId);
-        // Auto-load data if needed
         if (PAGE_LOADERS[targetId]) PAGE_LOADERS[targetId]();
     }
+    // Close sidebar on mobile after navigation
+    closeSidebar();
+}
+
+// ── Mobile Sidebar Toggle ──────────────────────────────────────────────────
+function toggleSidebar() {
+    const sidebar = document.getElementById('main-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const isOpen  = sidebar.classList.toggle('open');
+    overlay.classList.toggle('active', isOpen);
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('main-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
 }
 
 function goId(pageId) {

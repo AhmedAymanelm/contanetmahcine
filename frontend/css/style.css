@@ -402,3 +402,167 @@
     font-size: 12px;
     margin-top: 2px;
 }
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE / MOBILE STYLES
+   ══════════════════════════════════════════════════════ */
+
+/* ── Hamburger Button ────────────────────────────────── */
+.hamburger {
+  display: none;
+  position: fixed;
+  top: 44px;
+  right: 16px;
+  z-index: 1100;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.hamburger span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: var(--text);
+  border-radius: 2px;
+  transition: 0.25s;
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+}
+
+/* ── Breakpoint: Tablet (≤ 1024px) ──────────────────── */
+@media (max-width: 1024px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .grid2 { grid-template-columns: 1fr; }
+  .row3  { grid-template-columns: 1fr 1fr; }
+  .cal   { grid-template-columns: repeat(4, 1fr); }
+  .form-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Breakpoint: Mobile (≤ 768px) ───────────────────── */
+@media (max-width: 768px) {
+
+  /* Show hamburger */
+  .hamburger { display: flex; }
+
+  /* Sidebar: slide in from right, hidden by default */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    right: -260px;
+    height: 100vh;
+    z-index: 1060;
+    transition: right 0.28s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: -8px 0 30px rgba(0,0,0,0.5);
+  }
+  .sidebar.open {
+    right: 0;
+  }
+  .sidebar-overlay.active {
+    display: block;
+  }
+
+  /* Main content full width */
+  main {
+    padding: 16px;
+    padding-top: 60px; /* room for hamburger */
+  }
+
+  /* Grid layouts */
+  .stats    { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .newsgrid { grid-template-columns: 1fr; }
+  .row3     { grid-template-columns: 1fr; }
+  .grid2    { grid-template-columns: 1fr; }
+  .cal      { grid-template-columns: repeat(2, 1fr); }
+  .form-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Topline */
+  .topline {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .topline h1 { font-size: 20px; }
+
+  /* Trend rows */
+  .trend-row-card {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+  .trend-actions-col {
+    flex-direction: row;
+    width: 100%;
+  }
+  .trend-btn-read,
+  .trend-btn-create {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Geo pills wrap */
+  #geo-pills { gap: 6px; }
+  .geo-pill  { padding: 6px 10px; font-size: 0.75rem; }
+
+  /* API/Settings grids */
+  #api-ai-grid,
+  #api-social-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* General settings 2-col → 1-col */
+  .page section > div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Pipeline belt scroll */
+  .belt { overflow-x: auto; padding-bottom: 10px; }
+  .stage { width: 90px; }
+
+  /* Tables scroll */
+  .table-wrap, table { overflow-x: auto; display: block; width: 100%; }
+
+  /* Analytics section overrides */
+  .an-kpi-grid    { grid-template-columns: 1fr 1fr !important; }
+  .an-charts-row  { grid-template-columns: 1fr !important; }
+  .an-row-3       { grid-template-columns: 1fr !important; }
+  .an-full-card[style*="grid-template-columns:repeat(3"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Breakpoint: Small Mobile (≤ 480px) ─────────────── */
+@media (max-width: 480px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stat .value { font-size: 22px; }
+
+  .topline h1 { font-size: 18px; }
+
+  .btn { padding: 8px 14px; font-size: 12px; }
+
+  /* Trend card rank number smaller */
+  .trend-rank-num { width: 36px; height: 36px; font-size: 1rem; }
+  .trend-rank-col { width: 40px; }
+
+  /* Cal single column */
+  .cal { grid-template-columns: 1fr; }
+
+  /* Form grid */
+  .form-grid { grid-template-columns: 1fr; }
+}
