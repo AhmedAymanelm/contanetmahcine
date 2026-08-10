@@ -28,6 +28,8 @@ aptPkgs = [
     "libx11-6",
     "libx11-xcb1",
     "libxext6",
+    "libpangocairo-1.0-0",
+    "libgtk-3-0",
     "fonts-liberation"
 ]
 
