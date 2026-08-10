@@ -1919,15 +1919,15 @@ function showCustomConfirm(msg, onConfirm) {
                 <div style="text-align:right; margin-bottom:25px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px solid var(--line);">
                     <div style="margin-bottom:10px; color:var(--text); font-weight:bold; font-size:14px;">اختر صيغ المحتوى المطلوبة:</div>
                     <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" checked style="width:16px; height:16px; accent-color:var(--teal);">
+                        <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" style="width:16px; height:16px; accent-color:var(--teal);">
                         <span>📱 كاروسيل (إنستجرام، لينكدإن)</span>
                     </label>
                     <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-post" value="POST" checked style="width:16px; height:16px; accent-color:var(--teal);">
+                        <input type="checkbox" id="chk-format-post" value="POST" style="width:16px; height:16px; accent-color:var(--teal);">
                         <span>📝 بوست (فيسبوك، تويتر، لينكدإن)</span>
                     </label>
                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" checked style="width:16px; height:16px; accent-color:var(--teal);">
+                        <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" style="width:16px; height:16px; accent-color:var(--teal);">
                         <span>🎬 سكريبت فيديو (تيك توك، ريلز)</span>
                     </label>
                 </div>
@@ -1955,6 +1955,18 @@ function showCustomConfirm(msg, onConfirm) {
     const statMsg = document.getElementById('custom-confirm-message');
     if (dynMsg) dynMsg.innerText = msg;
     else if (statMsg) statMsg.innerText = msg;
+
+    // Restore previous selection if present (so user can choose explicitly).
+    try {
+        const last = localStorage.getItem('cm_last_gen_formats');
+        const defaults = last ? JSON.parse(last) : [];
+        const chkCar = document.getElementById('chk-format-carousel');
+        const chkPost = document.getElementById('chk-format-post');
+        const chkVid = document.getElementById('chk-format-video');
+        if (chkCar) chkCar.checked = Array.isArray(defaults) && defaults.includes('CAROUSEL');
+        if (chkPost) chkPost.checked = Array.isArray(defaults) && defaults.includes('POST');
+        if (chkVid) chkVid.checked = Array.isArray(defaults) && defaults.includes('VIDEO_SCRIPT');
+    } catch (e) { console.error('restore last gen formats failed', e); }
 
     // Ensure modal is visible and interactive
     modal.style.display = 'flex';
@@ -1998,6 +2010,8 @@ function showCustomConfirm(msg, onConfirm) {
             showToast('يجب اختيار صيغة واحدة على الأقل', 'error');
             return;
         }
+        // Persist selected formats for next time
+        try { localStorage.setItem('cm_last_gen_formats', JSON.stringify(formats)); } catch(e) { console.error('persist formats failed', e); }
 
         // Animate out then callback
         modal.style.opacity = '0';
