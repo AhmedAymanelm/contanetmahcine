@@ -567,7 +567,53 @@
       </div>
     </div>
 
+    <!-- ── Top Engagement Section ────────────────────────────────────────── -->
+    <p class="an-section-title">🔥 أحسن بوست تفاعل (Real-time)</p>
+    <div class="an-full-card" id="an-engagement-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h3 style="margin:0;">❤️ ترتيب البوستات بالتفاعل الحقيقي</h3>
+        <button onclick="loadEngagement()" style="background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.3); color:#f87171; padding:7px 16px; border-radius:8px; font-size:0.82rem; cursor:pointer;">🔄 تحديث</button>
+      </div>
+
+      <!-- Winner card -->
+      <div id="an-winner-card" style="display:none; background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(251,146,60,.08)); border:1px solid rgba(245,158,11,.3); border-radius:16px; padding:20px; margin-bottom:20px;">
+        <div style="display:flex; gap:16px; align-items:flex-start;">
+          <div id="an-winner-thumb-wrap" style="flex-shrink:0;"></div>
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <span style="background:linear-gradient(135deg,#f59e0b,#fb923c); color:#000; font-weight:900; font-size:0.7rem; padding:3px 10px; border-radius:999px;">🥇 أفضل بوست</span>
+              <span id="an-winner-platform" style="font-size:0.78rem; color:#94a3b8;"></span>
+              <span id="an-winner-date" style="font-size:0.75rem; color:#64748b; margin-right:auto;"></span>
+            </div>
+            <p id="an-winner-caption" style="font-size:0.95rem; color:#e2e8f0; line-height:1.6; margin:0 0 14px; word-break:break-word;"></p>
+            <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+              <span id="an-winner-likes" style="display:flex; align-items:center; gap:6px; font-size:1.1rem; font-weight:800; color:#f87171;">❤️ 0</span>
+              <span id="an-winner-comments" style="display:flex; align-items:center; gap:6px; font-size:1.1rem; font-weight:800; color:#60a5fa;">💬 0</span>
+              <span id="an-winner-total" style="display:flex; align-items:center; gap:6px; font-size:1.1rem; font-weight:800; color:#fbbf24;">⚡ 0 إجمالي</span>
+              <a id="an-winner-link" href="#" target="_blank" style="font-size:0.82rem; color:#818cf8; text-decoration:none; border:1px solid rgba(99,102,241,.3); padding:4px 12px; border-radius:8px; margin-right:auto;">🔗 فتح البوست</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div id="an-engagement-loading" style="text-align:center; padding:30px; color:#64748b;">
+        <span style="font-size:1.5rem; display:block; margin-bottom:8px; animation:spin 1s linear infinite;">⚙️</span>
+        جاري جلب بيانات التفاعل من المنصات...
+      </div>
+      <div id="an-engagement-list" style="display:none;">
+        <!-- Platform summary pills -->
+        <div id="an-platform-pills" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;"></div>
+        <!-- Post list -->
+        <div id="an-posts-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+      <div id="an-engagement-empty" style="display:none; text-align:center; padding:30px; color:#64748b;">
+        لا يوجد بيانات — تأكد من ربط Instagram أو Facebook في الإعدادات
+      </div>
+    </div>
+
   </div><!-- /an-content -->
+
 </section>
 
       </main>
@@ -1190,7 +1236,132 @@ document.addEventListener('DOMContentLoaded', () => {
   `;
   document.head.appendChild(style);
 });
+
+// ── Engagement Leaderboard ─────────────────────────────────────────────────
+async function loadEngagement() {
+  const loadEl  = document.getElementById('an-engagement-loading');
+  const listEl  = document.getElementById('an-engagement-list');
+  const emptyEl = document.getElementById('an-engagement-empty');
+  const winCard = document.getElementById('an-winner-card');
+
+  if (loadEl)  { loadEl.style.display = 'block'; }
+  if (listEl)  { listEl.style.display = 'none'; }
+  if (emptyEl) { emptyEl.style.display = 'none'; }
+  if (winCard) { winCard.style.display = 'none'; }
+
+  try {
+    const token = localStorage.getItem('cm_token');
+    const res = await fetch('/api/analytics/top-engagement', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (loadEl) loadEl.style.display = 'none';
+
+    const { top_post, all_posts, platform_summary } = data;
+
+    if (!all_posts || all_posts.length === 0) {
+      if (emptyEl) emptyEl.style.display = 'block';
+      return;
+    }
+
+    // ── Winner card ────────────────────────────────────────────────────────
+    if (top_post && winCard) {
+      winCard.style.display = 'block';
+
+      // Thumbnail
+      const thumbWrap = document.getElementById('an-winner-thumb-wrap');
+      if (thumbWrap) {
+        thumbWrap.innerHTML = top_post.thumbnail
+          ? `<img src="${top_post.thumbnail}" alt="صورة البوست"
+               style="width:90px; height:90px; object-fit:cover; border-radius:12px; border:2px solid rgba(245,158,11,.4);"
+               onerror="this.style.display='none'">`
+          : `<div style="width:90px; height:90px; border-radius:12px; background:rgba(245,158,11,.1); display:flex; align-items:center; justify-content:center; font-size:2rem; border:2px solid rgba(245,158,11,.2);">
+               ${PLATFORM_ICONS[top_post.platform] || '📄'}
+             </div>`;
+      }
+
+      // Platform + date
+      const plEl = document.getElementById('an-winner-platform');
+      if (plEl) plEl.innerHTML = `<span class="an-platform-pill">${PLATFORM_ICONS[top_post.platform]||'🌐'} ${top_post.platform}</span>`;
+
+      const dateEl = document.getElementById('an-winner-date');
+      if (dateEl && top_post.timestamp) {
+        dateEl.textContent = new Date(top_post.timestamp).toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
+      }
+
+      // Caption
+      const capEl = document.getElementById('an-winner-caption');
+      if (capEl) capEl.textContent = top_post.caption || '(بدون نص)';
+
+      // Stats
+      document.getElementById('an-winner-likes').textContent    = `❤️ ${top_post.likes.toLocaleString()} لايك`;
+      document.getElementById('an-winner-comments').textContent = `💬 ${top_post.comments.toLocaleString()} تعليق`;
+      document.getElementById('an-winner-total').textContent    = `⚡ ${top_post.total.toLocaleString()} إجمالي`;
+
+      const linkEl = document.getElementById('an-winner-link');
+      if (linkEl) {
+        if (top_post.permalink) { linkEl.href = top_post.permalink; linkEl.style.display = ''; }
+        else { linkEl.style.display = 'none'; }
+      }
+    }
+
+    // ── Platform summary pills ────────────────────────────────────────────
+    const pillsEl = document.getElementById('an-platform-pills');
+    if (pillsEl && platform_summary) {
+      pillsEl.innerHTML = Object.entries(platform_summary).map(([pl, s]) => `
+        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:10px 16px; min-width:140px;">
+          <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:6px;">${PLATFORM_ICONS[pl]||'🌐'} ${pl}</div>
+          <div style="font-size:0.82rem; color:#e2e8f0;">${s.posts} بوست</div>
+          <div style="display:flex; gap:10px; margin-top:4px;">
+            <span style="font-size:0.8rem; color:#f87171;">❤️ ${s.total_likes.toLocaleString()}</span>
+            <span style="font-size:0.8rem; color:#60a5fa;">💬 ${s.total_comments.toLocaleString()}</span>
+          </div>
+        </div>`).join('');
+    }
+
+    // ── Ranked post list ───────────────────────────────────────────────────
+    const postsEl = document.getElementById('an-posts-list');
+    const maxTotal = all_posts[0]?.total || 1;
+    if (postsEl) {
+      postsEl.innerHTML = all_posts.map((p, idx) => {
+        const barW  = Math.round(p.total / maxTotal * 100);
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx+1}`;
+        const platColor = {
+          Instagram:'rgba(225,48,108,.2)', Facebook:'rgba(24,119,242,.2)',
+          LinkedIn:'rgba(10,102,194,.2)',  'X (Twitter)':'rgba(29,161,242,.2)',
+          TikTok:'rgba(105,201,208,.2)',
+        }[p.platform] || 'rgba(255,255,255,0.05)';
+
+        return `
+          <div style="background:${platColor}; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px 16px; transition:.2s;"
+               onmouseover="this.style.transform='translateX(-2px)'" onmouseout="this.style.transform=''">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="font-size:1rem; min-width:28px; text-align:center;">${medal}</span>
+              <span class="an-platform-pill">${PLATFORM_ICONS[p.platform]||'🌐'} ${p.platform}</span>
+              <span style="flex:1; font-size:0.87rem; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.caption || '(بدون نص)'}</span>
+              <div style="display:flex; gap:12px; flex-shrink:0;">
+                <span style="font-size:0.85rem; color:#f87171; font-weight:700;">❤️ ${p.likes.toLocaleString()}</span>
+                <span style="font-size:0.85rem; color:#60a5fa; font-weight:700;">💬 ${p.comments.toLocaleString()}</span>
+                ${p.permalink ? `<a href="${p.permalink}" target="_blank" style="font-size:0.8rem; color:#818cf8; text-decoration:none;">🔗</a>` : ''}
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.06); border-radius:999px; height:5px; overflow:hidden;">
+              <div style="height:100%; width:${barW}%; background:linear-gradient(90deg,#f59e0b,#ef4444); border-radius:999px; transition:width 1s ease;"></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    if (listEl) listEl.style.display = 'block';
+
+  } catch(e) {
+    if (loadEl) loadEl.innerHTML = `<span style="color:#ef4444;">❌ خطأ: ${e.message}</span>`;
+  }
+}
 </script>
+
 
 </body>
 </html>

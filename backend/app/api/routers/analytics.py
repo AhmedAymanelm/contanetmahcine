@@ -277,3 +277,104 @@ def get_sources_list(db: Session = Depends(get_db)):
     sources = db.query(Source.id, Source.name).order_by(Source.name).all()
     return [{"id": r[0], "name": r[1]} for r in sources]
 
+
+@router.get("/top-engagement")
+def get_top_engagement():
+    """
+    Fetch real per-post engagement from Instagram + Facebook APIs.
+    Returns all posts ranked by total interactions (likes + comments).
+    """
+    import httpx
+    from app.core.config import settings
+
+    posts = []
+    errors = []
+
+    # ── Instagram ─────────────────────────────────────────────────────────────
+    if settings.INSTAGRAM_ACCESS_TOKEN and settings.INSTAGRAM_ACCOUNT_ID:
+        try:
+            fields = "id,caption,media_type,media_url,thumbnail_url,timestamp,like_count,comments_count,permalink"
+            url = (
+                f"https://graph.instagram.com/v19.0/{settings.INSTAGRAM_ACCOUNT_ID}/media"
+                f"?fields={fields}&limit=50&access_token={settings.INSTAGRAM_ACCESS_TOKEN}"
+            )
+            with httpx.Client(timeout=8.0) as client:
+                res = client.get(url)
+            if res.status_code == 200:
+                for item in res.json().get("data", []):
+                    likes    = item.get("like_count", 0) or 0
+                    comments = item.get("comments_count", 0) or 0
+                    caption  = (item.get("caption") or "")[:120]
+                    thumb    = item.get("media_url") or item.get("thumbnail_url") or ""
+                    posts.append({
+                        "platform":    "Instagram",
+                        "post_id":     item.get("id"),
+                        "caption":     caption,
+                        "likes":       likes,
+                        "comments":    comments,
+                        "total":       likes + comments,
+                        "media_type":  item.get("media_type", ""),
+                        "thumbnail":   thumb,
+                        "permalink":   item.get("permalink", ""),
+                        "timestamp":   item.get("timestamp", ""),
+                    })
+            else:
+                errors.append(f"Instagram API {res.status_code}: {res.text[:200]}")
+        except Exception as e:
+            errors.append(f"Instagram error: {str(e)}")
+
+    # ── Facebook ──────────────────────────────────────────────────────────────
+    if settings.FACEBOOK_ACCESS_TOKEN and settings.FACEBOOK_PAGE_ID:
+        try:
+            fields = "id,message,story,created_time,likes.summary(true),comments.summary(true),full_picture,permalink_url"
+            fb_url = (
+                f"https://graph.facebook.com/v19.0/{settings.FACEBOOK_PAGE_ID}/posts"
+                f"?fields={fields}&limit=50&access_token={settings.FACEBOOK_ACCESS_TOKEN}"
+            )
+            with httpx.Client(timeout=8.0) as client:
+                fb_res = client.get(fb_url)
+            if fb_res.status_code == 200:
+                for item in fb_res.json().get("data", []):
+                    likes    = item.get("likes",    {}).get("summary", {}).get("total_count", 0) or 0
+                    comments = item.get("comments", {}).get("summary", {}).get("total_count", 0) or 0
+                    caption  = (item.get("message") or item.get("story") or "")[:120]
+                    posts.append({
+                        "platform":    "Facebook",
+                        "post_id":     item.get("id"),
+                        "caption":     caption,
+                        "likes":       likes,
+                        "comments":    comments,
+                        "total":       likes + comments,
+                        "media_type":  "POST",
+                        "thumbnail":   item.get("full_picture", ""),
+                        "permalink":   item.get("permalink_url", ""),
+                        "timestamp":   item.get("created_time", ""),
+                    })
+            else:
+                errors.append(f"Facebook API {fb_res.status_code}: {fb_res.text[:200]}")
+        except Exception as e:
+            errors.append(f"Facebook error: {str(e)}")
+
+    # ── Sort & return ──────────────────────────────────────────────────────────
+    posts.sort(key=lambda x: x["total"], reverse=True)
+
+    # Top post
+    top_post = posts[0] if posts else None
+
+    # Summary per platform
+    platform_summary = {}
+    for p in posts:
+        pl = p["platform"]
+        if pl not in platform_summary:
+            platform_summary[pl] = {"posts": 0, "total_likes": 0, "total_comments": 0}
+        platform_summary[pl]["posts"]          += 1
+        platform_summary[pl]["total_likes"]    += p["likes"]
+        platform_summary[pl]["total_comments"] += p["comments"]
+
+    return {
+        "top_post":         top_post,
+        "all_posts":        posts[:20],          # top 20 ranked
+        "platform_summary": platform_summary,
+        "total_fetched":    len(posts),
+        "errors":           errors,
+    }

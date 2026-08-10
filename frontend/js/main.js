@@ -15,6 +15,7 @@ function go(element) {
             }
             if (targetId === 'page-analytics') {
                 loadAnalytics();
+                loadEngagement();
             }
         }
     }
