@@ -18,3 +18,15 @@ def generate_all_content(title: str, content: str) -> Dict[str, Any]:
     """Generates all 3 types of content via the Writer Agent"""
     agent = MasterAgent()
     return agent.writer.write_all(title, content)
+
+def generate_selected_content(title: str, content: str, formats: list) -> Dict[str, Any]:
+    """Generates only the selected types of content via the Writer Agent"""
+    agent = MasterAgent()
+    results = {}
+    if "POST" in formats:
+        results["posts"] = agent.writer.write_posts(title, content)
+    if "CAROUSEL" in formats:
+        results["carousel"] = agent.writer.write_carousel(title, content)
+    if "VIDEO_SCRIPT" in formats:
+        results["video_script"] = agent.writer.write_video_script(title, content)
+    return results

@@ -421,27 +421,33 @@ async function fetchRawArticles() {
 }
 
 async function approveArticle(id, btn) {
-    const orig = btn.innerText;
-    btn.innerText = "جاري الصياغة...";
-    btn.disabled = true;
-    try {
-        const res = await fetch(`${API_BASE}/raw-articles/${id}/generate`, { method: "POST" });
-        if (res.ok) {
-            btn.parentElement.parentElement.parentElement.style.opacity = '0.4';
-            showToast("تم تحويل الخبر للصياغة عبر Claude بنجاح", "success");
-            setTimeout(fetchRawArticles, 2000);
-            fetchDashboardStats();
-        } else {
-            showToast("حدث خطأ أثناء الصياغة", "error");
+    showCustomConfirm(`ما هي صيغ المحتوى التي تود توليدها لهذا الخبر؟`, async (formats) => {
+        const orig = btn.innerText;
+        btn.innerText = "جاري الصياغة...";
+        btn.disabled = true;
+        try {
+            const res = await fetch(`${API_BASE}/raw-articles/${id}/generate`, { 
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ formats: formats })
+            });
+            if (res.ok) {
+                btn.parentElement.parentElement.parentElement.style.opacity = '0.4';
+                showToast("تم تحويل الخبر للصياغة عبر Claude بنجاح", "success");
+                setTimeout(fetchRawArticles, 2000);
+                fetchDashboardStats();
+            } else {
+                showToast("حدث خطأ أثناء الصياغة", "error");
+                btn.innerText = orig;
+                btn.disabled = false;
+            }
+        } catch (err) {
+            console.error(err);
+            showToast("خطأ في الاتصال بالخادم", "error");
             btn.innerText = orig;
             btn.disabled = false;
         }
-    } catch (err) {
-        console.error(err);
-        showToast("خطأ في الاتصال بالخادم", "error");
-        btn.innerText = orig;
-        btn.disabled = false;
-    }
+    });
 }
 
 function openArticleModal(title, content, url, imageUrl) {
@@ -1825,13 +1831,23 @@ function showCustomConfirm(msg, onConfirm) {
     modal.style.display = 'flex';
     
     document.getElementById('custom-confirm-yes').onclick = () => {
+        const formats = [];
+        if(document.getElementById('chk-format-carousel').checked) formats.push('CAROUSEL');
+        if(document.getElementById('chk-format-post').checked) formats.push('POST');
+        if(document.getElementById('chk-format-video').checked) formats.push('VIDEO_SCRIPT');
+        
+        if (formats.length === 0) {
+            showToast('يجب اختيار صيغة واحدة على الأقل', 'error');
+            return;
+        }
+        
         modal.style.display = 'none';
-        if (onConfirm) onConfirm();
+        if (onConfirm) onConfirm(formats);
     };
 }
 
 async function generateTrendContent(title, snippet) {
-    showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async () => {
+    showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async (formats) => {
         showToast(`بدأ توليد المحتوى لترند: ${title}`);
     try {
         const token = localStorage.getItem('cm_token');
@@ -1841,7 +1857,7 @@ async function generateTrendContent(title, snippet) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ title, snippet })
+            body: JSON.stringify({ title, snippet, formats })
         });
         if (res.ok) {
             showToast(`تم إرسال الطلب لـ Claude بنجاح! سيظهر قريباً في المراجعة`, 'success');

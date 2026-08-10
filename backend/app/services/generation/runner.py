@@ -2,17 +2,20 @@ import logging
 from sqlalchemy.orm import Session
 from app.models.raw_article import RawArticle
 from app.models.content_item import ContentItem
-from app.ai.generation_pipeline import generate_all_content
+from app.ai.generation_pipeline import generate_selected_content
 
 from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-def process_article_generation(raw_article_id: int):
+def process_article_generation(raw_article_id: int, formats: list = None):
     """
     Takes a RawArticle ID, sends it to Claude for generation,
     saves the results as ContentItems, and updates status.
     """
+    if formats is None:
+        formats = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
+        
     db = SessionLocal()
     try:
         article = db.query(RawArticle).filter(RawArticle.id == raw_article_id).first()
@@ -25,7 +28,7 @@ def process_article_generation(raw_article_id: int):
         
         # We pass the full content if available, otherwise just the title
         text_to_process = article.content if article.content else article.title
-        generated = generate_all_content(article.title, text_to_process)
+        generated = generate_selected_content(article.title, text_to_process, formats)
         
         if not generated:
             logger.error("AI Generation failed or returned empty.")
@@ -97,17 +100,20 @@ def process_article_generation(raw_article_id: int):
     finally:
         db.close()
 
-def process_trend_generation(trend_title: str, trend_snippet: str):
+def process_trend_generation(trend_title: str, trend_snippet: str, formats: list = None):
     """
     Takes a Trend title and snippet, sends it to Claude for generation,
     and saves the results as ContentItems.
     """
+    if formats is None:
+        formats = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
+        
     db = SessionLocal()
     try:
         logger.info(f"Generating AI content for Trend: {trend_title}")
         
         text_to_process = f"Trend: {trend_title}\n\nContext/News: {trend_snippet}"
-        generated = generate_all_content(trend_title, text_to_process)
+        generated = generate_selected_content(trend_title, text_to_process, formats)
         
         if not generated:
             logger.error("AI Generation failed for trend.")

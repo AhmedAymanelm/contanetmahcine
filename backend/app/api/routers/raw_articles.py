@@ -45,8 +45,13 @@ def trigger_ingestion(background_tasks: BackgroundTasks, db: Session = Depends(g
     background_tasks.add_task(ingest_all_active_sources, db)
     return {"detail": "Ingestion started in the background"}
 
+from pydantic import BaseModel
+
+class ArticleGenerateRequest(BaseModel):
+    formats: List[str] = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
+
 @router.post("/{article_id}/generate")
-def generate_article_content(article_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def generate_article_content(article_id: int, request: ArticleGenerateRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     article = db.query(RawArticle).filter(RawArticle.id == article_id).first()
     if not article:
         return {"error": "Article not found"}
@@ -54,5 +59,5 @@ def generate_article_content(article_id: int, background_tasks: BackgroundTasks,
     article.status = "APPROVED_FOR_GENERATION"
     db.commit()
     
-    background_tasks.add_task(process_article_generation, article_id)
+    background_tasks.add_task(process_article_generation, article_id, request.formats)
     return {"detail": "Generation started in the background"}

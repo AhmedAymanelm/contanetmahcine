@@ -22,6 +22,7 @@ class TrendItem(BaseModel):
 class TrendGenerateRequest(BaseModel):
     title: str
     snippet: str
+    formats: List[str] = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
 
 def fetch_trends_for_geo(geo: str) -> List[TrendItem]:
     """
@@ -142,5 +143,5 @@ def generate_trend_content(request: TrendGenerateRequest, background_tasks: Back
     """
     Triggers background generation of content based on a Trend.
     """
-    background_tasks.add_task(process_trend_generation, request.title, request.snippet)
-    return {"detail": "Trend content generation started in the background"}
+    background_tasks.add_task(process_trend_generation, request.title, request.snippet, request.formats)
+    return {"message": "Generation started in background"}
