@@ -746,6 +746,32 @@ function getWeekRange(offset) {
     return { startOfWeek, endOfWeek };
 }
 
+// ---------------- DASHBOARD STATS ----------------
+async function fetchDashboardStats() {
+    try {
+        const res = await fetch(`${API_BASE}/dashboard/stats?_t=${Date.now()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Try updating common dashboard/count elements if they exist
+        Object.keys(data || {}).forEach(key => {
+            const val = data[key];
+            const ids = [
+                `dashboard-${key}`,
+                `stat-${key}`,
+                `sidebar-count-${key}`,
+                `${key}-count`
+            ];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = (typeof val === 'number' ? val : String(val || ''));
+            });
+        });
+    } catch (err) {
+        console.error('fetchDashboardStats error', err);
+    }
+}
+
 async function fetchScheduledContent() {
     try {
         const res = await fetch(`${API_BASE}/content/scheduled?_t=${Date.now()}`);
