@@ -9,6 +9,24 @@ from app.models.content_item import ContentItem
 router = APIRouter()
 
 from sqlalchemy import func
+import httpx
+from app.core.config import settings
+
+@router.get("/debug/facebook")
+def debug_facebook_api():
+    if not settings.FACEBOOK_ACCESS_TOKEN or not settings.FACEBOOK_PAGE_ID:
+        return {"error": "Missing Facebook credentials in environment"}
+    
+    fb_url = f"https://graph.facebook.com/v19.0/{settings.FACEBOOK_PAGE_ID}/posts?fields=likes.summary(true),comments.summary(true)&access_token={settings.FACEBOOK_ACCESS_TOKEN}"
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            res = client.get(fb_url)
+            return {
+                "status_code": res.status_code,
+                "response": res.json()
+            }
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("/")
 def get_dashboard_stats(db: Session = Depends(get_db)):
