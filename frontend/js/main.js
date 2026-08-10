@@ -1811,7 +1811,7 @@ async function loadTrends() {
                     <button class="btn ghost" style="flex: 1; text-align: center; border: 1px solid var(--line); font-size: 13px; padding: 8px;" onclick="openNewsModal('${trend.news_url}', '${safeTitle}', '${safeTitle}', '${safeSnippet}')">
                         اقرأ الخبر
                     </button>
-                    <button class="btn" style="flex: 1; background: var(--teal); border: none; font-size: 13px; padding: 8px;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}')">
+                    <button class="btn" style="flex: 1; background: var(--teal); border: none; font-size: 13px; padding: 8px;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}', this)">
                         <span class="ic">🤖</span> اصنع محتوى
                     </button>
                 </div>
@@ -1914,8 +1914,14 @@ function showCustomConfirm(msg, onConfirm) {
     };
 }
 
-async function generateTrendContent(title, snippet) {
+async function generateTrendContent(title, snippet, btn) {
     showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async (formats) => {
+        const origText = btn ? btn.innerHTML : "";
+        if (btn) {
+            btn.innerHTML = `<span class="ic">⏳</span> جاري الصياغة...`;
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+        }
         showToast(`بدأ توليد المحتوى لترند: ${title}`);
     try {
         const token = localStorage.getItem('cm_token');
@@ -1953,7 +1959,7 @@ async function openNewsModal(url, title, safeTitle, safeSnippet) {
     document.getElementById('news-modal').style.display = 'flex';
     document.getElementById('news-modal-generate').onclick = () => {
         closeNewsModal();
-        generateTrendContent(safeTitle, safeSnippet);
+        generateTrendContent(safeTitle, safeSnippet, document.getElementById('news-modal-generate'));
     };
 
     try {

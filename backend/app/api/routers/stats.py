@@ -74,9 +74,15 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     published_count = db.query(ContentItem).filter(
         func.lower(ContentItem.status) == 'published'
     ).count()
-    draft_count = db.query(RawArticle).filter(
+    raw_drafts = db.query(RawArticle).filter(
         func.lower(RawArticle.status) == 'approved_for_generation'
     ).count()
+    
+    content_drafts = db.query(ContentItem).filter(
+        func.lower(ContentItem.status) == 'draft'
+    ).count()
+    
+    draft_count = raw_drafts + content_drafts
     
     total_sources = db.query(Source).count()
     
