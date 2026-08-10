@@ -804,6 +804,10 @@ async function fetchDashboardStats() {
 
         if (!res.ok) {
             try { const txt = await res.text(); console.warn('fetchDashboardStats non-ok response', res.status, txt); } catch(e){}
+            // If both /api/stats and /api/stats/ are missing (404), show mock data so UI isn't empty
+            if (res.status === 404) {
+                applyMockDashboardStats();
+            }
             return;
         }
 
@@ -826,6 +830,60 @@ async function fetchDashboardStats() {
     } catch (err) {
         console.error('fetchDashboardStats error', err);
     }
+}
+
+function applyMockDashboardStats() {
+    try {
+        // Minimal mock values to keep the UI usable
+        const mock = {
+            stats: {
+                articles_today: 0,
+                pending_reviews: 0,
+                approval_rate: '0%',
+                scheduled: 0
+            },
+            sidebar_counts: {
+                sources: 0,
+                raw_articles: 0,
+                content: 0,
+                review: 0
+            },
+            pipeline_counts: {
+                raw: 0,
+                draft: 0,
+                review: 0,
+                scheduled: 0,
+                published: 0
+            }
+        };
+
+        // Stats
+        const s = mock.stats;
+        const map = {
+            articles_today: 'stat-articles',
+            pending_reviews: 'stat-pending',
+            approval_rate: 'stat-approved',
+            scheduled: 'stat-scheduled'
+        };
+        Object.keys(map).forEach(k => {
+            const el = document.getElementById(map[k]);
+            if (el) el.innerText = s[k] !== undefined ? s[k] : '-';
+        });
+
+        // Sidebar counts
+        Object.entries(mock.sidebar_counts).forEach(([k,v]) => {
+            const el = document.getElementById(`sidebar-count-${k}`);
+            if (el) el.innerText = v;
+        });
+
+        // Pipeline counts
+        Object.entries(mock.pipeline_counts).forEach(([k,v]) => {
+            const el = document.getElementById(`pipeline-count-${k}`);
+            if (el) el.innerText = v;
+        });
+
+        showToast('بيانات الداشبورد مؤقتة (mock) — endpoint غير متوفر حالياً', 'error');
+    } catch (e) { console.error('applyMockDashboardStats error', e); }
 }
 
 async function fetchScheduledContent() {
