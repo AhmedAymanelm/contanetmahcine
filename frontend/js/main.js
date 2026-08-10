@@ -793,8 +793,20 @@ function getWeekRange(offset) {
 // ---------------- DASHBOARD STATS ----------------
 async function fetchDashboardStats() {
     try {
-        const res = await fetch(`${API_BASE}/stats?_t=${Date.now()}`);
-        if (!res.ok) return;
+        const urlNoSlash = `${API_BASE}/stats?_t=${Date.now()}`;
+        let res = await fetch(urlNoSlash);
+        if (res.status === 404) {
+            // Try with trailing slash in case the router is mounted that way on the server
+            const urlWithSlash = `${API_BASE}/stats/?_t=${Date.now()}`;
+            console.warn(`fetchDashboardStats: primary 404, retrying ${urlWithSlash}`);
+            res = await fetch(urlWithSlash);
+        }
+
+        if (!res.ok) {
+            try { const txt = await res.text(); console.warn('fetchDashboardStats non-ok response', res.status, txt); } catch(e){}
+            return;
+        }
+
         const data = await res.json();
 
         // Try updating common dashboard/count elements if they exist
