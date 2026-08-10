@@ -77,21 +77,39 @@ class ReadRequest(BaseModel):
 @router.post("/read")
 def read_news_article(req: ReadRequest):
     """Scrape the actual news article behind the Google News obfuscated URL"""
-    from app.services.ingestion.extractors.browser_extractor import _get_page_html, extract_article_content
+    import trafilatura
+    import json
+    from googlenewsdecoder import new_decoderv1
     
-    html = _get_page_html(req.url)
-    if not html:
-        return {"title": "خطأ", "content": "لم نتمكن من جلب محتوى هذا الخبر.", "image": ""}
+    try:
+        # Decode the obfuscated Google News URL natively
+        decoded_res = new_decoderv1(req.url)
+        real_url = decoded_res.get('decoded_url') if decoded_res.get('status') else req.url
         
-    data = extract_article_content(req.url, html)
-    if not data:
-         return {"title": "خطأ", "content": "حدث خطأ أثناء استخراج النص من المقال.", "image": ""}
-         
-    return {
-        "title": data.get("title", ""),
-        "content": data.get("content", ""),
-        "image": data.get("image_url", "")
-    }
+        # Download and extract the article
+        downloaded = trafilatura.fetch_url(real_url)
+        if not downloaded:
+            return {"title": "خطأ", "content": "تعذر الاتصال بموقع الخبر الأصلي.", "image": ""}
+            
+        result = trafilatura.extract(
+            downloaded,
+            output_format="json",
+            include_comments=False,
+            include_tables=False,
+            include_images=True
+        )
+        if not result:
+             return {"title": "خطأ", "content": "حدث خطأ أثناء استخراج النص من المقال. قد يكون الموقع محمياً ضد السحب الآلي.", "image": ""}
+             
+        data = json.loads(result)
+        return {
+            "title": data.get("title", ""),
+            "content": data.get("text", ""),
+            "image": data.get("image", "")
+        }
+    except Exception as e:
+        print(f"Error reading news: {e}")
+        return {"title": "خطأ", "content": "تعذر فتح الرابط الأصلي للخبر.", "image": ""}
 
 @router.post("/generate")
 def generate_trend_content(request: TrendGenerateRequest, background_tasks: BackgroundTasks):

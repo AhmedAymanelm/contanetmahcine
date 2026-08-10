@@ -22,3 +22,4 @@ google-genai
 python-jose[cryptography]
 passlib
 bcrypt<4.0.0
+googlenewsdecoder==0.1.7
