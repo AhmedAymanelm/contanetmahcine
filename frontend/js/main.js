@@ -1000,7 +1000,13 @@ async function renderCarouselImages(id, templateId, textColor = null, accentColo
                 if (slides.error) {
                     btn.innerHTML = '❌ خطأ في المعالجة';
                     btn.style.background = '#b91c1c';
-                    const errorMsg = slides.error.length > 100 ? slides.error.substring(0, 100) + '...' : slides.error;
+                    let errorMsg = slides.error;
+                    const errMatch = errorMsg.match(/\[err\]\s*(.*?)(?=\n|$)/);
+                    if (errMatch) {
+                        errorMsg = errMatch[1].trim();
+                    } else if (errorMsg.length > 200) {
+                        errorMsg = errorMsg.substring(0, 200) + '...';
+                    }
                     showToast(`فشل توليد الصور: ${errorMsg}`, 'error');
                     return;
                 }
