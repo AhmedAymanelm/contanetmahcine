@@ -24,12 +24,19 @@ def get_raw_articles(db: Session = Depends(get_db)):
     ).delete(synchronize_session=False)
     db.commit()
     
-    articles = db.query(RawArticle).filter(RawArticle.status == "PENDING").order_by(RawArticle.created_at.desc()).limit(100).all()
+    articles = db.query(RawArticle).filter(
+        RawArticle.status == "PENDING",
+        RawArticle.created_at >= cutoff
+    ).order_by(RawArticle.created_at.desc()).limit(100).all()
     return articles
 
 @router.get("/generating", response_model=List[RawArticleResponse])
 def get_generating_articles(db: Session = Depends(get_db)):
-    articles = db.query(RawArticle).filter(RawArticle.status == "APPROVED_FOR_GENERATION").order_by(RawArticle.created_at.desc()).all()
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    articles = db.query(RawArticle).filter(
+        RawArticle.status == "APPROVED_FOR_GENERATION",
+        RawArticle.created_at >= cutoff
+    ).order_by(RawArticle.created_at.desc()).all()
     return articles
 
 @router.post("/ingest")

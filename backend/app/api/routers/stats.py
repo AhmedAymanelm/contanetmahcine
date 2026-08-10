@@ -14,36 +14,62 @@ from sqlalchemy import func
 def get_dashboard_stats(db: Session = Depends(get_db)):
     today = datetime.utcnow().date()
     
-    total_articles = db.query(RawArticle).filter(func.lower(RawArticle.status) == 'pending').count()
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    
+    total_articles = db.query(RawArticle).filter(
+        func.lower(RawArticle.status) == 'pending',
+        RawArticle.created_at >= cutoff
+    ).count()
     
     # 2. Pending Reviews
-    pending_count = db.query(ContentItem).filter(func.lower(ContentItem.status) == 'pending_review').count()
+    pending_count = db.query(ContentItem).filter(
+        func.lower(ContentItem.status) == 'pending_review',
+        ContentItem.created_at >= cutoff
+    ).count()
     
     # 3. Approved
-    approved_count = db.query(ContentItem).filter(func.lower(ContentItem.status) == 'approved').count()
-    total_content = db.query(ContentItem).count()
+    approved_count = db.query(ContentItem).filter(
+        func.lower(ContentItem.status) == 'approved',
+        ContentItem.created_at >= cutoff
+    ).count()
+    total_content = db.query(ContentItem).filter(ContentItem.created_at >= cutoff).count()
     approval_rate = int((approved_count / total_content * 100)) if total_content > 0 else 0
     
     # 4. Scheduled
-    scheduled_count = db.query(ContentItem).filter(func.lower(ContentItem.status) == 'scheduled').count()
+    scheduled_count = db.query(ContentItem).filter(
+        func.lower(ContentItem.status) == 'scheduled',
+        ContentItem.created_at >= cutoff
+    ).count()
     
-    # Recent Content (latest 5)
-    recent_content = db.query(ContentItem).order_by(ContentItem.created_at.desc()).limit(5).all()
+    # Recent Content (latest 5 within 24h)
+    recent_content = db.query(ContentItem).filter(ContentItem.created_at >= cutoff).order_by(ContentItem.created_at.desc()).limit(5).all()
     
-    # Pending Content (latest 5)
-    pending_content = db.query(ContentItem).filter(func.lower(ContentItem.status) == 'pending_review').order_by(ContentItem.created_at.desc()).limit(5).all()
+    # Pending Content (latest 5 within 24h)
+    pending_content = db.query(ContentItem).filter(
+        func.lower(ContentItem.status) == 'pending_review',
+        ContentItem.created_at >= cutoff
+    ).order_by(ContentItem.created_at.desc()).limit(5).all()
 
     # 5. Published and Draft
-    published_count = db.query(ContentItem).filter(func.lower(ContentItem.status) == 'published').count()
-    draft_count = db.query(RawArticle).filter(func.lower(RawArticle.status) == 'approved_for_generation').count()
+    published_count = db.query(ContentItem).filter(
+        func.lower(ContentItem.status) == 'published',
+        ContentItem.created_at >= cutoff
+    ).count()
+    draft_count = db.query(RawArticle).filter(
+        func.lower(RawArticle.status) == 'approved_for_generation',
+        RawArticle.created_at >= cutoff
+    ).count()
     
     total_sources = db.query(Source).count()
     
     # Platform Performance (Engagement/Interactions)
     platforms_count = {"Instagram": 0, "LinkedIn": 0, "Facebook": 0, "X": 0, "Snapchat": 0, "Threads": 0, "TikTok": 0}
     
-    # Calculate base performance from published posts
-    published_items = db.query(ContentItem).filter(func.lower(ContentItem.status) == 'published').all()
+    # Calculate base performance from published posts (last 24h)
+    published_items = db.query(ContentItem).filter(
+        func.lower(ContentItem.status) == 'published',
+        ContentItem.created_at >= cutoff
+    ).all()
     for item in published_items:
         if item.platforms:
             for p in item.platforms:
