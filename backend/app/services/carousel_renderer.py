@@ -38,8 +38,8 @@ def _progress_dark(current: int, total: int, accent: str) -> str:
     return f'<div style="display:flex;gap:10px;padding:30px 40px 10px;">{"".join(segs)}</div>'
 
 def _header_dark(current: int, total: int) -> str:
-    num = str(current + 1).zfill(2)
-    tot = str(total).zfill(2)
+    num = str(current + 1)
+    tot = str(total)
     return f"""
     <div style="padding: 10px 40px 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <span dir="ltr" style="color: rgba(255,255,255,0.9); font-size: 26px; font-weight: 900; letter-spacing: 2px;">{num} <span style="color:rgba(255,255,255,0.35); font-weight:400;">/</span> {tot}</span>
@@ -180,7 +180,7 @@ def render_light_card_slide(t: dict, slide: dict, idx: int, total: int, brand: s
     <div style="position:absolute; bottom:-100px; right:-50px; width:500px; height:350px; background:{blob_color}; border-radius:150px; transform:rotate(-10deg);"></div>
     <div style="position:absolute; top:50%; left:0; transform:translateY(-50%); width:0; height:0; border-top:60px solid transparent; border-bottom:60px solid transparent; border-left:80px solid {accent_color};"></div>
     <div style="position:absolute; top: 70px; right: 70px; z-index:20;">
-        <span dir="ltr" style="color: {accent_color}; font-size: 28px; font-weight: 900; letter-spacing:2px; background:rgba(255,255,255,0.92); padding: 6px 16px; border-radius: 50px;">{str(idx+1).zfill(2)} <span style="color:rgba(0,0,0,0.3); font-weight:400;">/</span> {str(total).zfill(2)}</span>
+        <span dir="ltr" style="color: {accent_color}; font-size: 28px; font-weight: 900; letter-spacing:2px; background:rgba(255,255,255,0.92); padding: 6px 16px; border-radius: 50px;">{str(idx+1)} <span style="color:rgba(0,0,0,0.3); font-weight:400;">/</span> {str(total)}</span>
     </div>
     <div style="width: 900px; height: 1150px; background:#ffffff; border-radius:60px; box-shadow:0 30px 60px rgba(0,0,0,0.08); display:flex; flex-direction:column; padding:80px 60px 50px; position:relative; z-index:10;">
         {watermark}
@@ -256,7 +256,7 @@ def render_cta_slide(t: dict, slide: dict, idx: int, total: int, brand: str) -> 
     <div class="bg-blob-2"></div>
     
     <div style="position:absolute; top: 70px; right: 70px; z-index:20;">
-        <span dir="ltr" style="color: {accent_color}; font-size: 26px; font-weight: 900; letter-spacing:2px; background:rgba(255,255,255,0.15); backdrop-filter:blur(4px); padding: 6px 18px; border-radius: 50px; border:1px solid rgba(255,255,255,0.2);">{str(idx+1).zfill(2)} <span style="opacity:0.5; font-weight:400;">/</span> {str(total).zfill(2)}</span>
+        <span dir="ltr" style="color: {accent_color}; font-size: 26px; font-weight: 900; letter-spacing:2px; background:rgba(255,255,255,0.15); backdrop-filter:blur(4px); padding: 6px 18px; border-radius: 50px; border:1px solid rgba(255,255,255,0.2);">{str(idx+1)} <span style="opacity:0.5; font-weight:400;">/</span> {str(total)}</span>
     </div>
     
     <div class="content-container">
@@ -428,7 +428,7 @@ def render_custom_pdf_slide(template, slide: dict, i: int, total: int, brand: st
             background:rgba(255,255,255,0.18); backdrop-filter:blur(8px);
             padding:6px 20px; border-radius:50px;
             border:1px solid rgba(255,255,255,0.25);
-        "><span dir="ltr">{str(i+1).zfill(2)} <span style="opacity:0.45; font-weight:400;">/</span> {str(total).zfill(2)}</span></span>
+        "><span dir="ltr">{str(i+1)} <span style="opacity:0.45; font-weight:400;">/</span> {str(total)}</span></span>
     </div>
 
     <div class="{container_class}">
