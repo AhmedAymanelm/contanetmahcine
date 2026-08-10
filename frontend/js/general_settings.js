@@ -62,16 +62,18 @@ function previewLogo(input) {
 }
 
 function applyLogoToSidebar(logoUrl, appName) {
-    // Update sidebar logo
-    const sidebarLogo = document.querySelector('.logo-icon');
-    if (sidebarLogo && logoUrl) {
-        sidebarLogo.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">`;
+    // Update sidebar logo (.mark)
+    const sidebarMark = document.querySelector('.mark');
+    if (sidebarMark && logoUrl) {
+        sidebarMark.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;">`;
+        sidebarMark.style.padding = '0';
+        sidebarMark.style.background = 'transparent';
     }
-    // Update sidebar app name
+    // Update sidebar app name (.name)
     if (appName) {
-        const nameEl = document.querySelector('.logo-text h2');
+        const nameEl = document.querySelector('.name');
         if (nameEl) nameEl.textContent = appName;
-        document.title = appName + ' — غرفة المحتوى';
+        document.title = appName;
     }
 }
 
@@ -85,19 +87,26 @@ function saveAppIdentity() {
 
     if (name) {
         localStorage.setItem('app_name', name);
-        // Apply to sidebar
-        const nameEl = document.querySelector('.logo-text h2');
+        const nameEl = document.querySelector('.name');
         if (nameEl) nameEl.textContent = name;
         document.title = name;
     }
     if (tagline) {
         localStorage.setItem('app_tagline', tagline);
-        const tagEl = document.querySelector('.logo-text span');
+        const tagEl = document.querySelector('.sub');
         if (tagEl) tagEl.textContent = tagline;
     }
-    if (logoUrl && logoInput?.dataset.logoUrl) {
-        localStorage.setItem('app_logo_url', logoUrl);
-        applyLogoToSidebar(logoUrl, null);
+    if (logoInput?.dataset.logoUrl) {
+        localStorage.setItem('app_logo_url', logoInput.dataset.logoUrl);
+        const sidebarMark = document.querySelector('.mark');
+        if (sidebarMark) {
+            sidebarMark.innerHTML = `<img src="${logoInput.dataset.logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;">`;
+            sidebarMark.style.padding = '0';
+            sidebarMark.style.background = 'transparent';
+            // Also update logo-preview
+            const preview = document.getElementById('logo-preview');
+            if (preview) preview.innerHTML = sidebarMark.innerHTML;
+        }
     }
 
     showSettingsMsg('✅ تم حفظ هوية التطبيق بنجاح', 'success');
@@ -189,24 +198,34 @@ function showSettingsMsg(text, type) {
 // ── Apply saved identity on page load ────────────────────────────────────────
 
 (function applyStoredIdentity() {
-    const savedName = localStorage.getItem('app_name');
-    const savedTagline = localStorage.getItem('app_tagline');
-    const savedLogo = localStorage.getItem('app_logo_url');
+    function doApply() {
+        const savedName = localStorage.getItem('app_name');
+        const savedTagline = localStorage.getItem('app_tagline');
+        const savedLogo = localStorage.getItem('app_logo_url');
 
-    if (savedName) {
-        const nameEl = document.querySelector('.logo-text h2');
-        if (nameEl) nameEl.textContent = savedName;
-        document.title = savedName;
-    }
-    if (savedTagline) {
-        const tagEl = document.querySelector('.logo-text span');
-        if (tagEl) tagEl.textContent = savedTagline;
-    }
-    if (savedLogo) {
-        const sidebarLogo = document.querySelector('.logo-icon');
-        if (sidebarLogo) {
-            sidebarLogo.innerHTML = `<img src="${savedLogo}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">`;
+        if (savedName) {
+            const nameEl = document.querySelector('.name');
+            if (nameEl) nameEl.textContent = savedName;
+            document.title = savedName;
         }
+        if (savedTagline) {
+            const tagEl = document.querySelector('.sub');
+            if (tagEl) tagEl.textContent = savedTagline;
+        }
+        if (savedLogo) {
+            const sidebarMark = document.querySelector('.mark');
+            if (sidebarMark) {
+                sidebarMark.innerHTML = `<img src="${savedLogo}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;">`;
+                sidebarMark.style.padding = '0';
+                sidebarMark.style.background = 'transparent';
+            }
+        }
+    }
+    // Run immediately if DOM ready, otherwise wait
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', doApply);
+    } else {
+        doApply();
     }
 })();
 
