@@ -1802,9 +1802,9 @@ async function loadTrends() {
                 <h3 style="margin-top: 5px; margin-bottom: 10px; font-size: 17px; color: var(--text); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 76px;">${trend.title}</h3>
                 <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong></div>
                 <div style="display: flex; gap: 10px; margin-top: auto;">
-                    <a href="${trend.news_url}" target="_blank" class="btn ghost" style="flex: 1; text-align: center; border: 1px solid var(--line); font-size: 13px; padding: 8px;">
+                    <button class="btn ghost" style="flex: 1; text-align: center; border: 1px solid var(--line); font-size: 13px; padding: 8px;" onclick="openNewsModal('${trend.news_url}', '${safeTitle}', '${safeTitle}', '${safeSnippet}')">
                         اقرأ الخبر
-                    </a>
+                    </button>
                     <button class="btn" style="flex: 1; background: var(--teal); border: none; font-size: 13px; padding: 8px;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}')">
                         <span class="ic">🤖</span> اصنع محتوى
                     </button>
@@ -1842,4 +1842,20 @@ async function generateTrendContent(title, snippet) {
         console.error(err);
         showToast('خطأ في الاتصال بالسيرفر', 'error');
     }
+}
+
+function openNewsModal(url, title, safeTitle, safeSnippet) {
+    document.getElementById('news-modal-title').innerText = title;
+    document.getElementById('news-modal-loading').style.display = 'block';
+    document.getElementById('news-modal-iframe').src = url;
+    document.getElementById('news-modal').style.display = 'flex';
+    document.getElementById('news-modal-generate').onclick = () => {
+        closeNewsModal();
+        generateTrendContent(safeTitle, safeSnippet);
+    };
+}
+
+function closeNewsModal() {
+    document.getElementById('news-modal').style.display = 'none';
+    document.getElementById('news-modal-iframe').src = '';
 }
