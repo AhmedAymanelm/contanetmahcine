@@ -1756,3 +1756,83 @@ if (typeof flatpickr !== 'undefined') {
         placeholder: "اختر الوقت"
     });
 }
+
+// ---------------- Trends ----------------
+async function loadTrends() {
+    const geo = document.getElementById('trend-geo-select').value;
+    const grid = document.getElementById('trends-grid');
+    const loading = document.getElementById('trends-loading');
+    
+    grid.innerHTML = '';
+    loading.style.display = 'block';
+    
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/trends/?geo=${geo}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!res.ok) throw new Error('Failed to fetch trends');
+        const data = await res.json();
+        
+        loading.style.display = 'none';
+        
+        if (data.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px;">لم يتم العثور على ترندات حالياً في هذه الدولة</div>';
+            return;
+        }
+        
+        data.forEach((trend, index) => {
+            const card = document.createElement('div');
+            card.style.background = 'var(--panel-2)';
+            card.style.border = '1px solid var(--line)';
+            card.style.borderRadius = '12px';
+            card.style.padding = '20px';
+            card.style.position = 'relative';
+            
+            const safeTitle = trend.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const safeSnippet = (trend.news_snippet || trend.description).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            
+            card.innerHTML = `
+                <div style="position: absolute; top: -10px; right: 20px; background: var(--red); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">#${index + 1}</div>
+                <h3 style="margin-top: 5px; margin-bottom: 10px; font-size: 18px; color: var(--text);">${trend.title}</h3>
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 15px;">🔍 عمليات البحث: <strong style="color: var(--amber);">${trend.traffic}</strong></div>
+                <p style="font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 20px; min-height: 42px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${trend.news_snippet || trend.description}</p>
+                <button class="btn" style="width: 100%; background: var(--teal); border: none;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}')">
+                    <span class="ic">🤖</span> اصنع محتوى
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+    } catch (err) {
+        console.error(err);
+        loading.style.display = 'none';
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--red); padding: 40px;">حدث خطأ أثناء الاتصال بالرادار</div>';
+    }
+}
+
+async function generateTrendContent(title, snippet) {
+    if (!confirm(`هل تريد توليد محتوى أوتوماتيكي بناءً على ترند: ${title}؟`)) return;
+    
+    showToast(`بدأ توليد المحتوى لترند: ${title}`);
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/trends/generate`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ title, snippet })
+        });
+        if (res.ok) {
+            showToast(`تم إرسال الطلب لـ Claude بنجاح! سيظهر قريباً في المراجعة`, 'success');
+        } else {
+            showToast('حدث خطأ أثناء إرسال الطلب', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('خطأ في الاتصال بالسيرفر', 'error');
+    }
+}
