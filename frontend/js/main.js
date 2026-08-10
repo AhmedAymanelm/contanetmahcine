@@ -669,9 +669,10 @@ function renderContentList() {
                 else if (cType.toUpperCase() === 'VIDEO' || cType.toUpperCase() === 'VIDEO_SCRIPT') cTypeAr = 'فيديو';
                 
                 let title = 'بدون عنوان';
+                let gen = null;
                 if (item.generated_content) {
                     try {
-                        let gen = typeof item.generated_content === 'string' ? JSON.parse(item.generated_content) : item.generated_content;
+                        gen = typeof item.generated_content === 'string' ? JSON.parse(item.generated_content) : item.generated_content;
                         title = gen.title || gen.hook || title;
                     } catch(e) {}
                 }
