@@ -63,6 +63,7 @@ class LinkedInService:
 
     async def publish_media(self, text: str, file_paths: list, media_type: str, access_token: str, person_urn: str) -> dict:
         """Publishes a media post (multiple images or single document) to LinkedIn."""
+        logger.info(f"LINKEDIN PUBLISH MEDIA CALLED! file_paths={file_paths}, media_type={media_type}")
         recipe = "urn:li:digitalmediaRecipe:feedshare-image" if media_type == "IMAGE" else "urn:li:digitalmediaRecipe:feedshare-document"
         register_url = f"{self.api_url}/assets?action=registerUpload"
         headers = {
