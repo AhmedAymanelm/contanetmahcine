@@ -107,10 +107,23 @@ def read_news_article(req: ReadRequest):
              return {"title": "خطأ", "content": "حدث خطأ أثناء استخراج النص من المقال. قد يكون الموقع محمياً ضد السحب الآلي.", "image": ""}
              
         data = json.loads(result)
+        image_url = data.get("image", "")
+        
+        # Fallback for image extraction
+        if not image_url:
+            try:
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(downloaded, "html.parser")
+                meta_img = soup.find("meta", property="og:image")
+                if meta_img and meta_img.get("content"):
+                    image_url = meta_img["content"]
+            except Exception:
+                pass
+                
         return {
             "title": data.get("title", ""),
             "content": data.get("text", ""),
-            "image": data.get("image", "")
+            "image": image_url
         }
     except Exception as e:
         print(f"Error reading news: {e}")

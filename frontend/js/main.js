@@ -1847,11 +1847,11 @@ async function generateTrendContent(title, snippet) {
 async function openNewsModal(url, title, safeTitle, safeSnippet) {
     document.getElementById('news-modal-title').innerText = title;
     
-    // reset UI
+        // reset UI
     document.getElementById('news-modal-loading').style.display = 'block';
     document.getElementById('news-modal-content').style.display = 'none';
     document.getElementById('news-modal-img').style.display = 'none';
-    document.getElementById('news-modal-img').src = '';
+    document.getElementById('news-modal-img').style.backgroundImage = '';
     document.getElementById('news-modal-h1').innerText = '';
     document.getElementById('news-modal-text').innerHTML = '';
     
@@ -1879,7 +1879,7 @@ async function openNewsModal(url, title, safeTitle, safeSnippet) {
         document.getElementById('news-modal-content').style.display = 'block';
         
         if (data.image) {
-            document.getElementById('news-modal-img').src = data.image;
+            document.getElementById('news-modal-img').style.backgroundImage = `url('${data.image}')`;
             document.getElementById('news-modal-img').style.display = 'block';
         }
         
