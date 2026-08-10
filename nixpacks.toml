@@ -5,7 +5,7 @@ python = true
 PLAYWRIGHT_BROWSERS_PATH = "0"
 
 [phases.setup]
-nixPkgs = ["python311", "ffmpeg"]
+nixPkgs = ["python311", "ffmpeg", "chromium"]
 aptPkgs = [
     "libnss3",
     "libnspr4",
@@ -33,5 +33,3 @@ aptPkgs = [
     "fonts-liberation"
 ]
 
-[phases.build]
-cmds = ["python -m playwright install --with-deps chromium"]
