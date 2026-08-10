@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service – Content Machine</title>
+  <meta name="description" content="Terms of Service for Content Machine – AI-powered social media content automation platform." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f1a;
+      --surface: #151829;
+      --border: rgba(255,255,255,0.07);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,15,26,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      font-size: 1.2rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.06) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 4rem 2rem 3rem;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.3);
+      color: var(--accent-light);
+      padding: 0.35rem 1rem; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 600; margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700; margin-bottom: 1rem;
+    }
+    .hero p { color: var(--muted); max-width: 520px; margin: 0 auto; font-size: 1rem; }
+    .effective-date {
+      display: inline-block; margin-top: 1.5rem;
+      color: var(--muted); font-size: 0.85rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      padding: 0.4rem 1rem; border-radius: 8px;
+    }
+
+    /* CONTENT */
+    .container {
+      max-width: 820px; margin: 3rem auto; padding: 0 2rem 4rem;
+    }
+    .toc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 3rem;
+    }
+    .toc-card h2 {
+      font-size: 0.95rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;
+    }
+    .toc-card ol {
+      list-style: none; counter-reset: toc;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
+    }
+    .toc-card li { counter-increment: toc; }
+    .toc-card li a {
+      color: var(--accent-light); text-decoration: none; font-size: 0.9rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      transition: color 0.2s;
+    }
+    .toc-card li a:before {
+      content: counter(toc, decimal-leading-zero);
+      font-size: 0.75rem; color: var(--muted); min-width: 22px;
+    }
+    .toc-card li a:hover { color: #fff; }
+
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 80px;
+    }
+    .section-num {
+      font-size: 0.75rem; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem;
+    }
+    section h2 {
+      font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    section p { color: var(--muted); margin-bottom: 0.8rem; }
+    section ul {
+      list-style: none; margin: 0.5rem 0 0.8rem 0;
+    }
+    section ul li {
+      color: var(--muted); padding: 0.4rem 0 0.4rem 1.5rem;
+      position: relative;
+    }
+    section ul li::before {
+      content: "→";
+      position: absolute; left: 0; color: var(--accent);
+    }
+
+    .highlight-box {
+      background: rgba(99,102,241,0.08);
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .highlight-box p { color: var(--text); margin: 0; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--accent-light); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .toc-card ol { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">⚡ Content Machine</a>
+  <div class="nav-links">
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">📄 Legal</div>
+  <h1>Terms of Service</h1>
+  <p>Please read these terms carefully before using Content Machine.</p>
+  <span class="effective-date">Effective Date: August 10, 2026</span>
+</div>
+
+<div class="container">
+
+  <div class="toc-card">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#acceptance">Acceptance of Terms</a></li>
+      <li><a href="#description">Service Description</a></li>
+      <li><a href="#account">Account &amp; Access</a></li>
+      <li><a href="#acceptable-use">Acceptable Use</a></li>
+      <li><a href="#social-platforms">Social Platform Integration</a></li>
+      <li><a href="#ip">Intellectual Property</a></li>
+      <li><a href="#data">Data &amp; Privacy</a></li>
+      <li><a href="#disclaimer">Disclaimers</a></li>
+      <li><a href="#limitation">Limitation of Liability</a></li>
+      <li><a href="#changes">Changes to Terms</a></li>
+      <li><a href="#termination">Termination</a></li>
+      <li><a href="#contact">Contact Us</a></li>
+    </ol>
+  </div>
+
+  <section id="acceptance">
+    <div class="section-num">01</div>
+    <h2>Acceptance of Terms</h2>
+    <p>By accessing or using Content Machine ("the Service"), you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using the Service.</p>
+    <div class="highlight-box">
+      <p>Your continued use of the Service constitutes your acceptance of these terms, including any updates or modifications we make.</p>
+    </div>
+  </section>
+
+  <section id="description">
+    <div class="section-num">02</div>
+    <h2>Service Description</h2>
+    <p>Content Machine is an AI-powered content automation platform that helps users:</p>
+    <ul>
+      <li>Aggregate news and articles from configured sources</li>
+      <li>Generate social media posts, carousels, and video scripts using AI</li>
+      <li>Schedule and publish content to connected social media platforms</li>
+      <li>Monitor content performance and manage a content pipeline</li>
+    </ul>
+    <p>We reserve the right to modify, suspend, or discontinue any part of the Service at any time without prior notice.</p>
+  </section>
+
+  <section id="account">
+    <div class="section-num">03</div>
+    <h2>Account &amp; Access</h2>
+    <p>To use Content Machine, you must maintain valid login credentials. You are responsible for:</p>
+    <ul>
+      <li>Keeping your credentials confidential and secure</li>
+      <li>All activities that occur under your account</li>
+      <li>Notifying us immediately of any unauthorized use</li>
+      <li>Ensuring all connected social accounts are legitimately owned by you</li>
+    </ul>
+    <p>We reserve the right to terminate accounts that violate these terms or engage in fraudulent activity.</p>
+  </section>
+
+  <section id="acceptable-use">
+    <div class="section-num">04</div>
+    <h2>Acceptable Use</h2>
+    <p>You agree not to use Content Machine to:</p>
+    <ul>
+      <li>Generate, distribute, or promote illegal, harmful, or offensive content</li>
+      <li>Spam, harass, or mislead other users or social media audiences</li>
+      <li>Violate the terms of service of any connected social media platform</li>
+      <li>Attempt to reverse-engineer, hack, or disrupt the Service</li>
+      <li>Infringe upon intellectual property rights of any third party</li>
+      <li>Automate interactions in ways that violate platform policies</li>
+    </ul>
+  </section>
+
+  <section id="social-platforms">
+    <div class="section-num">05</div>
+    <h2>Social Platform Integration</h2>
+    <p>Content Machine integrates with third-party social media platforms including LinkedIn, Instagram, Facebook, TikTok, X (Twitter), Snapchat, and Threads. By connecting these accounts, you:</p>
+    <ul>
+      <li>Authorize Content Machine to act on your behalf through official platform APIs</li>
+      <li>Agree to comply with each platform's own terms of service and content policies</li>
+      <li>Acknowledge that platform APIs may change, affecting Service functionality</li>
+      <li>Accept that we are not responsible for platform-side restrictions or policy changes</li>
+    </ul>
+    <p>All content published through the Service remains your responsibility. We do not review or pre-approve AI-generated content before publication.</p>
+  </section>
+
+  <section id="ip">
+    <div class="section-num">06</div>
+    <h2>Intellectual Property</h2>
+    <p>Content Machine and its technology, including AI models, interfaces, and code, are owned by or licensed to us. You retain full ownership of all content you create or publish through the platform.</p>
+    <p>By using the Service, you grant us a limited license to process your inputs solely for the purpose of providing the Service. We do not claim ownership over your content.</p>
+  </section>
+
+  <section id="data">
+    <div class="section-num">07</div>
+    <h2>Data &amp; Privacy</h2>
+    <p>Your use of Content Machine is also governed by our <a href="/privacy" style="color:var(--accent-light)">Privacy Policy</a>, which is incorporated into these Terms by reference. By using the Service, you consent to the data practices described therein.</p>
+    <p>We store the minimum data necessary to provide the Service, including OAuth tokens for connected social platforms. We do not sell your personal data to third parties.</p>
+  </section>
+
+  <section id="disclaimer">
+    <div class="section-num">08</div>
+    <h2>Disclaimers</h2>
+    <p>The Service is provided "as is" and "as available" without any warranties, express or implied. We do not warrant that:</p>
+    <ul>
+      <li>The Service will be uninterrupted, timely, or error-free</li>
+      <li>AI-generated content will be accurate, complete, or appropriate</li>
+      <li>Published content will achieve any particular engagement or reach</li>
+      <li>Third-party social platform APIs will remain available</li>
+    </ul>
+  </section>
+
+  <section id="limitation">
+    <div class="section-num">09</div>
+    <h2>Limitation of Liability</h2>
+    <p>To the fullest extent permitted by law, Content Machine and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service, including but not limited to loss of data, revenue, or reputation.</p>
+  </section>
+
+  <section id="changes">
+    <div class="section-num">10</div>
+    <h2>Changes to Terms</h2>
+    <p>We reserve the right to update these Terms at any time. We will indicate the effective date of the latest revision at the top of this page. Your continued use of the Service after any changes constitutes your acceptance of the new terms.</p>
+  </section>
+
+  <section id="termination">
+    <div class="section-num">11</div>
+    <h2>Termination</h2>
+    <p>We may terminate or suspend your access to the Service immediately, without prior notice, if you breach these Terms or for any other reason at our sole discretion. Upon termination, your right to use the Service ceases immediately.</p>
+  </section>
+
+  <section id="contact">
+    <div class="section-num">12</div>
+    <h2>Contact Us</h2>
+    <p>If you have questions about these Terms of Service, please contact us:</p>
+    <div class="highlight-box">
+      <p>📧 <strong>Content Machine Support</strong><br/>
+      For legal inquiries related to these terms, please reach out through the platform's support channel.</p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p>© 2026 Content Machine. All rights reserved. &nbsp;|&nbsp;
+    <a href="/terms">Terms of Service</a> &nbsp;|&nbsp;
+    <a href="/privacy">Privacy Policy</a>
+  </p>
+</footer>
+
+</body>
+</html>

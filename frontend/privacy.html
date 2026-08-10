@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy – Content Machine</title>
+  <meta name="description" content="Privacy Policy for Content Machine – learn how we collect, use, and protect your data." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f1a;
+      --surface: #151829;
+      --border: rgba(255,255,255,0.07);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      min-height: 100vh;
+    }
+
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,15,26,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      font-size: 1.2rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(16,185,129,0.06) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 4rem 2rem 3rem;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: #34d399;
+      padding: 0.35rem 1rem; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 600; margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700; margin-bottom: 1rem;
+    }
+    .hero p { color: var(--muted); max-width: 520px; margin: 0 auto; font-size: 1rem; }
+    .effective-date {
+      display: inline-block; margin-top: 1.5rem;
+      color: var(--muted); font-size: 0.85rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      padding: 0.4rem 1rem; border-radius: 8px;
+    }
+
+    .container {
+      max-width: 820px; margin: 3rem auto; padding: 0 2rem 4rem;
+    }
+
+    .toc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 3rem;
+    }
+    .toc-card h2 {
+      font-size: 0.95rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;
+    }
+    .toc-card ol {
+      list-style: none; counter-reset: toc;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
+    }
+    .toc-card li { counter-increment: toc; }
+    .toc-card li a {
+      color: #34d399; text-decoration: none; font-size: 0.9rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      transition: color 0.2s;
+    }
+    .toc-card li a:before {
+      content: counter(toc, decimal-leading-zero);
+      font-size: 0.75rem; color: var(--muted); min-width: 22px;
+    }
+    .toc-card li a:hover { color: #fff; }
+
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 80px;
+    }
+    .section-num {
+      font-size: 0.75rem; font-weight: 700; color: #34d399;
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem;
+    }
+    section h2 {
+      font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    section p { color: var(--muted); margin-bottom: 0.8rem; }
+    section ul {
+      list-style: none; margin: 0.5rem 0 0.8rem 0;
+    }
+    section ul li {
+      color: var(--muted); padding: 0.4rem 0 0.4rem 1.5rem;
+      position: relative;
+    }
+    section ul li::before {
+      content: "→";
+      position: absolute; left: 0; color: #34d399;
+    }
+
+    .highlight-box {
+      background: rgba(16,185,129,0.06);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .highlight-box p { color: var(--text); margin: 0; }
+
+    .data-table {
+      width: 100%; border-collapse: collapse; margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    .data-table th {
+      background: rgba(255,255,255,0.04);
+      text-align: left; padding: 0.8rem 1rem;
+      color: var(--text); font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 0.7rem 1rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--accent-light); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .toc-card ol { grid-template-columns: 1fr; }
+      .data-table { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">⚡ Content Machine</a>
+  <div class="nav-links">
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">🔒 Privacy</div>
+  <h1>Privacy Policy</h1>
+  <p>We are committed to protecting your privacy and being transparent about how we handle your data.</p>
+  <span class="effective-date">Effective Date: August 10, 2026</span>
+</div>
+
+<div class="container">
+
+  <div class="toc-card">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#data-collected">Data We Collect</a></li>
+      <li><a href="#how-we-use">How We Use Data</a></li>
+      <li><a href="#social-tokens">Social Media Tokens</a></li>
+      <li><a href="#ai-data">AI &amp; Content Processing</a></li>
+      <li><a href="#third-parties">Third-Party Services</a></li>
+      <li><a href="#data-retention">Data Retention</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#rights">Your Rights</a></li>
+      <li><a href="#cookies">Cookies</a></li>
+      <li><a href="#changes">Changes to Policy</a></li>
+      <li><a href="#contact">Contact Us</a></li>
+    </ol>
+  </div>
+
+  <section id="overview">
+    <div class="section-num">01</div>
+    <h2>Overview</h2>
+    <p>Content Machine ("we", "us", "our") operates an AI-powered social media content management platform. This Privacy Policy explains what information we collect, how we use it, and the choices you have.</p>
+    <div class="highlight-box">
+      <p>🛡️ We do <strong>not</strong> sell your personal data to third parties. We collect only what is necessary to operate the Service.</p>
+    </div>
+  </section>
+
+  <section id="data-collected">
+    <div class="section-num">02</div>
+    <h2>Data We Collect</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>What We Collect</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Account Data</strong></td>
+          <td>Username, hashed password</td>
+          <td>Authentication &amp; access control</td>
+        </tr>
+        <tr>
+          <td><strong>Social Tokens</strong></td>
+          <td>OAuth access tokens for connected platforms</td>
+          <td>Publishing content on your behalf</td>
+        </tr>
+        <tr>
+          <td><strong>Content Data</strong></td>
+          <td>Scraped articles, AI-generated posts, carousel images</td>
+          <td>Core Service functionality</td>
+        </tr>
+        <tr>
+          <td><strong>Usage Data</strong></td>
+          <td>API request logs, scheduled jobs, error logs</td>
+          <td>Service operation &amp; debugging</td>
+        </tr>
+        <tr>
+          <td><strong>Configuration Data</strong></td>
+          <td>Source URLs, platform settings, templates</td>
+          <td>Personalizing your pipeline</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>We do <strong>not</strong> collect: payment information, precise geolocation, biometric data, or data from minors.</p>
+  </section>
+
+  <section id="how-we-use">
+    <div class="section-num">03</div>
+    <h2>How We Use Your Data</h2>
+    <p>We use the data we collect to:</p>
+    <ul>
+      <li>Authenticate you and provide access to the platform</li>
+      <li>Ingest, process, and generate content from your configured sources</li>
+      <li>Publish approved content to your connected social media accounts</li>
+      <li>Schedule and execute publishing jobs on your behalf</li>
+      <li>Maintain logs for debugging and service reliability</li>
+      <li>Improve the platform based on usage patterns (aggregated, anonymized)</li>
+    </ul>
+    <p>We do not use your data to train our AI models or for advertising purposes.</p>
+  </section>
+
+  <section id="social-tokens">
+    <div class="section-num">04</div>
+    <h2>Social Media Tokens</h2>
+    <p>When you connect a social media account (LinkedIn, Instagram, Facebook, TikTok, X, Snapchat, Threads), we receive and store OAuth access tokens. These tokens:</p>
+    <ul>
+      <li>Are stored securely in our database, encrypted at rest</li>
+      <li>Are used exclusively to publish content you have approved</li>
+      <li>Are never shared with third parties outside the platform's own API</li>
+      <li>Can be revoked at any time by disconnecting the account in settings or via the social platform directly</li>
+    </ul>
+    <div class="highlight-box">
+      <p>⚠️ Revoking a token from the social platform will disconnect it from Content Machine. We do not store your social platform passwords.</p>
+    </div>
+  </section>
+
+  <section id="ai-data">
+    <div class="section-num">05</div>
+    <h2>AI &amp; Content Processing</h2>
+    <p>Content Machine uses Claude (Anthropic) as its AI backbone. When generating content:</p>
+    <ul>
+      <li>Article text and titles are sent to the AI API for content generation</li>
+      <li>We send only the minimum context needed (no personal account data)</li>
+      <li>AI-generated content is stored in our database until deleted by you</li>
+      <li>Anthropic's own privacy policy governs how they handle API inputs</li>
+    </ul>
+    <p>Generated carousel images are stored on Cloudinary and linked in your content pipeline. You can delete them at any time through the platform.</p>
+  </section>
+
+  <section id="third-parties">
+    <div class="section-num">06</div>
+    <h2>Third-Party Services</h2>
+    <p>Content Machine integrates with the following third-party services:</p>
+    <ul>
+      <li><strong>Anthropic (Claude API)</strong> — AI content generation</li>
+      <li><strong>Cloudinary</strong> — Image storage and delivery</li>
+      <li><strong>Neon (PostgreSQL)</strong> — Managed database hosting</li>
+      <li><strong>Railway</strong> — Application hosting and deployment</li>
+      <li><strong>Social Platform APIs</strong> — LinkedIn, Instagram, Facebook, TikTok, X, Snapchat, Threads</li>
+    </ul>
+    <p>Each of these services has its own privacy policy. We encourage you to review them. We only share data with these services as necessary to operate Content Machine.</p>
+  </section>
+
+  <section id="data-retention">
+    <div class="section-num">07</div>
+    <h2>Data Retention</h2>
+    <p>We retain your data for as long as your account is active or as needed to provide the Service:</p>
+    <ul>
+      <li>Published content records are retained for analytics and history</li>
+      <li>Rejected or deleted content is removed from the active pipeline</li>
+      <li>OAuth tokens are deleted when you disconnect a social account</li>
+      <li>Account data is retained until you request deletion</li>
+    </ul>
+    <p>To request complete data deletion, contact us using the information below.</p>
+  </section>
+
+  <section id="security">
+    <div class="section-num">08</div>
+    <h2>Security</h2>
+    <p>We implement industry-standard security measures including:</p>
+    <ul>
+      <li>HTTPS/TLS encryption for all data in transit</li>
+      <li>Encrypted storage for sensitive credentials (OAuth tokens, API keys)</li>
+      <li>Authentication required for all platform actions</li>
+      <li>Regular dependency updates to address known vulnerabilities</li>
+    </ul>
+    <p>No system is 100% secure. In the event of a data breach affecting your personal data, we will notify affected users in accordance with applicable law.</p>
+  </section>
+
+  <section id="rights">
+    <div class="section-num">09</div>
+    <h2>Your Rights</h2>
+    <p>You have the right to:</p>
+    <ul>
+      <li><strong>Access</strong> — Request a copy of the personal data we hold about you</li>
+      <li><strong>Correction</strong> — Request correction of inaccurate data</li>
+      <li><strong>Deletion</strong> — Request deletion of your personal data</li>
+      <li><strong>Portability</strong> — Request your data in a portable format</li>
+      <li><strong>Revocation</strong> — Revoke OAuth permissions for any connected platform at any time</li>
+    </ul>
+    <p>To exercise any of these rights, contact us using the information in Section 12.</p>
+  </section>
+
+  <section id="cookies">
+    <div class="section-num">10</div>
+    <h2>Cookies &amp; Local Storage</h2>
+    <p>Content Machine uses minimal browser storage:</p>
+    <ul>
+      <li><strong>Session tokens</strong> — Stored in localStorage to maintain your login session</li>
+      <li>We do <strong>not</strong> use advertising cookies or third-party tracking pixels</li>
+      <li>We do <strong>not</strong> use Google Analytics or similar tracking services</li>
+    </ul>
+    <p>You can clear your browser's local storage at any time to log out of the platform.</p>
+  </section>
+
+  <section id="changes">
+    <div class="section-num">11</div>
+    <h2>Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We will indicate the effective date of the latest revision at the top of this page. Significant changes will be communicated through the platform. Your continued use of the Service after any changes constitutes your acceptance of the updated policy.</p>
+  </section>
+
+  <section id="contact">
+    <div class="section-num">12</div>
+    <h2>Contact Us</h2>
+    <p>If you have questions about this Privacy Policy, want to exercise your data rights, or need to report a concern, please contact us:</p>
+    <div class="highlight-box">
+      <p>📧 <strong>Content Machine – Privacy Team</strong><br/>
+      For privacy inquiries, data deletion requests, or to report concerns, please reach out through the platform's support channel or via the project's GitHub repository.</p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p>© 2026 Content Machine. All rights reserved. &nbsp;|&nbsp;
+    <a href="/terms">Terms of Service</a> &nbsp;|&nbsp;
+    <a href="/privacy">Privacy Policy</a>
+  </p>
+</footer>
+
+</body>
+</html>
