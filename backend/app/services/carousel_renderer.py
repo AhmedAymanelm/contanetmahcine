@@ -377,6 +377,7 @@ def render_custom_pdf_slide(template, slide: dict, i: int, total: int, brand: st
       justify-content: center;
       align-items: center;
       padding: 60px;
+      position: relative;
   }}
   .glass-card {{
       display: flex;
@@ -420,10 +421,26 @@ def render_custom_pdf_slide(template, slide: dict, i: int, total: int, brand: st
 </style>
 </head>
 <body>
+    <!-- Slide number badge top-right -->
+    <div style="position:absolute; top:60px; right:60px; z-index:30;">
+        <span style="
+            color:{accent_color}; font-size:26px; font-weight:900; letter-spacing:2px;
+            background:rgba(255,255,255,0.18); backdrop-filter:blur(8px);
+            padding:6px 20px; border-radius:50px;
+            border:1px solid rgba(255,255,255,0.25);
+        ">{str(i+1).zfill(2)} <span style="opacity:0.45; font-weight:400;">/</span> {str(total).zfill(2)}</span>
+    </div>
+
     <div class="{container_class}">
         <h2>{heading}</h2>
         {avatar_html}
         <p>{body}</p>
+    </div>
+
+    <!-- Brand footer bottom-left -->
+    <div style="position:absolute; bottom:50px; left:60px; z-index:30; display:flex; align-items:center; gap:10px;">
+        <div style="width:7px; height:7px; border-radius:50%; background:{accent_color};"></div>
+        <span style="color:{text_color}; font-size:22px; font-weight:800; letter-spacing:1px; opacity:0.75;">@{brand}</span>
     </div>
 </body>
 </html>"""
