@@ -90,7 +90,8 @@ def publish_scheduled_content():
     try:
         # Use local time since the frontend sends naive local time to avoid timezone shifts
         now = datetime.now()
-        scheduled_items = db.query(ContentItem).filter(
+        from sqlalchemy.orm import joinedload
+        scheduled_items = db.query(ContentItem).options(joinedload(ContentItem.raw_article)).filter(
             ContentItem.status == "SCHEDULED",
             ContentItem.scheduled_at <= now
         ).all()
