@@ -452,6 +452,50 @@ function showToast(message, type = 'success') {
     }, 4000);
 }
 
+// ---------------- NAVIGATION HELPERS ----------------
+function go(target) {
+    try {
+        let pageId = null;
+        if (!target) return;
+        if (typeof target === 'string') {
+            pageId = target;
+        } else if (target instanceof Element) {
+            // If element is an anchor with data-page
+            pageId = target.getAttribute('data-page') || target.dataset.page || null;
+        }
+        if (!pageId) return;
+
+        // Update sidebar active link
+        document.querySelectorAll('nav a[data-page]').forEach(a => {
+            if (a.getAttribute('data-page') === pageId) a.classList.add('active');
+            else a.classList.remove('active');
+        });
+
+        // Show the requested page and hide others
+        document.querySelectorAll('.page').forEach(p => {
+            if (p.id === pageId) {
+                p.classList.add('active');
+                p.style.display = '';
+            } else {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            }
+        });
+
+        // Scroll to top of main content
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    } catch (err) {
+        console.error('navigation error', err);
+    }
+}
+
+function goId(id) {
+    if (!id) return;
+    // Accept both 'page-content' or '#page-content'
+    const pid = id.startsWith('#') ? id.slice(1) : id;
+    go(pid);
+}
+
 async function fetchAllContent() {
     try {
         const res = await fetch(`${API_BASE}/content/?_t=${Date.now()}`);
