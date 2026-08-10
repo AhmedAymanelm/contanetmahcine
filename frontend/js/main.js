@@ -1826,17 +1826,17 @@ async function loadTrends() {
 }
 
 function showCustomConfirm(msg, onConfirm) {
-    let modal = document.getElementById('custom-confirm-modal');
+    let modal = document.getElementById('generation-confirm-modal');
     
     if (!modal) {
         modal = document.createElement('div');
-        modal.id = 'custom-confirm-modal';
+        modal.id = 'generation-confirm-modal';
         modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px);';
         modal.innerHTML = `
             <div style="background:var(--panel-2); width:90%; max-width:400px; border-radius:16px; border: 1px solid var(--line); display:flex; flex-direction:column; padding:25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align:center;">
                 <div style="font-size:40px; margin-bottom:15px;">🤖</div>
                 <h3 style="margin:0 0 15px 0; font-size:18px; color:var(--text);">تأكيد صناعة المحتوى</h3>
-                <p id="custom-confirm-msg" style="color:var(--muted); font-size:15px; margin-bottom:20px; line-height:1.6;"></p>
+                <p id="generation-confirm-msg" style="color:var(--muted); font-size:15px; margin-bottom:20px; line-height:1.6;"></p>
                 <div style="text-align:right; margin-bottom:25px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px solid var(--line);">
                     <div style="margin-bottom:10px; color:var(--text); font-weight:bold; font-size:14px;">اختر صيغ المحتوى المطلوبة:</div>
                     <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer; color:var(--text); font-size:14px;">
@@ -1853,22 +1853,22 @@ function showCustomConfirm(msg, onConfirm) {
                     </label>
                 </div>
                 <div style="display:flex; gap:10px;">
-                    <button id="custom-confirm-yes" class="btn" style="flex:1; background:var(--teal); border:none; padding:12px; font-size:15px; border-radius:8px;">نعم، ابدأ الصنع</button>
-                    <button id="custom-confirm-no" class="btn ghost" style="flex:1; padding:12px; font-size:15px; border-radius:8px; background: rgba(255,255,255,0.05);">إلغاء</button>
+                    <button id="generation-confirm-yes" class="btn" style="flex:1; background:var(--teal); border:none; padding:12px; font-size:15px; border-radius:8px;">نعم، ابدأ الصنع</button>
+                    <button id="generation-confirm-no" class="btn ghost" style="flex:1; padding:12px; font-size:15px; border-radius:8px; background: rgba(255,255,255,0.05);">إلغاء</button>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
         
-        document.getElementById('custom-confirm-no').onclick = () => {
+        document.getElementById('generation-confirm-no').onclick = () => {
             modal.style.display = 'none';
         };
     }
     
-    document.getElementById('custom-confirm-msg').innerText = msg;
+    document.getElementById('generation-confirm-msg').innerText = msg;
     modal.style.display = 'flex';
     
-    document.getElementById('custom-confirm-yes').onclick = () => {
+    document.getElementById('generation-confirm-yes').onclick = () => {
         const formats = [];
         const chkCar = document.getElementById('chk-format-carousel');
         const chkPost = document.getElementById('chk-format-post');
