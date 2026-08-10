@@ -576,3 +576,61 @@
   /* Form grid */
   .form-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Template Form Mobile Fix ────────────────────── */
+@media (max-width: 768px) {
+  .template-form {
+    grid-template-columns: 1fr !important;
+  }
+  .template-form > div:nth-child(2) {
+    min-height: 200px;
+  }
+
+  /* Analytics filters row wrap */
+  .an-filter-row,
+  [style*="display:flex"][style*="flex-wrap:wrap"] {
+    gap: 8px !important;
+  }
+
+  /* Chips / pills wrap tighter */
+  .chips { gap: 6px; }
+  .chip  { padding: 6px 12px; font-size: 11px; }
+
+  /* Approval modal buttons */
+  #approve-options-buttons {
+    flex-direction: column;
+  }
+
+  /* General: any inline grid with 3 repeat → 1 col */
+  [style*="repeat(3,1fr)"],
+  [style*="repeat(3, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Panel headers with actions */
+  .pipeline-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Dropzone min height on mobile */
+  #tpl-dropzone {
+    min-height: 160px;
+  }
+
+  /* Stats pipeline stages scroll */
+  .belt {
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modal max-width */
+  #article-modal > div,
+  #edit-modal > div {
+    max-height: 95vh;
+    margin: 10px;
+    width: calc(100% - 20px) !important;
+    max-width: 100% !important;
+  }
+}
