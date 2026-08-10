@@ -211,9 +211,9 @@ async function loadAISummary() {
       low:    { label:'🟢 أولوية منخفضة', bg:'rgba(16,185,129,.12)', border:'rgba(16,185,129,.35)', color:'#34d399' },
     };
     const warnColors = {
-      high:   { bg:'rgba(239,68,68,.1)',   border:'rgba(239,68,68,.3)',   icon:'🚨', color:'#f87171' },
-      medium: { bg:'rgba(245,158,11,.1)',  border:'rgba(245,158,11,.3)',  icon:'⚠️', color:'#fbbf24' },
-      low:    { bg:'rgba(16,185,129,.1)',  border:'rgba(16,185,129,.3)',  icon:'💡', color:'#34d399' },
+      high:   { bg:'rgba(239,68,68,.1)',   border:'rgba(239,68,68,.3)',   icon:'<span class="no-print">🚨</span>', color:'#f87171' },
+      medium: { bg:'rgba(245,158,11,.1)',  border:'rgba(245,158,11,.3)',  icon:'<span class="no-print">⚠️</span>', color:'#fbbf24' },
+      low:    { bg:'rgba(16,185,129,.1)',  border:'rgba(16,185,129,.3)',  icon:'<span class="no-print">💡</span>', color:'#34d399' },
     };
 
     const bar = (label, val, max, color='#6366f1') => `
@@ -239,13 +239,13 @@ async function loadAISummary() {
     // Summary card
     html += `
       <div style="background:rgba(99,102,241,.1); border:1px solid rgba(99,102,241,.25); border-radius:14px; padding:18px 20px; margin-bottom:20px;">
-        <div style="font-size:0.75rem; color:#818cf8; font-weight:700; margin-bottom:8px;">📋 ملخص الأسبوع</div>
+        <div style="font-size:0.75rem; color:#818cf8; font-weight:700; margin-bottom:8px;"><span class="no-print">📋 </span>ملخص الأسبوع</div>
         <div style="font-size:0.9rem; color:#e2e8f0; line-height:1.7;">${ai.summary || '—'}</div>
       </div>`;
 
     // Performance progress bars
     const maxVal = Math.max(p.scraped, p.generated, p.published, 1);
-    html += section('📊 مؤشرات الأداء',
+    html += section('<span class="no-print">📊 </span>مؤشرات الأداء',
       bar('أخبار مسحوبة', p.scraped, maxVal, '#6366f1') +
       bar('محتوى مُنشأ', p.generated, maxVal, '#8b5cf6') +
       bar('منشور فعلاً', p.published, maxVal, '#10b981') +
@@ -258,7 +258,7 @@ async function loadAISummary() {
       const platBars = Object.entries(platforms).map(([pl, cnt]) =>
         bar(pl, cnt, maxPlat, platColors[pl] || '#6366f1')
       ).join('');
-      html += section('📱 النشر حسب المنصة', platBars);
+      html += section('<span class="no-print">📱 </span>النشر حسب المنصة', platBars);
     }
 
     // Recommendations
@@ -274,7 +274,7 @@ async function loadAISummary() {
             <div style="font-size:0.78rem; color:#94a3b8;">${r.reason}</div>
           </div>`;
       }).join('');
-      html += section('💡 التوصيات العملية', recCards);
+      html += section('<span class="no-print">💡 </span>التوصيات العملية', recCards);
     }
 
     // Warning
@@ -291,7 +291,7 @@ async function loadAISummary() {
     if (ai.content_idea?.title) {
       html += `
         <div style="background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.25); border-radius:12px; padding:14px 16px; margin-bottom:20px;">
-          <div style="font-size:0.75rem; font-weight:700; color:#10b981; margin-bottom:6px;">🌟 فكرة المحتوى</div>
+          <div style="font-size:0.75rem; font-weight:700; color:#10b981; margin-bottom:6px;"><span class="no-print">🌟 </span>فكرة المحتوى</div>
           <div style="font-size:0.88rem; font-weight:700; color:#e2e8f0; margin-bottom:4px;">${ai.content_idea.title}</div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <span style="font-size:0.72rem; background:rgba(16,185,129,.15); color:#34d399; padding:2px 10px; border-radius:999px;">${ai.content_idea.type}</span>
@@ -303,7 +303,7 @@ async function loadAISummary() {
     // Footer: timestamp + PDF button
     html += `
       <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid rgba(255,255,255,0.07); flex-wrap:wrap; gap:8px;">
-        <div style="font-size:0.72rem; color:#475569;">🕐 ${new Date(generated_at).toLocaleString('ar-EG')}</div>
+        <div style="font-size:0.72rem; color:#475569;"><span class="no-print">🕐 </span>${new Date(generated_at).toLocaleString('ar-EG')}</div>
         <button onclick="exportSummaryPDF()" style="background:rgba(99,102,241,.2); border:1px solid rgba(99,102,241,.4); color:#818cf8; padding:6px 16px; border-radius:8px; font-size:0.78rem; font-weight:700; cursor:pointer; font-family:inherit; transition:.2s;"
           onmouseover="this.style.background='rgba(99,102,241,.35)'" onmouseout="this.style.background='rgba(99,102,241,.2)'">
           📄 تنزيل PDF
@@ -352,18 +352,15 @@ function exportSummaryPDF() {
     .idea-card { background:#f0fdf4; border:1.5px solid #86efac; border-radius:12px; padding:14px 18px; }
     .footer { margin-top:24px; font-size:11px; color:#94a3b8; border-top:1px solid #f1f5f9; padding-top:12px; }
     @media print {
-      body { padding: 20px; }
-      button { display:none !important; }
+      body { padding: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      button, .no-print { display:none !important; }
     }
   </style>
 </head>
 <body>
-  <h1>📊 تقرير أداء غرفة المحتوى</h1>
+  <h1>تقرير أداء غرفة المحتوى</h1>
   <div class="subtitle">تحليل ذكي مدعوم بـ Claude AI • ${new Date().toLocaleDateString('ar-EG', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}</div>
-  ${content.innerHTML
-    .replace(/style="[^"]*color[^"]*rgba\([^)]*\)[^"]*"/g, '') // simplify for print
-    .replace(/background:rgba\([^)]*\)/g, '')
-  }
+  ${content.innerHTML}
   <div class="footer">تم التوليد بواسطة غرفة المحتوى — Content Machine AI</div>
   <script>window.onload = () => { window.print(); }<\/script>
 </body>
