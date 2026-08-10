@@ -376,6 +376,84 @@
 
 
 
+<section class="page" id="page-analytics">
+  <div class="topline">
+    <div>
+      <h1>📈 التحليلات</h1>
+      <p>نظرة شاملة على أداء ماكينة المحتوى</p>
+    </div>
+    <button class="btn" id="an-refresh-btn" onclick="loadAnalytics()" style="background:rgba(99,102,241,.15); border:1px solid rgba(99,102,241,.3); color:#818cf8; padding:10px 20px; border-radius:10px; font-size:0.9rem;">🔄 تحديث</button>
+  </div>
+
+  <div id="an-loading-state" class="an-loading">
+    <span class="an-spin">⚙️</span>
+    <span>جاري تحميل البيانات...</span>
+  </div>
+
+  <div id="an-content" style="display:none;">
+
+    <!-- ── KPI Cards ─────────────────────────────────────────────────────── -->
+    <p class="an-section-title">📊 مؤشرات الأداء الرئيسية</p>
+    <div class="an-kpi-grid" id="an-kpis"></div>
+
+    <!-- ── Trends Row ─────────────────────────────────────────────────────── -->
+    <p class="an-section-title">📅 اتجاهات آخر 14 يوم</p>
+    <div class="an-full-card">
+      <h3>📰 الأخبار المسحوبة يومياً</h3>
+      <canvas id="chart-scrape-trend"></canvas>
+    </div>
+    <div class="an-full-card">
+      <h3>✍️ المحتوى المُنشأ يومياً</h3>
+      <canvas id="chart-content-trend"></canvas>
+    </div>
+
+    <!-- ── Platform + Type charts ─────────────────────────────────────────── -->
+    <p class="an-section-title">🌐 توزيع المنصات والمحتوى</p>
+    <div class="an-charts-row">
+      <div class="an-chart-card">
+        <h3>🌐 البوستات المنشورة لكل منصة</h3>
+        <canvas id="chart-platforms"></canvas>
+      </div>
+      <div class="an-chart-card">
+        <h3>🗂️ نوع المحتوى المُنشأ</h3>
+        <canvas id="chart-types"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Pipeline donut + Sources bar ──────────────────────────────────── -->
+    <div class="an-charts-row">
+      <div class="an-chart-card">
+        <h3>⚙️ حالة المحتوى في الـ Pipeline</h3>
+        <canvas id="chart-pipeline"></canvas>
+      </div>
+      <div class="an-chart-card">
+        <h3>📡 أكثر المصادر نشاطاً</h3>
+        <canvas id="chart-sources"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Top Content Table ──────────────────────────────────────────────── -->
+    <p class="an-section-title">🏆 أفضل المحتوى المنشور</p>
+    <div class="an-full-card">
+      <h3>🚀 آخر البوستات المنشورة</h3>
+      <div style="overflow-x:auto;">
+        <table class="an-table" id="an-top-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>العنوان</th>
+              <th>النوع</th>
+              <th>المنصات</th>
+              <th>تاريخ النشر</th>
+            </tr>
+          </thead>
+          <tbody id="an-top-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /an-content -->
+</section>
       </main>
     </div>
 <!-- Template Picker Modal -->
@@ -630,84 +708,6 @@
 }
 </style>
 
-<section class="page" id="page-analytics">
-  <div class="topline">
-    <div>
-      <h1>📈 التحليلات</h1>
-      <p>نظرة شاملة على أداء ماكينة المحتوى</p>
-    </div>
-    <button class="btn" id="an-refresh-btn" onclick="loadAnalytics()" style="background:rgba(99,102,241,.15); border:1px solid rgba(99,102,241,.3); color:#818cf8; padding:10px 20px; border-radius:10px; font-size:0.9rem;">🔄 تحديث</button>
-  </div>
-
-  <div id="an-loading-state" class="an-loading">
-    <span class="an-spin">⚙️</span>
-    <span>جاري تحميل البيانات...</span>
-  </div>
-
-  <div id="an-content" style="display:none;">
-
-    <!-- ── KPI Cards ─────────────────────────────────────────────────────── -->
-    <p class="an-section-title">📊 مؤشرات الأداء الرئيسية</p>
-    <div class="an-kpi-grid" id="an-kpis"></div>
-
-    <!-- ── Trends Row ─────────────────────────────────────────────────────── -->
-    <p class="an-section-title">📅 اتجاهات آخر 14 يوم</p>
-    <div class="an-full-card">
-      <h3>📰 الأخبار المسحوبة يومياً</h3>
-      <canvas id="chart-scrape-trend"></canvas>
-    </div>
-    <div class="an-full-card">
-      <h3>✍️ المحتوى المُنشأ يومياً</h3>
-      <canvas id="chart-content-trend"></canvas>
-    </div>
-
-    <!-- ── Platform + Type charts ─────────────────────────────────────────── -->
-    <p class="an-section-title">🌐 توزيع المنصات والمحتوى</p>
-    <div class="an-charts-row">
-      <div class="an-chart-card">
-        <h3>🌐 البوستات المنشورة لكل منصة</h3>
-        <canvas id="chart-platforms"></canvas>
-      </div>
-      <div class="an-chart-card">
-        <h3>🗂️ نوع المحتوى المُنشأ</h3>
-        <canvas id="chart-types"></canvas>
-      </div>
-    </div>
-
-    <!-- ── Pipeline donut + Sources bar ──────────────────────────────────── -->
-    <div class="an-charts-row">
-      <div class="an-chart-card">
-        <h3>⚙️ حالة المحتوى في الـ Pipeline</h3>
-        <canvas id="chart-pipeline"></canvas>
-      </div>
-      <div class="an-chart-card">
-        <h3>📡 أكثر المصادر نشاطاً</h3>
-        <canvas id="chart-sources"></canvas>
-      </div>
-    </div>
-
-    <!-- ── Top Content Table ──────────────────────────────────────────────── -->
-    <p class="an-section-title">🏆 أفضل المحتوى المنشور</p>
-    <div class="an-full-card">
-      <h3>🚀 آخر البوستات المنشورة</h3>
-      <div style="overflow-x:auto;">
-        <table class="an-table" id="an-top-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>العنوان</th>
-              <th>النوع</th>
-              <th>المنصات</th>
-              <th>تاريخ النشر</th>
-            </tr>
-          </thead>
-          <tbody id="an-top-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-  </div><!-- /an-content -->
-</section>
 
 <script>
 // ── Analytics Controller ───────────────────────────────────────────────────
