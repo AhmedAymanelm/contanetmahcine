@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 def _get_page_html(url: str) -> str:
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"])
             page = browser.new_page()
             # Wait until network is idle to ensure JS has rendered
             page.goto(url, wait_until="networkidle", timeout=30000)
