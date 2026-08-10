@@ -530,6 +530,9 @@ function showToast(message, type = 'success') {
         opacity: 0;
         transform: translateY(20px);
         transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        max-width: 400px;
+        word-break: break-word;
+        line-height: 1.5;
     `;
     toast.innerText = message;
     

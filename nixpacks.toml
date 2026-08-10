@@ -25,4 +25,4 @@ aptPkgs = [
 ]
 
 [phases.build]
-cmds = ["python -m playwright install chromium"]
+cmds = ["python -m playwright install --with-deps chromium"]
