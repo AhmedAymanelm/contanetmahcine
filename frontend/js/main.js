@@ -1810,9 +1810,7 @@ async function loadTrends() {
     try {
         const token = localStorage.getItem('cm_token');
         const res = await fetch(`${API_BASE}/trends/?geo=${geo}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to fetch trends');
         const data = await res.json();
@@ -1820,42 +1818,51 @@ async function loadTrends() {
         loading.style.display = 'none';
         
         if (data.length === 0) {
-            grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px;">لم يتم العثور على ترندات حالياً في هذه الدولة</div>';
+            grid.innerHTML = '<div style="text-align:center; color:var(--muted); padding:60px;">لم يتم العثور على ترندات حالياً</div>';
             return;
         }
-        
+
+        // Rank color palette
+        const rankColors = [
+            { bg: 'linear-gradient(135deg,#f59e0b,#ef4444)', text: '#fbbf24' },  // 1 gold-red
+            { bg: 'linear-gradient(135deg,#6366f1,#8b5cf6)', text: '#818cf8' },  // 2 indigo
+            { bg: 'linear-gradient(135deg,#10b981,#06b6d4)', text: '#34d399' },  // 3 teal
+            { bg: 'linear-gradient(135deg,#3b82f6,#6366f1)', text: '#60a5fa' },  // 4+
+        ];
+        const getColor = (i) => rankColors[Math.min(i, 3)];
+
         data.forEach((trend, index) => {
-            const card = document.createElement('div');
-            card.style.background = 'var(--panel-2)';
-            card.style.border = '1px solid var(--line)';
-            card.style.borderRadius = '12px';
-            card.style.padding = '20px';
-            card.style.position = 'relative';
-            card.style.display = 'flex';
-            card.style.flexDirection = 'column';
-            
             const safeTitle = trend.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            const safeSnippet = (trend.news_snippet || trend.description).replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            
+            const safeSnippet = (trend.news_snippet || trend.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const col = getColor(index);
+            // Heat bar width (top trends get fuller bar)
+            const heatPct = Math.max(20, Math.round(100 - (index / data.length) * 75));
+
+            const card = document.createElement('div');
+            card.className = 'trend-row-card';
             card.innerHTML = `
-                <div style="position: absolute; top: -10px; right: 20px; background: var(--red); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">#${index + 1}</div>
-                <h3 style="margin-top: 5px; margin-bottom: 10px; font-size: 17px; color: var(--text); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 76px;">${trend.title}</h3>
-                <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong></div>
-                <div style="display: flex; gap: 10px; margin-top: auto;">
-                    <button class="btn ghost" style="flex: 1; text-align: center; border: 1px solid var(--line); font-size: 13px; padding: 8px;" onclick="openNewsModal('${trend.news_url}', '${safeTitle}', '${safeTitle}', '${safeSnippet}')">
-                        اقرأ الخبر
-                    </button>
-                    <button class="btn" style="flex: 1; background: var(--teal); border: none; font-size: 13px; padding: 8px;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}', this)">
-                        <span class="ic">🤖</span> اصنع محتوى
-                    </button>
+                <div class="trend-rank-col">
+                    <div class="trend-rank-num" style="background:${col.bg};">${index + 1}</div>
+                    <div class="trend-heat-bar-wrap">
+                        <div class="trend-heat-bar" style="width:${heatPct}%; background:${col.bg};"></div>
+                    </div>
+                </div>
+                <div class="trend-body-col">
+                    <div class="trend-source-tag">${trend.traffic || 'أخبار جوجل'}</div>
+                    <h3 class="trend-title">${trend.title}</h3>
+                </div>
+                <div class="trend-actions-col">
+                    <button class="trend-btn-read" onclick="openNewsModal('${trend.news_url}', '${safeTitle}', '${safeTitle}', '${safeSnippet}')">اقرأ</button>
+                    <button class="trend-btn-create" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}', this)">اصنع محتوى</button>
                 </div>
             `;
             grid.appendChild(card);
         });
+
     } catch (err) {
         console.error(err);
         loading.style.display = 'none';
-        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--red); padding: 40px;">حدث خطأ أثناء الاتصال بالرادار</div>';
+        grid.innerHTML = '<div style="text-align:center; color:var(--red); padding:60px;">حدث خطأ أثناء الاتصال بالرادار</div>';
     }
 }
 
