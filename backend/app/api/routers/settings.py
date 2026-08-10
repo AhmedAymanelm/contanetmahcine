@@ -5,7 +5,8 @@ from pathlib import Path
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
-from app.api.dependencies import get_db, get_current_user
+from app.api.deps import get_db
+from app.core.security import get_current_user
 from app.core.config import settings
 from app.models.oauth_token import OAuthToken
 
