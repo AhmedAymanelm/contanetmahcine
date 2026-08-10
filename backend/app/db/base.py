@@ -5,3 +5,4 @@ from app.models.content_item import ContentItem  # noqa
 from app.models.banned_word import BannedWord  # noqa
 from app.models.carousel_template import CarouselTemplate  # noqa
 from app.models.oauth_token import OAuthToken  # noqa
+from app.models.user import User  # noqa

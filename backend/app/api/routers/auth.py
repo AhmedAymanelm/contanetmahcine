@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from app.api.deps import get_db
+from app.core.security import verify_password, create_access_token
+from app.models.user import User
 from app.models.oauth_token import OAuthToken
 from app.services.social.threads_service import ThreadsService
 from app.services.social.linkedin_service import LinkedInService
@@ -14,6 +17,23 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 threads_service = ThreadsService()
 linkedin_service = LinkedInService()
+
+@router.post("/login")
+def login_for_access_token(
+    db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
+):
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=1440)
+    access_token = create_access_token(
+        subject=str(user.id), expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/threads")
 def auth_threads():

@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
 <link rel="stylesheet" href="css/style.css">
+<script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -39,6 +40,7 @@
         <div class="navgroup-label">النظام</div>
         <a data-page="page-api" onclick="go(this)"><span class="ic">🔑</span> إعدادات Claude API</a>
         <a data-page="page-settings" onclick="go(this)"><span class="ic">⚙</span> الإعدادات العامة</a>
+        <a onclick="logout()" style="color: var(--red); margin-top: 10px;"><span class="ic">🚪</span> تسجيل الخروج</a>
       </nav>
 
       <div class="side-foot">حالة الاتصال بـ Claude<br><b>● متصل</b> — Sonnet 4.6</div>

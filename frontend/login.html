@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول - Content Machine</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: var(--bg);
+      margin: 0;
+      font-family: var(--font-family);
+    }
+    .login-container {
+      background: var(--surface);
+      padding: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    .login-container .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+    .login-container .logo-box {
+      background: var(--red);
+      color: white;
+      font-weight: 800;
+      font-size: 20px;
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+    .login-container h1 {
+      color: var(--foreground);
+      font-size: 16px;
+      margin: 0;
+    }
+    .login-container h2 {
+      font-size: 22px;
+      margin-bottom: 24px;
+      color: var(--foreground);
+    }
+    .form-group {
+      margin-bottom: 20px;
+      text-align: right;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted-foreground);
+      font-size: 14px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--foreground);
+      font-size: 16px;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus {
+      border-color: var(--red);
+    }
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+    .btn-login:hover {
+      background: #cc4545;
+    }
+    .error-message {
+      color: var(--red);
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <div class="logo-box">CM</div>
+      <div>
+        <h1>غرفة المحتوى</h1>
+        <div style="font-size:10px; color:var(--muted-foreground); letter-spacing:1px;">CONTENT MACHINE</div>
+      </div>
+    </div>
+    <h2>تسجيل الدخول</h2>
+    
+    <div class="error-message" id="error-msg"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="username">اسم المستخدم</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">كلمة المرور</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <button type="submit" class="btn-login" id="login-btn">دخول</button>
+    </form>
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

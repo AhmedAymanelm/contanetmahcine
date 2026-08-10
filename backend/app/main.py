@@ -9,6 +9,8 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routers import sources, raw_articles, content, stats, templates, social, auth, threads
 from app.core.config import settings
+from app.core.security import get_current_user
+from fastapi import Depends
 
 from contextlib import asynccontextmanager
 from app.services.ingestion.scheduler_service import start_scheduler, stop_scheduler
@@ -39,14 +41,14 @@ app.add_middleware(
 )
 
 # Include Routers
-app.include_router(sources.router, prefix="/api/sources", tags=["Sources"])
-app.include_router(raw_articles.router, prefix="/api/raw-articles", tags=["Raw Articles"])
-app.include_router(content.router, prefix="/api/content", tags=["Content Items"])
-app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
-app.include_router(stats.router, prefix="/api/stats", tags=["Stats"])
-app.include_router(social.router, prefix="/api/social", tags=["Social Integration"])
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(threads.router, prefix="/api/threads", tags=["Threads API"])
+app.include_router(sources.router, prefix="/api/sources", tags=["Sources"], dependencies=[Depends(get_current_user)])
+app.include_router(raw_articles.router, prefix="/api/raw-articles", tags=["Raw Articles"], dependencies=[Depends(get_current_user)])
+app.include_router(content.router, prefix="/api/content", tags=["Content Items"], dependencies=[Depends(get_current_user)])
+app.include_router(templates.router, prefix="/api/templates", tags=["Templates"], dependencies=[Depends(get_current_user)])
+app.include_router(stats.router, prefix="/api/stats", tags=["Stats"], dependencies=[Depends(get_current_user)])
+app.include_router(social.router, prefix="/api/social", tags=["Social Integration"], dependencies=[Depends(get_current_user)])
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"]) # Move to /api/auth
+app.include_router(threads.router, prefix="/api/threads", tags=["Threads API"], dependencies=[Depends(get_current_user)])
 
 @app.get("/api/health")
 def health_check():

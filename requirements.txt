@@ -19,3 +19,5 @@ pillow
 colorgram.py
 python-multipart
 google-genai
+python-jose[cryptography]
+passlib[bcrypt]
