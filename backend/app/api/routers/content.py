@@ -23,25 +23,32 @@ CAROUSEL_OUTPUT = Path(__file__).parent.parent.parent.parent / "static" / "carou
 @router.get("/", response_model=List[ContentItemResponse])
 def get_all_content(db: Session = Depends(get_db)):
     cutoff = datetime.utcnow() - timedelta(hours=24)
-    items = db.query(ContentItem).filter(ContentItem.created_at >= cutoff).order_by(ContentItem.created_at.desc()).all()
+    # Expire old pending content
+    db.query(ContentItem).filter(
+        ContentItem.status == "pending_review",
+        ContentItem.created_at < cutoff
+    ).update({"status": "EXPIRED"}, synchronize_session=False)
+    db.commit()
+    
+    items = db.query(ContentItem).order_by(ContentItem.created_at.desc()).all()
     return items
 
 @router.get("/review", response_model=List[ContentItemResponse])
 def get_content_for_review(db: Session = Depends(get_db)):
     cutoff = datetime.utcnow() - timedelta(hours=24)
-    items = db.query(ContentItem).filter(
+    # Expire old pending content
+    db.query(ContentItem).filter(
         ContentItem.status == "pending_review",
-        ContentItem.created_at >= cutoff
-    ).all()
+        ContentItem.created_at < cutoff
+    ).update({"status": "EXPIRED"}, synchronize_session=False)
+    db.commit()
+
+    items = db.query(ContentItem).filter(ContentItem.status == "pending_review").all()
     return items
 
 @router.get("/scheduled", response_model=List[ContentItemResponse])
 def get_scheduled_content(db: Session = Depends(get_db)):
-    cutoff = datetime.utcnow() - timedelta(hours=24)
-    items = db.query(ContentItem).filter(
-        ContentItem.status == "SCHEDULED",
-        ContentItem.created_at >= cutoff
-    ).all()
+    items = db.query(ContentItem).filter(ContentItem.status == "SCHEDULED").all()
     return items
 
 from app.schemas.content_item import ContentItemUpdate

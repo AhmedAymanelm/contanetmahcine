@@ -88,6 +88,7 @@ async function fetchDashboardStats() {
                 else if (s === 'pending_review') { badgeClass = 'review'; statusAr = 'قيد المراجعة'; }
                 else if (s === 'scheduled') { badgeClass = 'scheduled'; statusAr = 'مجدول'; }
                 else if (s === 'published') { badgeClass = 'published'; statusAr = 'منشور'; }
+                else if (s === 'expired') { badgeClass = 'draft'; statusAr = 'منتهي الصلاحية'; }
 
                 let cType = item.content_type || 'POST';
                 let cTypeAr = 'بوست';
@@ -643,6 +644,7 @@ function renderContentList() {
                 else if (s === 'pending_review') { badgeClass = 'review'; statusAr = 'قيد المراجعة'; }
                 else if (s === 'scheduled') { badgeClass = 'scheduled'; statusAr = 'مجدول'; }
                 else if (s === 'published') { badgeClass = 'published'; statusAr = 'منشور'; }
+                else if (s === 'expired') { badgeClass = 'draft'; statusAr = 'منتهي الصلاحية'; }
                 
                 let platformsArr = [];
                 if (Array.isArray(item.platforms)) platformsArr = item.platforms;
