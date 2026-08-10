@@ -268,7 +268,7 @@ async def get_ai_summary(db: Session = Depends(get_db)):
     """
     Ask Claude to generate a smart weekly summary + actionable recommendations.
     """
-    import anthropic
+    import anthropic, json
 
     if not settings.ANTHROPIC_API_KEY:
         return {"error": "ANTHROPIC_API_KEY غير مُعيَّن في الإعدادات"}
@@ -288,6 +288,9 @@ async def get_ai_summary(db: Session = Depends(get_db)):
         ContentItem.created_at >= last_7d
     ).count()
 
+    publish_rate  = round(published_7d / generated_7d * 100) if generated_7d else 0
+    rejection_rate = round(rejected_7d / generated_7d * 100) if generated_7d else 0
+
     # Platform counts
     all_pub = db.query(ContentItem).filter(
         func.upper(ContentItem.status) == "PUBLISHED",
@@ -306,35 +309,63 @@ async def get_ai_summary(db: Session = Depends(get_db)):
         func.count(RawArticle.id).desc()
     ).limit(3).all()
 
-    prompt = f"""أنت مستشار محتوى رقمي خبير. تحلل أداء "غرفة المحتوى" — منصة لإدارة ونشر المحتوى على وسائل التواصل الاجتماعي.
+    prompt = f"""أنت مستشار محتوى رقمي خبير. تحلل أداء "غرفة المحتوى" — منصة لإدارة ونشر المحتوى.
 
-إليك بيانات هذا الأسبوع:
+بيانات هذا الأسبوع:
 - أخبار مسحوبة: {scraped_7d}
 - محتوى مُنشأ: {generated_7d}
 - منشور فعلياً: {published_7d}
 - مرفوض: {rejected_7d}
-- معدل النشر: {round(published_7d/generated_7d*100) if generated_7d else 0}%
-- معدل الرفض: {round(rejected_7d/generated_7d*100) if generated_7d else 0}%
-- المنصات: {dict(plat_counts)}
+- معدل النشر: {publish_rate}%
+- معدل الرفض: {rejection_rate}%
+- المنصات والنشر: {dict(plat_counts)}
 - أكثر المصادر نشاطاً: {', '.join([r[0] for r in top_sources])}
 
-المطلوب:
-1. **ملخص الأداء** (جملتان فقط)
-2. **3 توصيات عملية وقابلة للتنفيذ** مع سبب كل توصية
-3. **تحذير واحد** (لو في شيء يستحق الانتباه)
-4. **فكرة محتوى واحدة مبتكرة** تناسب هذا الأسبوع
+أرجع ردك بصيغة JSON فقط (بدون أي نص خارج JSON) بهذا الهيكل الدقيق:
+{{
+  "summary": "جملتان فقط تلخصان الأداء الأسبوعي",
+  "recommendations": [
+    {{"title": "عنوان التوصية", "reason": "السبب في جملة واحدة", "priority": "high"}},
+    {{"title": "عنوان التوصية", "reason": "السبب في جملة واحدة", "priority": "medium"}},
+    {{"title": "عنوان التوصية", "reason": "السبب في جملة واحدة", "priority": "low"}}
+  ],
+  "warning": {{"text": "تحذير واحد مهم أو فارغ إن لم يوجد", "severity": "high"}},
+  "content_idea": {{"title": "فكرة محتوى مبتكرة", "type": "كاروسيل", "why": "لماذا ستنجح"}}
+}}
 
-رد بالعربية فقط. كن مباشراً ومختصراً."""
+قواعد صارمة: أرجع JSON فقط. لا تضع ```json أو أي نص قبل أو بعد JSON."""
 
     try:
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         msg = client.messages.create(
             model="claude-sonnet-4-5",
-            max_tokens=600,
+            max_tokens=800,
             messages=[{"role": "user", "content": prompt}]
         )
-        ai_text = msg.content[0].text if msg.content else "لم يتم الحصول على رد"
-        return {"summary": ai_text, "generated_at": now.isoformat()}
+        ai_text = msg.content[0].text.strip() if msg.content else "{}"
+
+        # Parse Claude's JSON response
+        try:
+            ai_data = json.loads(ai_text)
+        except json.JSONDecodeError:
+            # Try to extract JSON from text if Claude added extra text
+            import re
+            match = re.search(r'\{.*\}', ai_text, re.DOTALL)
+            ai_data = json.loads(match.group()) if match else {"summary": ai_text}
+
+        return {
+            "ai": ai_data,
+            "performance": {
+                "scraped":        scraped_7d,
+                "generated":      generated_7d,
+                "published":      published_7d,
+                "rejected":       rejected_7d,
+                "publish_rate":   publish_rate,
+                "rejection_rate": rejection_rate,
+            },
+            "platforms":   dict(plat_counts),
+            "generated_at": now.isoformat()
+        }
     except Exception as e:
         return {"error": f"خطأ في الاتصال بـ Claude: {str(e)}"}
 

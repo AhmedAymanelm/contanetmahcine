@@ -186,7 +186,11 @@ async function loadAISummary() {
   const body = document.getElementById('ai-summary-body');
   if (!body) return;
   if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري التحليل...'; }
-  body.innerHTML = '<div style="color:#64748b; animation:pulse 1s infinite;">🤖 Claude يحلل أداءك الأسبوعي...</div>';
+  body.innerHTML = `
+    <div style="text-align:center; padding:40px; color:#64748b;">
+      <div style="font-size:2rem; margin-bottom:12px;">🤖</div>
+      <div style="font-size:0.9rem;">Claude يحلل أداءك الأسبوعي...</div>
+    </div>`;
   try {
     const token = localStorage.getItem('cm_token');
     const res = await fetch('/api/recommendations/ai-summary', {
@@ -195,14 +199,178 @@ async function loadAISummary() {
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    body.innerHTML = `<div style="color:#e2e8f0; white-space:pre-wrap; font-size:0.88rem; line-height:1.8;">${data.summary}</div>
-      <div style="font-size:0.72rem; color:#64748b; margin-top:10px;">🕐 ${new Date(data.generated_at).toLocaleString('ar-EG')}</div>`;
+
+    const { ai, performance: p, platforms, generated_at } = data;
+    const maxPlat = Math.max(...Object.values(platforms || {}), 1);
+    const platColors = { Instagram:'#e1306c', Facebook:'#1877f2', LinkedIn:'#0a66c2',
+                         'X (Twitter)':'#1da1f2', TikTok:'#010101', Threads:'#000000',
+                         Snapchat:'#fffc00' };
+    const prioConfig = {
+      high:   { label:'🔴 أولوية عالية',   bg:'rgba(239,68,68,.12)',  border:'rgba(239,68,68,.35)',  color:'#f87171' },
+      medium: { label:'🟡 أولوية متوسطة', bg:'rgba(245,158,11,.12)', border:'rgba(245,158,11,.35)', color:'#fbbf24' },
+      low:    { label:'🟢 أولوية منخفضة', bg:'rgba(16,185,129,.12)', border:'rgba(16,185,129,.35)', color:'#34d399' },
+    };
+    const warnColors = {
+      high:   { bg:'rgba(239,68,68,.1)',   border:'rgba(239,68,68,.3)',   icon:'🚨', color:'#f87171' },
+      medium: { bg:'rgba(245,158,11,.1)',  border:'rgba(245,158,11,.3)',  icon:'⚠️', color:'#fbbf24' },
+      low:    { bg:'rgba(16,185,129,.1)',  border:'rgba(16,185,129,.3)',  icon:'💡', color:'#34d399' },
+    };
+
+    const bar = (label, val, max, color='#6366f1') => `
+      <div style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="font-size:0.8rem; color:#94a3b8;">${label}</span>
+          <span style="font-size:0.8rem; font-weight:700; color:#e2e8f0;">${val}</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.06); border-radius:999px; height:8px; overflow:hidden;">
+          <div style="height:100%; width:${Math.min(100, Math.round(val/max*100))}%; background:${color}; border-radius:999px; transition:width 1.2s ease;"></div>
+        </div>
+      </div>`;
+
+    const section = (title, content) => `
+      <div style="margin-bottom:20px;">
+        <div style="font-size:0.78rem; font-weight:700; color:#64748b; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">${title}</div>
+        ${content}
+      </div>`;
+
+    // ── Build report HTML ──
+    let html = `<div id="ai-report-content" style="font-family:inherit;">`;
+
+    // Summary card
+    html += `
+      <div style="background:rgba(99,102,241,.1); border:1px solid rgba(99,102,241,.25); border-radius:14px; padding:18px 20px; margin-bottom:20px;">
+        <div style="font-size:0.75rem; color:#818cf8; font-weight:700; margin-bottom:8px;">📋 ملخص الأسبوع</div>
+        <div style="font-size:0.9rem; color:#e2e8f0; line-height:1.7;">${ai.summary || '—'}</div>
+      </div>`;
+
+    // Performance progress bars
+    const maxVal = Math.max(p.scraped, p.generated, p.published, 1);
+    html += section('📊 مؤشرات الأداء',
+      bar('أخبار مسحوبة', p.scraped, maxVal, '#6366f1') +
+      bar('محتوى مُنشأ', p.generated, maxVal, '#8b5cf6') +
+      bar('منشور فعلاً', p.published, maxVal, '#10b981') +
+      bar('معدل النشر', p.publish_rate + '%', 100, '#06b6d4') +
+      bar('معدل الرفض', p.rejection_rate + '%', 100, '#f43f5e')
+    );
+
+    // Platform comparison bars
+    if (Object.keys(platforms).length) {
+      const platBars = Object.entries(platforms).map(([pl, cnt]) =>
+        bar(pl, cnt, maxPlat, platColors[pl] || '#6366f1')
+      ).join('');
+      html += section('📱 النشر حسب المنصة', platBars);
+    }
+
+    // Recommendations
+    if (ai.recommendations?.length) {
+      const recCards = ai.recommendations.map(r => {
+        const c = prioConfig[r.priority] || prioConfig.low;
+        return `
+          <div style="background:${c.bg}; border:1px solid ${c.border}; border-radius:12px; padding:14px 16px; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <span style="font-size:0.7rem; color:${c.color}; font-weight:700; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:999px; border:1px solid ${c.border};">${c.label}</span>
+            </div>
+            <div style="font-size:0.88rem; font-weight:700; color:#e2e8f0; margin-bottom:4px;">${r.title}</div>
+            <div style="font-size:0.78rem; color:#94a3b8;">${r.reason}</div>
+          </div>`;
+      }).join('');
+      html += section('💡 التوصيات العملية', recCards);
+    }
+
+    // Warning
+    if (ai.warning?.text) {
+      const w = warnColors[ai.warning.severity] || warnColors.medium;
+      html += `
+        <div style="background:${w.bg}; border:1px solid ${w.border}; border-radius:12px; padding:14px 16px; margin-bottom:20px;">
+          <div style="font-size:0.75rem; font-weight:700; color:#64748b; margin-bottom:6px;">${w.icon} تنبيه</div>
+          <div style="font-size:0.86rem; color:#e2e8f0;">${ai.warning.text}</div>
+        </div>`;
+    }
+
+    // Content idea
+    if (ai.content_idea?.title) {
+      html += `
+        <div style="background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.25); border-radius:12px; padding:14px 16px; margin-bottom:20px;">
+          <div style="font-size:0.75rem; font-weight:700; color:#10b981; margin-bottom:6px;">🌟 فكرة المحتوى</div>
+          <div style="font-size:0.88rem; font-weight:700; color:#e2e8f0; margin-bottom:4px;">${ai.content_idea.title}</div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span style="font-size:0.72rem; background:rgba(16,185,129,.15); color:#34d399; padding:2px 10px; border-radius:999px;">${ai.content_idea.type}</span>
+            <span style="font-size:0.78rem; color:#64748b;">${ai.content_idea.why}</span>
+          </div>
+        </div>`;
+    }
+
+    // Footer: timestamp + PDF button
+    html += `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid rgba(255,255,255,0.07); flex-wrap:wrap; gap:8px;">
+        <div style="font-size:0.72rem; color:#475569;">🕐 ${new Date(generated_at).toLocaleString('ar-EG')}</div>
+        <button onclick="exportSummaryPDF()" style="background:rgba(99,102,241,.2); border:1px solid rgba(99,102,241,.4); color:#818cf8; padding:6px 16px; border-radius:8px; font-size:0.78rem; font-weight:700; cursor:pointer; font-family:inherit; transition:.2s;"
+          onmouseover="this.style.background='rgba(99,102,241,.35)'" onmouseout="this.style.background='rgba(99,102,241,.2)'">
+          📄 تنزيل PDF
+        </button>
+      </div>`;
+
+    html += `</div>`;
+    body.innerHTML = html;
+
   } catch(e) {
     body.innerHTML = `<span style="color:#ef4444;">❌ ${e.message}</span>`;
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '✨ اطلب التحليل'; }
   }
 }
+
+// ── PDF Export ────────────────────────────────────────────────────────────────
+function exportSummaryPDF() {
+  const content = document.getElementById('ai-report-content');
+  if (!content) return;
+
+  const printWin = window.open('', '_blank', 'width=900,height=700');
+  printWin.document.write(`<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير غرفة المحتوى</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Cairo',sans-serif; background:#fff; color:#1e293b; padding:40px; }
+    h1 { font-size:22px; margin-bottom:6px; }
+    .subtitle { font-size:13px; color:#64748b; margin-bottom:32px; }
+    .card { border:1.5px solid #e2e8f0; border-radius:12px; padding:16px 20px; margin-bottom:16px; }
+    .card-title { font-size:11px; font-weight:700; color:#64748b; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+    .summary-text { font-size:14px; line-height:1.8; color:#334155; }
+    .bar-row { margin-bottom:10px; }
+    .bar-label { display:flex; justify-content:space-between; font-size:12px; color:#64748b; margin-bottom:3px; }
+    .bar-track { background:#f1f5f9; border-radius:999px; height:8px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:999px; }
+    .rec-card { border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+    .rec-title { font-size:13px; font-weight:700; color:#1e293b; margin-bottom:4px; }
+    .rec-reason { font-size:12px; color:#64748b; }
+    .badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; margin-bottom:6px; }
+    .warn-card { border-radius:10px; padding:12px 14px; margin-bottom:16px; font-size:13px; }
+    .idea-card { background:#f0fdf4; border:1.5px solid #86efac; border-radius:12px; padding:14px 18px; }
+    .footer { margin-top:24px; font-size:11px; color:#94a3b8; border-top:1px solid #f1f5f9; padding-top:12px; }
+    @media print {
+      body { padding: 20px; }
+      button { display:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 تقرير أداء غرفة المحتوى</h1>
+  <div class="subtitle">تحليل ذكي مدعوم بـ Claude AI • ${new Date().toLocaleDateString('ar-EG', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}</div>
+  ${content.innerHTML
+    .replace(/style="[^"]*color[^"]*rgba\([^)]*\)[^"]*"/g, '') // simplify for print
+    .replace(/background:rgba\([^)]*\)/g, '')
+  }
+  <div class="footer">تم التوليد بواسطة غرفة المحتوى — Content Machine AI</div>
+  <script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`);
+  printWin.document.close();
+}
+
 
 // ── Content Ideas ────────────────────────────────────────────────────────────
 async function loadContentIdeas() {
