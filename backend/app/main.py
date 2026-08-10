@@ -56,12 +56,22 @@ def health_check():
     return {"status": "ok", "environment": settings.ENVIRONMENT}
 
 # ── TikTok URL-prefix ownership verification ──────────────────────────────────
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, FileResponse
 
 @app.get("/tiktokUl3sqscByg3q8nXurtLOC7HXdiExDMDf.txt", response_class=PlainTextResponse, include_in_schema=False)
 def tiktok_verification():
     return "tiktok-developers-site-verification=Ul3sqscByg3q8nXurtLOC7HXdiExDMDf"
 
-# Serve frontend HTML/JS/CSS (Must be after API routes)
+# ── Legal pages ───────────────────────────────────────────────────────────────
 FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
+
+@app.get("/terms", response_class=FileResponse, include_in_schema=False)
+def terms_page():
+    return FileResponse(str(FRONTEND_DIR / "terms.html"), media_type="text/html")
+
+@app.get("/privacy", response_class=FileResponse, include_in_schema=False)
+def privacy_page():
+    return FileResponse(str(FRONTEND_DIR / "privacy.html"), media_type="text/html")
+
+# Serve frontend HTML/JS/CSS (Must be after API routes)
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
