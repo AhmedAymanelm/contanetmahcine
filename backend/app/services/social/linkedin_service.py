@@ -72,7 +72,8 @@ class LinkedInService:
         headers = {
             "Authorization": f"Bearer {access_token}",
             "X-Restli-Protocol-Version": "2.0.0",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Linkedin-Version": "202401"
         }
         register_payload = {
             "registerUploadRequest": {
@@ -139,7 +140,8 @@ class LinkedInService:
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "X-Restli-Protocol-Version": "2.0.0",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Linkedin-Version": "202401"
             }
             payload = {
                 "author": f"urn:li:person:{person_urn}",
