@@ -1000,7 +1000,8 @@ async function renderCarouselImages(id, templateId, textColor = null, accentColo
                 if (slides.error) {
                     btn.innerHTML = '❌ خطأ في المعالجة';
                     btn.style.background = '#b91c1c';
-                    showToast(`فشل توليد الصور: ${slides.error}`, 'error');
+                    const errorMsg = slides.error.length > 100 ? slides.error.substring(0, 100) + '...' : slides.error;
+                    showToast(`فشل توليد الصور: ${errorMsg}`, 'error');
                     return;
                 }
                 if (window.reviewItemsData && window.reviewItemsData[id]) {
