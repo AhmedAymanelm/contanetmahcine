@@ -84,18 +84,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     platforms_count = {"Instagram": 0, "LinkedIn": 0, "Facebook": 0, "X": 0, "Snapchat": 0, "Threads": 0, "TikTok": 0}
     
     # Calculate base performance from published posts (for platforms without API)
-    published_items = db.query(ContentItem).filter(
-        func.lower(ContentItem.status) == 'published'
-    ).all()
-    for item in published_items:
-        if item.platforms:
-            for p in item.platforms:
-                p_upper = p.upper()
-                if "TW" in p_upper or "X" in p_upper or "TWITTER" in p_upper: platforms_count["X"] += 1
-                elif "LI" in p_upper or "LINKEDIN" in p_upper: platforms_count["LinkedIn"] += 1
-                elif "SC" in p_upper or "SNAP" in p_upper: platforms_count["Snapchat"] += 1
-                elif "TH" in p_upper or "THREADS" in p_upper: platforms_count["Threads"] += 1
-                elif "TK" in p_upper or "TIKTOK" in p_upper: platforms_count["TikTok"] += 1
+    # The user requested to ONLY show real API engagement, so we do not add +1 per post anymore.
+    pass
 
     
     # Fetch real Instagram stats
