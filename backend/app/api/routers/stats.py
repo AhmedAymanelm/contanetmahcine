@@ -81,7 +81,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     total_sources = db.query(Source).count()
     
     # Platform Performance (Engagement/Interactions)
-    platforms_count = {"Instagram": 0, "LinkedIn": 0, "Facebook": 0, "X": 0, "Snapchat": 0, "Threads": 0, "TikTok": 0}
+    platforms_count = {"Instagram": 0, "Facebook": 0}
     
     # Calculate base performance from published posts (for platforms without API)
     # The user requested to ONLY show real API engagement, so we do not add +1 per post anymore.
