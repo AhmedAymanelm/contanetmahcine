@@ -23,12 +23,14 @@ def process_article_generation(raw_article_id: int, formats: list = None):
             logger.error(f"Article {raw_article_id} not found for generation.")
             return
 
-        # Call AI pipeline
-        logger.info(f"Generating AI content for article: {article.title}")
-        
-        # We pass the full content if available, otherwise just the title
+        # Call AI pipeline — pass carousel platforms so language is chosen correctly
+        # (Arabic for IG/FB/etc, English only when LinkedIn is the sole platform)
+        carousel_platforms = ["IG", "Li"]  # default carousel platforms
         text_to_process = article.content if article.content else article.title
-        generated = generate_selected_content(article.title, text_to_process, formats)
+        generated = generate_selected_content(
+            article.title, text_to_process, formats,
+            platforms=carousel_platforms
+        )
         
         if not generated:
             logger.error("AI Generation failed or returned empty.")
@@ -129,7 +131,11 @@ def process_trend_generation(trend_title: str, trend_snippet: str, formats: list
         db.commit()
         
         text_to_process = f"Trend: {trend_title}\n\nContext/News: {trend_snippet}"
-        generated = generate_selected_content(trend_title, text_to_process, formats)
+        carousel_platforms = ["IG", "Li"]
+        generated = generate_selected_content(
+            trend_title, text_to_process, formats,
+            platforms=carousel_platforms
+        )
         
         if not generated:
             logger.error("AI Generation failed for trend.")

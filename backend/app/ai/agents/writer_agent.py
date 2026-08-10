@@ -1,9 +1,9 @@
 from app.ai.agents.base_agent import AgentClient, AgentConfig
 from app.ai.schemas import PostContent, CarouselContent, VideoScript
 from app.ai.prompts.post_prompt import get_post_prompt
-from app.ai.prompts.carousel_prompt import get_carousel_prompt
+from app.ai.prompts.carousel_prompt import get_carousel_prompt, CAROUSEL_SYSTEM_PROMPT
 from app.ai.prompts.video_script_prompt import get_video_script_prompt
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 class WriterAgent:
     def __init__(self):
@@ -19,18 +19,35 @@ class WriterAgent:
         prompt = get_post_prompt(title, content)
         return self.client.execute_structured_task(self.config, prompt, PostContent)
 
-    def write_carousel(self, title: str, content: str) -> dict:
-        prompt = get_carousel_prompt(title, content)
+    def write_carousel(self, title: str, content: str, platforms: Optional[List[str]] = None) -> dict:
+        """
+        Generate carousel content.
+        Language logic:
+        - Default: Arabic (for Instagram, Facebook, all Arabic platforms)
+        - English ONLY when LinkedIn is the sole platform selected
+        - If LinkedIn is selected WITH other platforms: generate Arabic (linkedin_slides
+          will be auto-translated by _ensure_english_linkedin in the publish flow)
+        """
+        platforms = platforms or []
+        plats_upper = [p.upper() for p in platforms]
+
+        is_li_only = (
+            bool(platforms) and
+            all(("LI" in p or "LINKEDIN" in p) for p in plats_upper)
+        )
+
+        language = "english" if is_li_only else "arabic"
+        prompt = get_carousel_prompt(title, content, language=language)
         return self.client.execute_structured_task(self.config, prompt, CarouselContent)
 
     def write_video_script(self, title: str, content: str) -> dict:
         prompt = get_video_script_prompt(title, content)
         return self.client.execute_structured_task(self.config, prompt, VideoScript)
 
-    def write_all(self, title: str, content: str) -> Dict[str, Any]:
+    def write_all(self, title: str, content: str, platforms: Optional[List[str]] = None) -> Dict[str, Any]:
         """Generates all content sequentially"""
         return {
-            "posts": self.write_posts(title, content),
-            "carousel": self.write_carousel(title, content),
-            "video_script": self.write_video_script(title, content)
+            "posts":        self.write_posts(title, content),
+            "carousel":     self.write_carousel(title, content, platforms=platforms),
+            "video_script": self.write_video_script(title, content),
         }
