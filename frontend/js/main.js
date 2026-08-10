@@ -1819,10 +1819,20 @@ async function loadTrends() {
     }
 }
 
-async function generateTrendContent(title, snippet) {
-    if (!confirm(`هل تريد توليد محتوى أوتوماتيكي بناءً على ترند: ${title}؟`)) return;
+function showCustomConfirm(msg, onConfirm) {
+    document.getElementById('custom-confirm-msg').innerText = msg;
+    const modal = document.getElementById('custom-confirm-modal');
+    modal.style.display = 'flex';
     
-    showToast(`بدأ توليد المحتوى لترند: ${title}`);
+    document.getElementById('custom-confirm-yes').onclick = () => {
+        modal.style.display = 'none';
+        if (onConfirm) onConfirm();
+    };
+}
+
+async function generateTrendContent(title, snippet) {
+    showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async () => {
+        showToast(`بدأ توليد المحتوى لترند: ${title}`);
     try {
         const token = localStorage.getItem('cm_token');
         const res = await fetch(`${API_BASE}/trends/generate`, {
@@ -1838,10 +1848,11 @@ async function generateTrendContent(title, snippet) {
         } else {
             showToast('حدث خطأ أثناء إرسال الطلب', 'error');
         }
-    } catch (err) {
-        console.error(err);
-        showToast('خطأ في الاتصال بالسيرفر', 'error');
-    }
+        } catch (err) {
+            console.error(err);
+            showToast('خطأ في الاتصال بالسيرفر', 'error');
+        }
+    });
 }
 
 async function openNewsModal(url, title, safeTitle, safeSnippet) {
