@@ -726,6 +726,105 @@
   </div>
 </section>
 
+<!-- ── General Settings Page ──────────────────────────────────────────────── -->
+<section class="page" id="page-settings">
+  <div class="topline">
+    <div>
+      <h1>الإعدادات العامة</h1>
+      <p>تخصيص التطبيق وإدارة بيانات الحساب</p>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:20px;">
+
+    <!-- ── App Identity ──────────────────────────────────────────────────── -->
+    <div class="an-chart-card" style="background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.05));">
+      <h3 style="margin:0 0 20px; font-size:1rem; color:var(--text);">هوية التطبيق</h3>
+
+      <!-- Logo Preview -->
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px; padding:14px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--line);">
+        <div id="logo-preview" style="width:54px; height:54px; border-radius:12px; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.1rem; color:#fff; overflow:hidden; flex-shrink:0;">CM</div>
+        <div style="flex:1;">
+          <div style="font-size:0.85rem; color:var(--text); font-weight:600; margin-bottom:4px;">لوجو التطبيق</div>
+          <div style="font-size:0.75rem; color:var(--muted);">PNG / JPG — يظهر في الشريط الجانبي</div>
+        </div>
+        <label for="logo-upload" style="background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); color:#818cf8; padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.8rem; font-weight:600;">رفع صورة</label>
+        <input type="file" id="logo-upload" accept="image/*" style="display:none;" onchange="previewLogo(this)">
+      </div>
+
+      <!-- App Name -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:6px;">اسم التطبيق</label>
+        <input type="text" id="setting-app-name" placeholder="غرفة المحتوى" style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:inherit; font-size:0.9rem;">
+      </div>
+
+      <!-- Tagline -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:6px;">التعريف (Tagline)</label>
+        <input type="text" id="setting-app-tagline" placeholder="CONTENT MACHINE" style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:inherit; font-size:0.9rem;">
+      </div>
+
+      <button onclick="saveAppIdentity()" style="width:100%; background:#6366f1; border:none; color:#fff; padding:10px; border-radius:8px; cursor:pointer; font-weight:700; font-family:inherit; font-size:0.9rem; transition:0.2s;" onmouseover="this.style.background='#4f46e5'" onmouseout="this.style.background='#6366f1'">حفظ الهوية</button>
+    </div>
+
+    <!-- ── Account Security ──────────────────────────────────────────────── -->
+    <div class="an-chart-card" style="background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(6,182,212,.05));">
+      <h3 style="margin:0 0 20px; font-size:1rem; color:var(--text);">بيانات الحساب والأمان</h3>
+
+      <!-- Current Username display -->
+      <div style="padding:12px 16px; background:rgba(255,255,255,0.04); border:1px solid var(--line); border-radius:10px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:0.75rem; color:var(--muted); margin-bottom:2px;">اسم المستخدم الحالي</div>
+          <div id="current-username-display" style="font-size:0.95rem; font-weight:700; color:var(--text);">—</div>
+        </div>
+        <div style="font-size:1.5rem;">👤</div>
+      </div>
+
+      <!-- New Username -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:6px;">اسم المستخدم الجديد</label>
+        <input type="text" id="setting-new-username" placeholder="اتركه فارغاً للإبقاء على الحالي" style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:inherit; font-size:0.9rem;" autocomplete="off">
+      </div>
+
+      <!-- Current Password -->
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:6px;">كلمة السر الحالية</label>
+        <input type="password" id="setting-current-password" placeholder="••••••••" style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:inherit; font-size:0.9rem;" autocomplete="current-password">
+      </div>
+
+      <!-- New Password -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:0.8rem; color:var(--muted); margin-bottom:6px;">كلمة السر الجديدة</label>
+        <input type="password" id="setting-new-password" placeholder="اتركها فارغة للإبقاء على الحالية" style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:inherit; font-size:0.9rem;" autocomplete="new-password">
+      </div>
+
+      <button onclick="saveAccountSettings()" style="width:100%; background:rgba(16,185,129,0.9); border:none; color:#fff; padding:10px; border-radius:8px; cursor:pointer; font-weight:700; font-family:inherit; font-size:0.9rem; transition:0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='rgba(16,185,129,0.9)'">حفظ بيانات الحساب</button>
+    </div>
+
+  </div>
+
+  <!-- ── Account Info ────────────────────────────────────────────────────── -->
+  <p class="an-section-title" style="margin-top:32px;">معلومات الحساب</p>
+  <div class="an-full-card" style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px;">
+    <div style="text-align:center; padding:16px; background:rgba(255,255,255,0.03); border-radius:10px;">
+      <div style="font-size:0.75rem; color:var(--muted); margin-bottom:8px;">الإصدار</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#818cf8;">v1.0.0</div>
+    </div>
+    <div style="text-align:center; padding:16px; background:rgba(255,255,255,0.03); border-radius:10px;">
+      <div style="font-size:0.75rem; color:var(--muted); margin-bottom:8px;">نموذج الذكاء الاصطناعي</div>
+      <div style="font-size:1.2rem; font-weight:800; color:#34d399;">Claude Sonnet</div>
+    </div>
+    <div style="text-align:center; padding:16px; background:rgba(255,255,255,0.03); border-radius:10px;">
+      <div style="font-size:0.75rem; color:var(--muted); margin-bottom:8px;">حالة الخادم</div>
+      <div id="settings-server-status" style="font-size:1.2rem; font-weight:800; color:#34d399;">جاري الفحص...</div>
+    </div>
+  </div>
+
+  <!-- Status messages -->
+  <div id="settings-msg" style="display:none; margin-top:16px; padding:12px 16px; border-radius:10px; font-size:0.88rem; font-weight:600;"></div>
+
+</section>
+
       </main>
 
     </div>
@@ -984,5 +1083,6 @@
 <script src="js/analytics.js?v=1"></script>
 <script src="js/recommendations.js"></script>
 <script src="js/api_settings.js"></script>
+<script src="js/general_settings.js"></script>
 </body>
 </html>

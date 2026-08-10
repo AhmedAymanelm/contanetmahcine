@@ -4,8 +4,9 @@ from typing import Optional
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from app.api.deps import get_db
-from app.core.security import verify_password, create_access_token
+from app.core.security import verify_password, create_access_token, get_password_hash, get_current_user
 from app.models.user import User
 from app.models.oauth_token import OAuthToken
 from app.services.social.threads_service import ThreadsService
@@ -263,3 +264,46 @@ async def auth_tiktok_callback(
 def auth_tiktok_status(db: Session = Depends(get_db)):
     """Return TikTok connection status. Never exposes tokens."""
     return tiktok_service.get_status(db)
+
+
+# ─── Account Management ────────────────────────────────────────────────────────
+
+@router.get("/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    """Return current authenticated user's basic info."""
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+    }
+
+
+class UpdateAccountRequest(BaseModel):
+    current_password: str
+    new_username: Optional[str] = None
+    new_password: Optional[str] = None
+
+
+@router.post("/update-account")
+def update_account(
+    body: UpdateAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update username and/or password. Requires current password verification."""
+    if not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=401, detail="كلمة السر الحالية غير صحيحة")
+
+    if body.new_username and body.new_username != current_user.username:
+        existing = db.query(User).filter(User.username == body.new_username).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="اسم المستخدم مستخدم بالفعل")
+        current_user.username = body.new_username
+
+    if body.new_password:
+        if len(body.new_password) < 6:
+            raise HTTPException(status_code=400, detail="كلمة السر يجب أن تكون 6 أحرف على الأقل")
+        current_user.hashed_password = get_password_hash(body.new_password)
+
+    db.commit()
+    return {"message": "تم تحديث البيانات بنجاح", "username": current_user.username}
