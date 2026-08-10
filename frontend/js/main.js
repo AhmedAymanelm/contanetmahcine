@@ -1791,18 +1791,24 @@ async function loadTrends() {
             card.style.borderRadius = '12px';
             card.style.padding = '20px';
             card.style.position = 'relative';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
             
             const safeTitle = trend.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
             const safeSnippet = (trend.news_snippet || trend.description).replace(/'/g, "\\'").replace(/"/g, "&quot;");
             
             card.innerHTML = `
                 <div style="position: absolute; top: -10px; right: 20px; background: var(--red); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">#${index + 1}</div>
-                <h3 style="margin-top: 5px; margin-bottom: 10px; font-size: 18px; color: var(--text);">${trend.title}</h3>
-                <div style="font-size: 12px; color: var(--muted); margin-bottom: 15px;">📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong></div>
-                <p style="font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 20px; min-height: 42px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${trend.news_snippet || trend.description}</p>
-                <button class="btn" style="width: 100%; background: var(--teal); border: none;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}')">
-                    <span class="ic">🤖</span> اصنع محتوى
-                </button>
+                <h3 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: var(--text); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 72px;">${trend.title}</h3>
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong></div>
+                <div style="display: flex; gap: 10px; margin-top: auto;">
+                    <a href="${trend.news_url}" target="_blank" class="btn ghost" style="flex: 1; text-align: center; border: 1px solid var(--line); font-size: 13px; padding: 8px;">
+                        اقرأ الخبر
+                    </a>
+                    <button class="btn" style="flex: 1; background: var(--teal); border: none; font-size: 13px; padding: 8px;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}')">
+                        <span class="ic">🤖</span> اصنع محتوى
+                    </button>
+                </div>
             `;
             grid.appendChild(card);
         });
