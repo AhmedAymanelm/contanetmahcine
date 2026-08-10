@@ -793,7 +793,7 @@ function getWeekRange(offset) {
 // ---------------- DASHBOARD STATS ----------------
 async function fetchDashboardStats() {
     try {
-        const res = await fetch(`${API_BASE}/dashboard/stats?_t=${Date.now()}`);
+        const res = await fetch(`${API_BASE}/stats?_t=${Date.now()}`);
         if (!res.ok) return;
         const data = await res.json();
 
