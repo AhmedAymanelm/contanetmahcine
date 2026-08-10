@@ -28,10 +28,16 @@ def get_trends(geo: str = "EG"):
     """
     Fetches real-time technology news from Google News for a specific country.
     """
+    import urllib.parse
+    
+    # Niche topics specifically for a tech/finance/crypto content creator
+    query = 'الذكاء الاصطناعي OR بيتكوين OR انفيديا OR مايكروسوفت OR جوجل OR OpenAI OR عملات رقمية OR تداول OR آبل OR ايلون ماسك'
+    encoded_query = urllib.parse.quote(query)
+    
     if geo == "GLOBAL":
-        url = "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ar&gl=AE&ceid=AE:ar" # Default to Arabic global tech news
+        url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ar&gl=AE&ceid=AE:ar"
     else:
-        url = f"https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ar&gl={geo}&ceid={geo}:ar"
+        url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ar&gl={geo}&ceid={geo}:ar"
         
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
