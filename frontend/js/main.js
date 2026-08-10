@@ -17,6 +17,9 @@ function go(element) {
                 loadAnalytics();
                 loadEngagement();
             }
+            if (targetId === 'page-recs') {
+                loadRecs();
+            }
         }
     }
 }

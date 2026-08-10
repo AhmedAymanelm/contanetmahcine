@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routers import sources, raw_articles, content, stats, templates, social, auth, threads, trends
 from app.api.routers.analytics import router as analytics_router
+from app.api.routers.recommendations import router as recommendations_router
 from app.core.config import settings
 from app.core.security import get_current_user
 from fastapi import Depends
@@ -52,6 +53,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"]) # M
 app.include_router(threads.router, prefix="/api/threads", tags=["Threads API"], dependencies=[Depends(get_current_user)])
 app.include_router(trends.router, prefix="/api/trends", tags=["Trends Radar"], dependencies=[Depends(get_current_user)])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"], dependencies=[Depends(get_current_user)])
+app.include_router(recommendations_router, prefix="/api/recommendations", tags=["Recommendations"], dependencies=[Depends(get_current_user)])
 
 @app.get("/api/health")
 def health_check():
