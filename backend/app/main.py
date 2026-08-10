@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routers import sources, raw_articles, content, stats, templates, social, auth, threads
+from app.api.routers import sources, raw_articles, content, stats, templates, social, auth, threads, trends
 from app.core.config import settings
 from app.core.security import get_current_user
 from fastapi import Depends
@@ -49,6 +49,7 @@ app.include_router(stats.router, prefix="/api/stats", tags=["Stats"], dependenci
 app.include_router(social.router, prefix="/api/social", tags=["Social Integration"], dependencies=[Depends(get_current_user)])
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"]) # Move to /api/auth
 app.include_router(threads.router, prefix="/api/threads", tags=["Threads API"], dependencies=[Depends(get_current_user)])
+app.include_router(trends.router, prefix="/api/trends", tags=["Trends Radar"], dependencies=[Depends(get_current_user)])
 
 @app.get("/api/health")
 def health_check():

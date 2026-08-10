@@ -96,3 +96,77 @@ def process_article_generation(raw_article_id: int):
             pass
     finally:
         db.close()
+
+def process_trend_generation(trend_title: str, trend_snippet: str):
+    """
+    Takes a Trend title and snippet, sends it to Claude for generation,
+    and saves the results as ContentItems.
+    """
+    db = SessionLocal()
+    try:
+        logger.info(f"Generating AI content for Trend: {trend_title}")
+        
+        text_to_process = f"Trend: {trend_title}\n\nContext/News: {trend_snippet}"
+        generated = generate_all_content(trend_title, text_to_process)
+        
+        if not generated:
+            logger.error("AI Generation failed for trend.")
+            return
+
+        # Create Content Items
+        items_to_add = []
+        
+        # Inject trend_title into all generated components to show up in the UI
+        for key in generated:
+            if isinstance(generated[key], dict):
+                generated[key]["trend_title"] = trend_title
+        
+        # 1. Post
+        if "posts" in generated and generated["posts"]:
+            items_to_add.append(
+                ContentItem(
+                    raw_article_id=None,
+                    content_type="POST",
+                    status="pending_review",
+                    platforms=["FB", "Li", "X"],
+                    generated_content=generated["posts"]
+                )
+            )
+            
+        # 2. Carousel
+        if "carousel" in generated and generated["carousel"]:
+            items_to_add.append(
+                ContentItem(
+                    raw_article_id=None,
+                    content_type="CAROUSEL",
+                    status="pending_review",
+                    platforms=["IG", "Li"],
+                    generated_content=generated["carousel"]
+                )
+            )
+            
+        # 3. Video Script
+        if "video_script" in generated and generated["video_script"]:
+            items_to_add.append(
+                ContentItem(
+                    raw_article_id=None,
+                    content_type="VIDEO_SCRIPT",
+                    status="pending_review",
+                    platforms=["TT", "IG"],
+                    generated_content=generated["video_script"]
+                )
+            )
+            
+        if items_to_add:
+            for item in items_to_add:
+                db.add(item)
+                
+            db.commit()
+            logger.info(f"Successfully generated content items for Trend: {trend_title}")
+        else:
+            logger.error(f"Claude returned empty content for Trend: {trend_title}")
+    except Exception as e:
+        logger.error(f"Trend Generation failed: {e}")
+        db.rollback()
+    finally:
+        db.close()
