@@ -40,7 +40,22 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     total_sources = db.query(Source).count()
     
     # Platform Performance (Engagement/Interactions)
-    platforms_count = {"Instagram": 0, "LinkedIn": 0, "Facebook": 0, "X": 0, "TikTok": 0}
+    platforms_count = {"Instagram": 0, "LinkedIn": 0, "Facebook": 0, "X": 0, "Snapchat": 0, "Threads": 0, "TikTok": 0}
+    
+    # Calculate base performance from published posts
+    published_items = db.query(ContentItem).filter(func.lower(ContentItem.status) == 'published').all()
+    for item in published_items:
+        if item.platforms:
+            for p in item.platforms:
+                p_upper = p.upper()
+                if "IG" in p_upper or "INSTA" in p_upper: platforms_count["Instagram"] += 1
+                elif "FB" in p_upper or "FACEBOOK" in p_upper: platforms_count["Facebook"] += 1
+                elif "TW" in p_upper or "X" in p_upper or "TWITTER" in p_upper: platforms_count["X"] += 1
+                elif "LI" in p_upper or "LINKEDIN" in p_upper: platforms_count["LinkedIn"] += 1
+                elif "SC" in p_upper or "SNAP" in p_upper: platforms_count["Snapchat"] += 1
+                elif "TH" in p_upper or "THREADS" in p_upper: platforms_count["Threads"] += 1
+                elif "TK" in p_upper or "TIKTOK" in p_upper: platforms_count["TikTok"] += 1
+
     
     # Fetch real Instagram stats
     try:
@@ -53,7 +68,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
                 if res.status_code == 200:
                     data = res.json().get("data", [])
                     total_ig_eng = sum(item.get("like_count", 0) + item.get("comments_count", 0) for item in data)
-                    platforms_count["Instagram"] = total_ig_eng
+                    platforms_count["Instagram"] += total_ig_eng
     except Exception as e:
         print(f"Error fetching IG stats: {e}")
         
@@ -71,7 +86,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
                         likes = post.get("likes", {}).get("summary", {}).get("total_count", 0)
                         comments = post.get("comments", {}).get("summary", {}).get("total_count", 0)
                         total_fb_eng += (likes + comments)
-                    platforms_count["Facebook"] = total_fb_eng
+                    platforms_count["Facebook"] += total_fb_eng
     except Exception as e:
         print(f"Error fetching FB stats: {e}")
     

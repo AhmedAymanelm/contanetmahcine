@@ -62,7 +62,9 @@ async function fetchDashboardStats() {
                 'Instagram': 'var(--red)',
                 'Facebook': 'var(--amber)',
                 'X': 'var(--muted)',
-                'TikTok': 'var(--teal)'
+                'TikTok': 'var(--teal)',
+                'Snapchat': 'var(--yellow)',
+                'Threads': 'var(--foreground)'
             };
             
             let html = '';
