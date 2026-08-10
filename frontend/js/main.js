@@ -1855,19 +1855,45 @@ async function loadTrends() {
             const safeTitle = trend.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
             const safeSnippet = (trend.news_snippet || trend.description).replace(/'/g, "\\'").replace(/"/g, "&quot;");
             
-            card.innerHTML = `
-                <div style="position: absolute; top: -10px; right: 20px; background: var(--red); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">#${index + 1}</div>
-                <h3 style="margin-top: 5px; margin-bottom: 10px; font-size: 17px; color: var(--text); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 76px;">${trend.title}</h3>
-                <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong></div>
-                <div style="display: flex; gap: 10px; margin-top: auto;">
-                    <button class="btn ghost" style="flex: 1; text-align: center; border: 1px solid var(--line); font-size: 13px; padding: 8px;" onclick="openNewsModal('${trend.news_url}', '${safeTitle}', '${safeTitle}', '${safeSnippet}')">
-                        اقرأ الخبر
-                    </button>
-                    <button class="btn" style="flex: 1; background: var(--teal); border: none; font-size: 13px; padding: 8px;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}')">
-                        <span class="ic">🤖</span> اصنع محتوى
-                    </button>
-                </div>
-            `;
+            // Build content safely using DOM methods to avoid inline onclick with interpolated strings
+            const badge = document.createElement('div');
+            badge.style.cssText = 'position: absolute; top: -10px; right: 20px; background: var(--red); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;';
+            badge.innerText = `#${index + 1}`;
+
+            const h3 = document.createElement('h3');
+            h3.style.cssText = 'margin-top: 5px; margin-bottom: 10px; font-size: 17px; color: var(--text); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 76px;';
+            h3.innerText = trend.title;
+
+            const srcDiv = document.createElement('div');
+            srcDiv.style.cssText = 'font-size: 12px; color: var(--muted); margin-bottom: 20px;';
+            srcDiv.innerHTML = `📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong>`;
+
+            const controls = document.createElement('div');
+            controls.style.cssText = 'display:flex; gap:10px; margin-top:auto;';
+
+            const btnRead = document.createElement('button');
+            btnRead.className = 'btn ghost';
+            btnRead.style.cssText = 'flex:1; text-align:center; border:1px solid var(--line); font-size:13px; padding:8px;';
+            btnRead.innerText = 'اقرأ الخبر';
+            btnRead.onclick = () => {
+                try { openNewsModal(trend.news_url, safeTitle, safeTitle, safeSnippet); } catch(e) { console.error('openNewsModal error', e); }
+            };
+
+            const btnGen = document.createElement('button');
+            btnGen.className = 'btn';
+            btnGen.style.cssText = 'flex:1; background:var(--teal); border:none; font-size:13px; padding:8px;';
+            btnGen.innerHTML = '<span class="ic">🤖</span> اصنع محتوى';
+            btnGen.onclick = () => {
+                try { generateTrendContent(safeTitle, safeSnippet); } catch(e) { console.error('generateTrendContent error', e); }
+            };
+
+            controls.appendChild(btnRead);
+            controls.appendChild(btnGen);
+
+            card.appendChild(badge);
+            card.appendChild(h3);
+            card.appendChild(srcDiv);
+            card.appendChild(controls);
             grid.appendChild(card);
         });
     } catch (err) {
