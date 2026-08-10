@@ -2072,7 +2072,8 @@ async function openNewsModal(url, title, safeTitle, safeSnippet) {
         if (!contentText || contentText.trim() === '') {
              contentText = 'عذراً، لم نتمكن من قراءة النص كاملاً من المصدر. قد يكون الموقع يمنع النسخ الآلي.';
         }
-        const contentHtml = contentText.split('\\n').map(p => p.trim()).filter(p => p.length > 0).map(p => `<p style="margin-bottom:15px;">${p}</p>`).join('');
+        // Split on real newlines (handle CRLF) and render paragraphs
+        const contentHtml = contentText.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0).map(p => `<p style="margin-bottom:15px;">${p.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`).join('');
         document.getElementById('news-modal-text').innerHTML = contentHtml;
         
     } catch (err) {
