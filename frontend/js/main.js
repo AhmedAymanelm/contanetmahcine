@@ -1759,7 +1759,8 @@ if (typeof flatpickr !== 'undefined') {
 
 // ---------------- Trends ----------------
 async function loadTrends() {
-    const geo = 'GLOBAL';
+    let geoSelect = document.getElementById('trend-geo-select');
+    const geo = geoSelect ? geoSelect.value : 'EG';
     const grid = document.getElementById('trends-grid');
     const loading = document.getElementById('trends-loading');
     

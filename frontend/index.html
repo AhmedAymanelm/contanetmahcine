@@ -223,9 +223,16 @@
         <div class="topline">
           <div>
             <h1>رادار الترند <span class="count new">مباشر</span></h1>
-            <p>مراقبة المواضيع الأكثر بحثاً وتداولاً الآن حول العالم</p>
+            <p>مراقبة المواضيع الأكثر بحثاً وتداولاً الآن لتوليد محتوى سريع منها</p>
           </div>
           <div style="display:flex; gap:10px; align-items:center;">
+            <select id="trend-geo-select" style="padding: 10px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; outline:none;" onchange="loadTrends()">
+              <option value="EG">مصر 🇪🇬</option>
+              <option value="SA">السعودية 🇸🇦</option>
+              <option value="AE">الإمارات 🇦🇪</option>
+              <option value="GLOBAL">العالم كله 🌍 (لغات مختلفة)</option>
+              <option value="US">أمريكا 🇺🇸 (ترند أجنبي)</option>
+            </select>
             <button class="btn ghost" onclick="loadTrends()">تحديث <span class="ic">🔄</span></button>
           </div>
         </div>
