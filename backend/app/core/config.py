@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     TWITTER_API_SECRET: Optional[str] = None
     TWITTER_ACCESS_TOKEN: Optional[str] = None
     TWITTER_ACCESS_SECRET: Optional[str] = None
+
+    # TikTok OAuth
+    TIKTOK_CLIENT_KEY: Optional[str] = None
+    TIKTOK_CLIENT_SECRET: Optional[str] = None
+    TIKTOK_REDIRECT_URI: str = "https://contanetmahcine.up.railway.app/auth/tiktok/callback"
     
     model_config = SettingsConfigDict(env_file=str(Path(__file__).resolve().parent.parent.parent / ".env"), env_file_encoding="utf-8", extra="ignore")
 

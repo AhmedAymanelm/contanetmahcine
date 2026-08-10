@@ -11,12 +11,14 @@ from app.models.oauth_token import OAuthToken
 from app.services.social.threads_service import ThreadsService
 from app.services.social.linkedin_service import LinkedInService
 from app.services.social.snapchat_service import SnapchatService
+from app.services.social.tiktok_service import TikTokService
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 threads_service = ThreadsService()
 linkedin_service = LinkedInService()
+tiktok_service = TikTokService()
 
 @router.post("/login")
 def login_for_access_token(
@@ -184,3 +186,80 @@ async def auth_snapchat_callback(
         
     snapchat_service.save_token(db, exchange_res.get("data", {}))
     return RedirectResponse("/?snapchat_connected=true")
+
+
+# ─── TikTok OAuth 2.0 ─────────────────────────────────────────────────────────
+
+@router.get("/tiktok")
+def auth_tiktok():
+    """Redirect the user to TikTok's OAuth v2 authorization page."""
+    try:
+        url, _state = tiktok_service.generate_auth_url()
+        return RedirectResponse(url)
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+
+
+@router.get("/tiktok/callback")
+async def auth_tiktok_callback(
+    code: Optional[str] = Query(None, description="Authorization code from TikTok"),
+    state: Optional[str] = Query(None, description="State for CSRF protection"),
+    error: Optional[str] = Query(None),
+    error_description: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Handle TikTok OAuth callback: validate state, exchange code, store tokens."""
+    # 1. Surface any OAuth-level errors from TikTok
+    if error:
+        logger.error(f"TikTok OAuth error returned: {error}")
+        if error == "access_denied":
+            return JSONResponse(status_code=400, content={
+                "status": "error", "message": "User denied access to TikTok."
+            })
+        return JSONResponse(status_code=400, content={
+            "status": "error", "message": error_description or error
+        })
+
+    # 2. Validate state (CSRF protection)
+    if not state or not tiktok_service.validate_state(state):
+        logger.warning("TikTok callback received invalid or expired state")
+        return JSONResponse(status_code=400, content={
+            "status": "error",
+            "message": "Invalid or expired state parameter. Please try connecting again."
+        })
+
+    # 3. Require authorization code
+    if not code:
+        return JSONResponse(status_code=400, content={
+            "status": "error", "message": "Missing authorization code."
+        })
+
+    # 4. Exchange code for tokens (client_secret never logged)
+    exchange_res = await tiktok_service.exchange_code(code)
+    if not exchange_res.get("success"):
+        err = exchange_res.get("error", "unknown")
+        detail = exchange_res.get("detail", "")
+
+        if err == "invalid_grant":
+            msg = "The authorization code is invalid or has already been used."
+        elif err == "invalid_client":
+            msg = "TikTok client credentials are misconfigured."
+        elif err == "invalid_scope":
+            msg = "One or more requested scopes are not approved for this app."
+        else:
+            msg = f"Failed to exchange authorization code: {err}"
+
+        logger.error(f"TikTok code exchange failed: error={err}")
+        return JSONResponse(status_code=400, content={"status": "error", "message": msg})
+
+    # 5. Persist tokens
+    token_data = exchange_res["data"]
+    tiktok_service.save_token(db, token_data)
+
+    return RedirectResponse("/?tiktok_connected=true")
+
+
+@router.get("/tiktok/status")
+def auth_tiktok_status(db: Session = Depends(get_db)):
+    """Return TikTok connection status. Never exposes tokens."""
+    return tiktok_service.get_status(db)
