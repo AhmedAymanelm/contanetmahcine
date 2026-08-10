@@ -31,7 +31,8 @@ def get_trends(geo: str = "EG"):
     import urllib.parse
     
     # Niche topics specifically for a tech/finance/crypto content creator
-    query = 'الذكاء الاصطناعي OR بيتكوين OR انفيديا OR مايكروسوفت OR جوجل OR OpenAI OR عملات رقمية OR تداول OR آبل OR ايلون ماسك'
+    # Added when:2d to restrict results to the last 48 hours
+    query = '(الذكاء الاصطناعي OR بيتكوين OR انفيديا OR مايكروسوفت OR جوجل OR OpenAI OR عملات رقمية OR تداول OR آبل OR ايلون ماسك) when:2d'
     encoded_query = urllib.parse.quote(query)
     
     if geo == "GLOBAL":
