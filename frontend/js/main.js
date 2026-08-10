@@ -1844,18 +1844,64 @@ async function generateTrendContent(title, snippet) {
     }
 }
 
-function openNewsModal(url, title, safeTitle, safeSnippet) {
+async function openNewsModal(url, title, safeTitle, safeSnippet) {
     document.getElementById('news-modal-title').innerText = title;
+    
+    // reset UI
     document.getElementById('news-modal-loading').style.display = 'block';
-    document.getElementById('news-modal-iframe').src = url;
+    document.getElementById('news-modal-content').style.display = 'none';
+    document.getElementById('news-modal-img').style.display = 'none';
+    document.getElementById('news-modal-img').src = '';
+    document.getElementById('news-modal-h1').innerText = '';
+    document.getElementById('news-modal-text').innerHTML = '';
+    
     document.getElementById('news-modal').style.display = 'flex';
     document.getElementById('news-modal-generate').onclick = () => {
         closeNewsModal();
         generateTrendContent(safeTitle, safeSnippet);
     };
+
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/trends/read`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ url: url })
+        });
+        
+        if (!res.ok) throw new Error('Failed to load article');
+        
+        const data = await res.json();
+        document.getElementById('news-modal-loading').style.display = 'none';
+        document.getElementById('news-modal-content').style.display = 'block';
+        
+        if (data.image) {
+            document.getElementById('news-modal-img').src = data.image;
+            document.getElementById('news-modal-img').style.display = 'block';
+        }
+        
+        // Use backend title if trafilatura found a better one, else use the RSS title
+        document.getElementById('news-modal-h1').innerText = data.title || title;
+        
+        // Convert text to paragraphs
+        let contentText = data.content;
+        if (!contentText || contentText.trim() === '') {
+             contentText = 'عذراً، لم نتمكن من قراءة النص كاملاً من المصدر. قد يكون الموقع يمنع النسخ الآلي.';
+        }
+        const contentHtml = contentText.split('\\n').map(p => p.trim()).filter(p => p.length > 0).map(p => `<p style="margin-bottom:15px;">${p}</p>`).join('');
+        document.getElementById('news-modal-text').innerHTML = contentHtml;
+        
+    } catch (err) {
+        console.error(err);
+        document.getElementById('news-modal-loading').style.display = 'none';
+        document.getElementById('news-modal-content').style.display = 'block';
+        document.getElementById('news-modal-text').innerHTML = '<div style="color:red; text-align:center; padding:40px;">حدث خطأ أثناء الاتصال بالخادم لجلب تفاصيل الخبر. ربما المصدر يمنع الوصول.</div>';
+    }
 }
 
 function closeNewsModal() {
     document.getElementById('news-modal').style.display = 'none';
-    document.getElementById('news-modal-iframe').src = '';
 }

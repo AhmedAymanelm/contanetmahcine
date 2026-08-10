@@ -70,6 +70,28 @@ def get_trends(geo: str = "EG"):
         
     return trends
 
+class ReadRequest(BaseModel):
+    url: str
+
+@router.post("/read")
+def read_news_article(req: ReadRequest):
+    """Scrape the actual news article behind the Google News obfuscated URL"""
+    from app.services.ingestion.extractors.browser_extractor import _get_page_html, extract_article_content
+    
+    html = _get_page_html(req.url)
+    if not html:
+        return {"title": "خطأ", "content": "لم نتمكن من جلب محتوى هذا الخبر.", "image": ""}
+        
+    data = extract_article_content(req.url, html)
+    if not data:
+         return {"title": "خطأ", "content": "حدث خطأ أثناء استخراج النص من المقال.", "image": ""}
+         
+    return {
+        "title": data.get("title", ""),
+        "content": data.get("content", ""),
+        "image": data.get("image_url", "")
+    }
+
 @router.post("/generate")
 def generate_trend_content(request: TrendGenerateRequest, background_tasks: BackgroundTasks):
     """
