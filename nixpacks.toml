@@ -33,3 +33,6 @@ aptPkgs = [
     "fonts-liberation"
 ]
 
+[phases.build]
+cmds = ["python -m playwright install chromium"]
+

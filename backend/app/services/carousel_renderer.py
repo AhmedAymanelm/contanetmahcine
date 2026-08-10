@@ -450,14 +450,6 @@ async def render_carousel_images(
     slide_dir = OUTPUT_DIR / str(content_id)
     slide_dir.mkdir(parents=True, exist_ok=True)
 
-    # FORCE INSTALL PLAYWRIGHT BROWSER TO ENSURE IT EXISTS IN CURRENT ENV
-    import subprocess
-    try:
-        print("Ensuring Playwright Chromium is installed...", flush=True)
-        subprocess.run(["python", "-m", "playwright", "install", "chromium"], check=True)
-    except Exception as e:
-        print(f"Playwright install failed: {e}", flush=True)
-
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page(viewport={"width": 1080, "height": 1350})
