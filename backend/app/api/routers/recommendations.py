@@ -1,13 +1,11 @@
 """
 Recommendations API — AI-powered insights for Content Machine.
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
-from typing import Optional
-import httpx
 
 from app.api.deps import get_db
 from app.models.raw_article import RawArticle
@@ -102,7 +100,7 @@ def get_recommendations(db: Session = Depends(get_db)):
 
     source_scores.sort(key=lambda x: x["score"], reverse=True)
 
-    # ── 2. Platform Strategy ───────────────────────────────────────────────
+    # ── 2. Platform Strategy (DB only — fast) ─────────────────────────────
     all_published = db.query(ContentItem).filter(
         func.upper(ContentItem.status) == "PUBLISHED",
         ContentItem.created_at >= last_30d
@@ -115,35 +113,7 @@ def get_recommendations(db: Session = Depends(get_db)):
         for p in plats:
             pl = _platform_label(p)
             platform_stats[pl]["posts"] += 1
-
-    # Fetch real engagement from IG + FB
-    try:
-        if settings.INSTAGRAM_ACCESS_TOKEN and settings.INSTAGRAM_ACCOUNT_ID:
-            url = (f"https://graph.instagram.com/v19.0/{settings.INSTAGRAM_ACCOUNT_ID}/media"
-                   f"?fields=like_count,comments_count&limit=50&access_token={settings.INSTAGRAM_ACCESS_TOKEN}")
-            with httpx.Client(timeout=5.0) as client:
-                res = client.get(url)
-            if res.status_code == 200:
-                for m in res.json().get("data", []):
-                    platform_stats["Instagram"]["engagement"] += (
-                        (m.get("like_count") or 0) + (m.get("comments_count") or 0)
-                    )
-    except Exception: pass
-
-    try:
-        if settings.FACEBOOK_ACCESS_TOKEN and settings.FACEBOOK_PAGE_ID:
-            fb_url = (f"https://graph.facebook.com/v19.0/{settings.FACEBOOK_PAGE_ID}/posts"
-                      f"?fields=likes.summary(true),comments.summary(true)&limit=50"
-                      f"&access_token={settings.FACEBOOK_ACCESS_TOKEN}")
-            with httpx.Client(timeout=5.0) as client:
-                fb_res = client.get(fb_url)
-            if fb_res.status_code == 200:
-                for p in fb_res.json().get("data", []):
-                    platform_stats["Facebook"]["engagement"] += (
-                        (p.get("likes", {}).get("summary", {}).get("total_count") or 0) +
-                        (p.get("comments", {}).get("summary", {}).get("total_count") or 0)
-                    )
-    except Exception: pass
+    # Note: real engagement data available via /api/analytics/top-engagement
 
     platform_list = []
     for pl, s in platform_stats.items():
