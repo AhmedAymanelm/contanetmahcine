@@ -1832,9 +1832,18 @@ function showCustomConfirm(msg, onConfirm) {
     
     document.getElementById('custom-confirm-yes').onclick = () => {
         const formats = [];
-        if(document.getElementById('chk-format-carousel').checked) formats.push('CAROUSEL');
-        if(document.getElementById('chk-format-post').checked) formats.push('POST');
-        if(document.getElementById('chk-format-video').checked) formats.push('VIDEO_SCRIPT');
+        const chkCar = document.getElementById('chk-format-carousel');
+        const chkPost = document.getElementById('chk-format-post');
+        const chkVid = document.getElementById('chk-format-video');
+        
+        if (chkCar && chkPost && chkVid) {
+            if(chkCar.checked) formats.push('CAROUSEL');
+            if(chkPost.checked) formats.push('POST');
+            if(chkVid.checked) formats.push('VIDEO_SCRIPT');
+        } else {
+            // Fallback if HTML is cached
+            formats.push('CAROUSEL', 'POST', 'VIDEO_SCRIPT');
+        }
         
         if (formats.length === 0) {
             showToast('يجب اختيار صيغة واحدة على الأقل', 'error');
