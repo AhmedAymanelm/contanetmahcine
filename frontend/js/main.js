@@ -1,45 +1,142 @@
 const API_BASE = '/api';
 
-// Global error overlay for easier debugging when DevTools is not open
-(function setupErrorOverlay(){
-    try {
-        if (!document.getElementById('cm-error-overlay')) {
-            const ov = document.createElement('div');
-            ov.id = 'cm-error-overlay';
-            ov.style.cssText = 'position:fixed; bottom:20px; right:20px; max-width:420px; background:rgba(220,38,38,0.95); color:white; padding:12px 16px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.5); font-family:Arial, Helvetica, sans-serif; font-size:13px; z-index:20000; display:none; white-space:pre-wrap; line-height:1.3;';
-            ov.innerText = '';
-            const close = document.createElement('button');
-            close.innerText = '×';
-            close.style.cssText = 'position:absolute; top:6px; right:8px; background:none; border:none; color:white; font-size:16px; cursor:pointer;';
-            close.onclick = () => ov.style.display = 'none';
-            ov.appendChild(close);
-            const content = document.createElement('div');
-            content.id = 'cm-error-overlay-content';
-            content.style.marginTop = '6px';
-            ov.appendChild(content);
-            document.addEventListener('DOMContentLoaded', () => document.body.appendChild(ov));
+function go(element) {
+    document.querySelectorAll('nav a').forEach(el => el.classList.remove('active'));
+    element.classList.add('active');
+    
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    const targetId = element.getAttribute('data-page');
+    if (targetId) {
+        const targetPage = document.getElementById(targetId);
+        if (targetPage) {
+            targetPage.classList.add('active');
+            if (targetId === 'page-trends') {
+                loadTrends();
+            }
         }
-    } catch(e) {
-        console.error('Failed to setup error overlay', e);
     }
-    // Global handlers
-    window.addEventListener('error', function(ev) {
-        try {
-            const msg = `${ev.message} at ${ev.filename}:${ev.lineno}:${ev.colno}`;
-            console.error(msg, ev.error);
-            const el = document.getElementById('cm-error-overlay-content');
-            if (el) { el.innerText = msg + '\n' + (ev.error && ev.error.stack ? ev.error.stack : ''); document.getElementById('cm-error-overlay').style.display = 'block'; }
-        } catch(e) { console.error(e); }
-    });
-    window.addEventListener('unhandledrejection', function(ev) {
-        try {
-            const reason = ev.reason && ev.reason.stack ? ev.reason.stack : String(ev.reason);
-            console.error('UnhandledRejection', reason);
-            const el = document.getElementById('cm-error-overlay-content');
-            if (el) { el.innerText = 'UnhandledRejection:\n' + reason; document.getElementById('cm-error-overlay').style.display = 'block'; }
-        } catch(e) { console.error(e); }
-    });
-})();
+}
+
+function goId(pageId) {
+    const link = document.querySelector(`nav a[data-page="${pageId}"]`);
+    if (link) go(link);
+}
+
+// ---------------- API Fetching ----------------
+
+async function fetchDashboardStats() {
+    try {
+        const res = await fetch(`${API_BASE}/stats/`);
+        if (!res.ok) throw new Error('Failed to fetch stats');
+        const data = await res.json();
+        
+        // Update stats blocks
+        document.getElementById('stat-articles').innerText = data.stats.articles_today;
+        document.getElementById('stat-pending').innerText = data.stats.pending_reviews;
+        document.getElementById('stat-approved').innerText = data.stats.approval_rate;
+        document.getElementById('stat-scheduled').innerText = data.stats.scheduled;
+
+        document.getElementById('stat-articles-sub').innerText = 'تم التحديث للتو';
+        document.getElementById('stat-pending-sub').innerText = data.stats.pending_reviews > 0 ? 'يتطلب إجراء' : 'لا يوجد مهام';
+        document.getElementById('stat-approved-sub').innerText = 'معدل الموافقة الكلي';
+        document.getElementById('stat-scheduled-sub').innerText = 'جاهز للنشر';
+
+        // Update Sidebar Counts
+        document.getElementById('sidebar-count-sources').innerText = data.sidebar_counts.sources;
+        document.getElementById('sidebar-count-raw').innerText = data.sidebar_counts.raw_articles;
+        document.getElementById('sidebar-count-content').innerText = data.sidebar_counts.content;
+        document.getElementById('sidebar-count-review').innerText = data.sidebar_counts.review;
+
+        // Update Pipeline Counts
+        document.getElementById('pipeline-count-raw').innerText = data.pipeline_counts.raw;
+        document.getElementById('pipeline-count-draft').innerText = data.pipeline_counts.draft;
+        document.getElementById('pipeline-count-review').innerText = data.pipeline_counts.review;
+        document.getElementById('pipeline-count-scheduled').innerText = data.pipeline_counts.scheduled;
+        document.getElementById('pipeline-count-published').innerText = data.pipeline_counts.published;
+
+        // Update Platform Performance
+        const perfList = document.getElementById('platform-performance-list');
+        if (perfList && data.platform_performance) {
+            const perf = data.platform_performance;
+            let maxCount = Math.max(...Object.values(perf));
+            if (maxCount === 0) maxCount = 1; // prevent division by zero
+            
+            const pColors = {
+                'Instagram': 'var(--red)',
+                'Facebook': 'var(--amber)',
+                'X': 'var(--muted)',
+                'TikTok': 'var(--teal)',
+                'Snapchat': 'var(--yellow)',
+                'Threads': 'var(--foreground)'
+            };
+            
+            let html = '';
+            for (const [platform, count] of Object.entries(perf)) {
+                const width = (count / maxCount) * 100;
+                const color = pColors[platform] || 'var(--teal)';
+                html += `<div class="bar-row"><div class="l">${platform}</div><div class="bar-track"><div class="bar-fill" style="width:${width}%; background:${color}"></div></div><div class="v">${count}</div></div>`;
+            }
+            perfList.innerHTML = html;
+        }
+
+        // Update Recent Content
+        const recentList = document.getElementById('recent-content-list');
+        if(recentList) {
+            recentList.innerHTML = '';
+            data.recent_content.forEach(item => {
+                let s = item.status.toLowerCase();
+                let badgeClass = 'draft';
+                let statusAr = item.status;
+                if (s === 'approved') { badgeClass = 'approved'; statusAr = 'معتمد'; }
+                else if (s === 'pending_review') { badgeClass = 'review'; statusAr = 'قيد المراجعة'; }
+                else if (s === 'scheduled') { badgeClass = 'scheduled'; statusAr = 'مجدول'; }
+                else if (s === 'published') { badgeClass = 'published'; statusAr = 'منشور'; }
+                else if (s === 'expired') { badgeClass = 'draft'; statusAr = 'منتهي الصلاحية'; }
+
+                let cType = item.content_type || 'POST';
+                let cTypeAr = 'بوست';
+                if (cType.toUpperCase() === 'CAROUSEL') cTypeAr = 'كاروسيل';
+                else if (cType.toUpperCase() === 'VIDEO' || cType.toUpperCase() === 'VIDEO_SCRIPT') cTypeAr = 'فيديو';
+
+                let platformsArr = item.platforms || [];
+                let platforms = platformsArr.map(p => `<span>${p}</span>`).join('');
+                recentList.innerHTML += `
+                    <tr>
+                        <td><div class="src"><span class="dot" style="background:var(--amber)"></span>${item.source_name}</div></td>
+                        <td class="title-cell"><span class="t">${item.title || 'بدون عنوان'}</span><span class="m cal-slot-type type-${cType.toLowerCase()}" style="display:inline-block; margin-top:4px">${cTypeAr}</span></td>
+                        <td><span class="badge ${badgeClass}">${statusAr}</span></td>
+                        <td><div class="plats">${platforms}</div></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Update Pending Reviews
+        const pendingList = document.getElementById('pending-reviews-list');
+        if(pendingList) {
+            pendingList.innerHTML = '';
+            data.pending_content.forEach(item => {
+                pendingList.innerHTML += `
+                    <div class="review-item">
+                        <div class="thumb" style="font-size:10px">${item.source_name}</div>
+                        <div class="review-body">
+                            <div class="t">${item.title}</div>
+                            <div class="m">${item.content_type}</div>
+                            <div class="review-actions">
+                                <button class="reject">رفض</button>
+                                <button>تعديل</button>
+                                <button class="approve">موافقة</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+    } catch (err) {
+        console.error(err);
+    }
+}
 
 async function fetchSources() {
     try {
@@ -452,50 +549,6 @@ function showToast(message, type = 'success') {
     }, 4000);
 }
 
-// ---------------- NAVIGATION HELPERS ----------------
-function go(target) {
-    try {
-        let pageId = null;
-        if (!target) return;
-        if (typeof target === 'string') {
-            pageId = target;
-        } else if (target instanceof Element) {
-            // If element is an anchor with data-page
-            pageId = target.getAttribute('data-page') || target.dataset.page || null;
-        }
-        if (!pageId) return;
-
-        // Update sidebar active link
-        document.querySelectorAll('nav a[data-page]').forEach(a => {
-            if (a.getAttribute('data-page') === pageId) a.classList.add('active');
-            else a.classList.remove('active');
-        });
-
-        // Show the requested page and hide others
-        document.querySelectorAll('.page').forEach(p => {
-            if (p.id === pageId) {
-                p.classList.add('active');
-                p.style.display = '';
-            } else {
-                p.classList.remove('active');
-                p.style.display = 'none';
-            }
-        });
-
-        // Scroll to top of main content
-        window.scrollTo({ top: 0, behavior: 'instant' });
-    } catch (err) {
-        console.error('navigation error', err);
-    }
-}
-
-function goId(id) {
-    if (!id) return;
-    // Accept both 'page-content' or '#page-content'
-    const pid = id.startsWith('#') ? id.slice(1) : id;
-    go(pid);
-}
-
 async function fetchAllContent() {
     try {
         const res = await fetch(`${API_BASE}/content/?_t=${Date.now()}`);
@@ -788,122 +841,6 @@ function getWeekRange(offset) {
     endOfWeek.setHours(23,59,59,999);
     
     return { startOfWeek, endOfWeek };
-}
-
-// ---------------- DASHBOARD STATS ----------------
-async function fetchDashboardStats() {
-    try {
-        const urlNoSlash = `${API_BASE}/stats?_t=${Date.now()}`;
-        let res = await fetch(urlNoSlash);
-        if (res.status === 404) {
-            // Try with trailing slash in case the router is mounted that way on the server
-            const urlWithSlash = `${API_BASE}/stats/?_t=${Date.now()}`;
-            console.warn(`fetchDashboardStats: primary 404, retrying ${urlWithSlash}`);
-            res = await fetch(urlWithSlash);
-        }
-
-        if (!res.ok) {
-            try { const txt = await res.text(); console.warn('fetchDashboardStats non-ok response', res.status, txt); } catch(e){}
-            // If both /api/stats and /api/stats/ are missing (404), show mock data so UI isn't empty
-            if (res.status === 404) {
-                applyMockDashboardStats();
-            }
-            return;
-        }
-
-        const data = await res.json();
-
-        // data expected shape: { stats: {...}, sidebar_counts: {...}, pipeline_counts: {...} }
-        if (data.stats) {
-            const s = data.stats;
-            const map = {
-                articles_today: 'stat-articles',
-                pending_reviews: 'stat-pending',
-                approval_rate: 'stat-approved',
-                scheduled: 'stat-scheduled'
-            };
-            Object.keys(map).forEach(k => {
-                const el = document.getElementById(map[k]);
-                if (el) el.innerText = s[k] !== undefined ? s[k] : '-';
-            });
-        }
-
-        if (data.sidebar_counts) {
-            const sc = data.sidebar_counts;
-            Object.entries(sc).forEach(([k, v]) => {
-                // Support both raw and raw_articles keys
-                const idCandidates = [`sidebar-count-${k}`, `sidebar-count-${k.replace(/raw_articles/, 'raw')}`];
-                idCandidates.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.innerText = typeof v === 'number' ? v : String(v || '');
-                });
-            });
-        }
-
-        if (data.pipeline_counts) {
-            const pc = data.pipeline_counts;
-            Object.entries(pc).forEach(([k, v]) => {
-                const el = document.getElementById(`pipeline-count-${k}`);
-                if (el) el.innerText = typeof v === 'number' ? v : String(v || '');
-            });
-        }
-    } catch (err) {
-        console.error('fetchDashboardStats error', err);
-    }
-}
-
-function applyMockDashboardStats() {
-    try {
-        // Minimal mock values to keep the UI usable
-        const mock = {
-            stats: {
-                articles_today: 0,
-                pending_reviews: 0,
-                approval_rate: '0%',
-                scheduled: 0
-            },
-            sidebar_counts: {
-                sources: 0,
-                raw_articles: 0,
-                content: 0,
-                review: 0
-            },
-            pipeline_counts: {
-                raw: 0,
-                draft: 0,
-                review: 0,
-                scheduled: 0,
-                published: 0
-            }
-        };
-
-        // Stats
-        const s = mock.stats;
-        const map = {
-            articles_today: 'stat-articles',
-            pending_reviews: 'stat-pending',
-            approval_rate: 'stat-approved',
-            scheduled: 'stat-scheduled'
-        };
-        Object.keys(map).forEach(k => {
-            const el = document.getElementById(map[k]);
-            if (el) el.innerText = s[k] !== undefined ? s[k] : '-';
-        });
-
-        // Sidebar counts
-        Object.entries(mock.sidebar_counts).forEach(([k,v]) => {
-            const el = document.getElementById(`sidebar-count-${k}`);
-            if (el) el.innerText = v;
-        });
-
-        // Pipeline counts
-        Object.entries(mock.pipeline_counts).forEach(([k,v]) => {
-            const el = document.getElementById(`pipeline-count-${k}`);
-            if (el) el.innerText = v;
-        });
-
-        showToast('بيانات الداشبورد مؤقتة (mock) — endpoint غير متوفر حالياً', 'error');
-    } catch (e) { console.error('applyMockDashboardStats error', e); }
 }
 
 async function fetchScheduledContent() {
@@ -1318,11 +1255,9 @@ function closeApproveModal() {
     setTimeout(() => modal.style.display = 'none', 200);
 }
 
-const _btnApproveCancel = document.getElementById('btn-approve-cancel');
-if (_btnApproveCancel) _btnApproveCancel.onclick = closeApproveModal;
+document.getElementById('btn-approve-cancel').onclick = closeApproveModal;
 
-const _btnApproveDirect = document.getElementById('btn-approve-direct');
-if (_btnApproveDirect) _btnApproveDirect.onclick = async function() {
+document.getElementById('btn-approve-direct').onclick = async function() {
     if (!currentApproveId || !currentApproveBtn) return;
     const btn = currentApproveBtn;
     const id = currentApproveId;
@@ -1361,22 +1296,19 @@ if (_btnApproveDirect) _btnApproveDirect.onclick = async function() {
     }
 };
 
-const _btnApproveScheduleShow = document.getElementById('btn-approve-schedule-show');
-if (_btnApproveScheduleShow) _btnApproveScheduleShow.onclick = function() {
+document.getElementById('btn-approve-schedule-show').onclick = function() {
     document.getElementById('approve-buttons-container').style.display = 'none';
     document.getElementById('schedule-picker-container').style.display = 'block';
     document.getElementById('schedule-submit-container').style.display = 'flex';
 };
 
-const _btnScheduleCancel = document.getElementById('btn-schedule-cancel');
-if (_btnScheduleCancel) _btnScheduleCancel.onclick = function() {
+document.getElementById('btn-schedule-cancel').onclick = function() {
     document.getElementById('schedule-picker-container').style.display = 'none';
     document.getElementById('schedule-submit-container').style.display = 'none';
     document.getElementById('approve-buttons-container').style.display = 'flex';
 };
 
-const _btnScheduleConfirm = document.getElementById('btn-schedule-confirm');
-if (_btnScheduleConfirm) _btnScheduleConfirm.onclick = async function() {
+document.getElementById('btn-schedule-confirm').onclick = async function() {
     if (!currentApproveId || !currentApproveBtn) return;
     const dateVal = document.getElementById('schedule-date-input').value;
     const timeVal = document.getElementById('schedule-time-input').value;
@@ -1484,45 +1416,39 @@ async function runIngestion() {
 
 // Load data on start
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // Set current date
-        const dateDisplay = document.getElementById('current-date-display');
-        if (dateDisplay) {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            dateDisplay.innerText = "اليوم: " + new Date().toLocaleDateString('ar-EG', options);
-        }
+    // Set current date
+    const dateDisplay = document.getElementById('current-date-display');
+    if (dateDisplay) {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateDisplay.innerText = "اليوم: " + new Date().toLocaleDateString('ar-EG', options);
+    }
 
-        // Setup Content Filters
-        document.querySelectorAll('#content-filters .chip').forEach(chip => {
-            chip.addEventListener('click', function() {
-                document.querySelectorAll('#content-filters .chip').forEach(c => c.classList.remove('active'));
-                this.classList.add('active');
-                renderContentList();
-            });
+    // Setup Content Filters
+    document.querySelectorAll('#content-filters .chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            document.querySelectorAll('#content-filters .chip').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            renderContentList();
         });
+    });
 
-        loadTemplates(); // Load async without blocking
+    loadTemplates(); // Load async without blocking
+    fetchDashboardStats();
+    fetchSources();
+    fetchRawArticles();
+    fetchAllContent();
+    fetchReviewContent();
+    fetchScheduledContent();
+    fetchPlatformStatus();
+
+    // Refresh data every 30 seconds
+    setInterval(() => {
         fetchDashboardStats();
-        fetchSources();
         fetchRawArticles();
-        fetchAllContent();
         fetchReviewContent();
         fetchScheduledContent();
         fetchPlatformStatus();
-
-        // Refresh data every 30 seconds
-        setInterval(() => {
-            fetchDashboardStats();
-            fetchRawArticles();
-            fetchReviewContent();
-            fetchScheduledContent();
-            fetchPlatformStatus();
-        }, 30000);
-    } catch (err) {
-        console.error('Error during DOMContentLoaded initialization:', err);
-        const el = document.getElementById('cm-error-overlay-content');
-        if (el) { el.innerText = 'Init error:\n' + (err && err.stack ? err.stack : String(err)); document.getElementById('cm-error-overlay').style.display = 'block'; }
-    }
+    }, 30000);
 });
 
 let swiperInstance = null;
@@ -1877,46 +1803,19 @@ async function loadTrends() {
             const safeTitle = trend.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
             const safeSnippet = (trend.news_snippet || trend.description).replace(/'/g, "\\'").replace(/"/g, "&quot;");
             
-            // Build content safely using DOM methods to avoid inline onclick with interpolated strings
-            const badge = document.createElement('div');
-            badge.style.cssText = 'position: absolute; top: -10px; right: 20px; background: var(--red); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;';
-            badge.innerText = `#${index + 1}`;
-
-            const h3 = document.createElement('h3');
-            h3.style.cssText = 'margin-top: 5px; margin-bottom: 10px; font-size: 17px; color: var(--text); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 76px;';
-            h3.innerText = trend.title;
-
-            const srcDiv = document.createElement('div');
-            srcDiv.style.cssText = 'font-size: 12px; color: var(--muted); margin-bottom: 20px;';
-            srcDiv.innerHTML = `📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong>`;
-
-            const controls = document.createElement('div');
-            controls.style.cssText = 'display:flex; gap:10px; margin-top:auto;';
-
-            const btnRead = document.createElement('button');
-            btnRead.className = 'btn ghost';
-            btnRead.style.cssText = 'flex:1; text-align:center; border:1px solid var(--line); font-size:13px; padding:8px;';
-            btnRead.innerText = 'اقرأ الخبر';
-            btnRead.onclick = () => {
-                try { openNewsModal(trend.news_url, safeTitle, safeTitle, safeSnippet); } catch(e) { console.error('openNewsModal error', e); }
-            };
-
-            const btnGen = document.createElement('button');
-            btnGen.className = 'btn';
-            btnGen.style.cssText = 'flex:1; background:var(--teal); border:none; font-size:13px; padding:8px;';
-            btnGen.innerHTML = '<span class="ic">🤖</span> اصنع محتوى';
-            btnGen.onclick = () => {
-                console.log('Trend generate button clicked for index', index);
-                try { generateTrendContent(safeTitle, safeSnippet); } catch(e) { console.error('generateTrendContent error', e); showToast('خطأ محلي: ' + e.message, 'error'); }
-            };
-
-            controls.appendChild(btnRead);
-            controls.appendChild(btnGen);
-
-            card.appendChild(badge);
-            card.appendChild(h3);
-            card.appendChild(srcDiv);
-            card.appendChild(controls);
+            card.innerHTML = `
+                <div style="position: absolute; top: -10px; right: 20px; background: var(--red); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">#${index + 1}</div>
+                <h3 style="margin-top: 5px; margin-bottom: 10px; font-size: 17px; color: var(--text); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; height: 76px;">${trend.title}</h3>
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">📰 المصدر: <strong style="color: var(--amber);">${trend.traffic || 'أخبار جوجل'}</strong></div>
+                <div style="display: flex; gap: 10px; margin-top: auto;">
+                    <button class="btn ghost" style="flex: 1; text-align: center; border: 1px solid var(--line); font-size: 13px; padding: 8px;" onclick="openNewsModal('${trend.news_url}', '${safeTitle}', '${safeTitle}', '${safeSnippet}')">
+                        اقرأ الخبر
+                    </button>
+                    <button class="btn" style="flex: 1; background: var(--teal); border: none; font-size: 13px; padding: 8px;" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}')">
+                        <span class="ic">🤖</span> اصنع محتوى
+                    </button>
+                </div>
+            `;
             grid.appendChild(card);
         });
     } catch (err) {
@@ -1932,24 +1831,24 @@ function showCustomConfirm(msg, onConfirm) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'custom-confirm-modal';
-        modal.style.cssText = 'display:none; opacity:0; transition:opacity 0.18s ease; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px); pointer-events:none;';
+        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px);';
         modal.innerHTML = `
-            <div id="custom-confirm-content" style="background:var(--panel-2); width:90%; max-width:400px; border-radius:16px; border: 1px solid var(--line); display:flex; flex-direction:column; padding:25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align:center; transform:scale(0.96); transition:transform 0.18s ease;">
+            <div style="background:var(--panel-2); width:90%; max-width:400px; border-radius:16px; border: 1px solid var(--line); display:flex; flex-direction:column; padding:25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align:center;">
                 <div style="font-size:40px; margin-bottom:15px;">🤖</div>
                 <h3 style="margin:0 0 15px 0; font-size:18px; color:var(--text);">تأكيد صناعة المحتوى</h3>
                 <p id="custom-confirm-msg" style="color:var(--muted); font-size:15px; margin-bottom:20px; line-height:1.6;"></p>
                 <div style="text-align:right; margin-bottom:25px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px solid var(--line);">
                     <div style="margin-bottom:10px; color:var(--text); font-weight:bold; font-size:14px;">اختر صيغ المحتوى المطلوبة:</div>
                     <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" style="width:16px; height:16px; accent-color:var(--teal);">
+                        <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" checked style="width:16px; height:16px; accent-color:var(--teal);">
                         <span>📱 كاروسيل (إنستجرام، لينكدإن)</span>
                     </label>
                     <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-post" value="POST" style="width:16px; height:16px; accent-color:var(--teal);">
+                        <input type="checkbox" id="chk-format-post" value="POST" checked style="width:16px; height:16px; accent-color:var(--teal);">
                         <span>📝 بوست (فيسبوك، تويتر، لينكدإن)</span>
                     </label>
                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" style="width:16px; height:16px; accent-color:var(--teal);">
+                        <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" checked style="width:16px; height:16px; accent-color:var(--teal);">
                         <span>🎬 سكريبت فيديو (تيك توك، ريلز)</span>
                     </label>
                 </div>
@@ -1960,66 +1859,21 @@ function showCustomConfirm(msg, onConfirm) {
             </div>
         `;
         document.body.appendChild(modal);
-
-        // Attach a safe cancel handler (will be overridden later if static modal exists)
-        modal.querySelector('#custom-confirm-no')?.addEventListener('click', () => {
-            modal.style.opacity = '0';
-            modal.style.pointerEvents = 'none';
-            const content = document.getElementById('custom-confirm-content');
-            if (content) content.style.transform = 'scale(0.96)';
-            setTimeout(() => { modal.style.display = 'none'; }, 220);
-        });
+        
+        document.getElementById('custom-confirm-no').onclick = () => {
+            modal.style.display = 'none';
+        };
     }
     
-    // Support either the dynamic modal (custom-confirm-msg, custom-confirm-yes/no)
-    // or a static modal present in index.html (custom-confirm-message, custom-confirm-ok/cancel)
-    const dynMsg = document.getElementById('custom-confirm-msg');
-    const statMsg = document.getElementById('custom-confirm-message');
-    if (dynMsg) dynMsg.innerText = msg;
-    else if (statMsg) statMsg.innerText = msg;
-
-    // Restore previous selection if present (so user can choose explicitly).
-    try {
-        const last = localStorage.getItem('cm_last_gen_formats');
-        const defaults = last ? JSON.parse(last) : [];
-        const chkCar = document.getElementById('chk-format-carousel');
-        const chkPost = document.getElementById('chk-format-post');
-        const chkVid = document.getElementById('chk-format-video');
-        if (chkCar) chkCar.checked = Array.isArray(defaults) && defaults.includes('CAROUSEL');
-        if (chkPost) chkPost.checked = Array.isArray(defaults) && defaults.includes('POST');
-        if (chkVid) chkVid.checked = Array.isArray(defaults) && defaults.includes('VIDEO_SCRIPT');
-    } catch (e) { console.error('restore last gen formats failed', e); }
-
-    // Ensure modal is visible and interactive
+    document.getElementById('custom-confirm-msg').innerText = msg;
     modal.style.display = 'flex';
-    // small delay to allow layout, then fade in
-    setTimeout(() => {
-        modal.style.opacity = '1';
-        modal.style.pointerEvents = 'auto';
-        const content = document.getElementById('custom-confirm-content');
-        if (content) content.style.transform = 'scale(1)';
-    }, 10);
-
-    const dynYes = document.getElementById('custom-confirm-yes');
-    const dynNo = document.getElementById('custom-confirm-no');
-    const statOk = document.getElementById('custom-confirm-ok');
-    const statCancel = document.getElementById('custom-confirm-cancel');
-
-    if (dynNo) dynNo.onclick = () => {
-        modal.style.opacity = '0';
-        modal.style.pointerEvents = 'none';
-        const content = document.getElementById('custom-confirm-content');
-        if (content) content.style.transform = 'scale(0.96)';
-        setTimeout(() => { modal.style.display = 'none'; }, 200);
-    };
-    if (statCancel) statCancel.onclick = () => { modal.style.display = 'none'; };
-
-    if (dynYes) dynYes.onclick = () => {
+    
+    document.getElementById('custom-confirm-yes').onclick = () => {
         const formats = [];
         const chkCar = document.getElementById('chk-format-carousel');
         const chkPost = document.getElementById('chk-format-post');
         const chkVid = document.getElementById('chk-format-video');
-
+        
         if (chkCar && chkPost && chkVid) {
             if(chkCar.checked) formats.push('CAROUSEL');
             if(chkPost.checked) formats.push('POST');
@@ -2027,62 +1881,40 @@ function showCustomConfirm(msg, onConfirm) {
         } else {
             formats.push('CAROUSEL', 'POST', 'VIDEO_SCRIPT');
         }
-
+        
         if (formats.length === 0) {
             showToast('يجب اختيار صيغة واحدة على الأقل', 'error');
             return;
         }
-        // Persist selected formats for next time
-        try { localStorage.setItem('cm_last_gen_formats', JSON.stringify(formats)); } catch(e) { console.error('persist formats failed', e); }
-
-        // Animate out then callback
-        modal.style.opacity = '0';
-        modal.style.pointerEvents = 'none';
-        const content = document.getElementById('custom-confirm-content');
-        if (content) content.style.transform = 'scale(0.96)';
-        setTimeout(() => {
-            modal.style.display = 'none';
-            try { if (onConfirm) onConfirm(formats); } catch(e){ console.error('onConfirm handler error', e); }
-        }, 200);
-    };
-
-    if (statOk) statOk.onclick = () => {
+        
         modal.style.display = 'none';
-        const formats = ['CAROUSEL','POST','VIDEO_SCRIPT'];
         if (onConfirm) onConfirm(formats);
     };
 }
 
 async function generateTrendContent(title, snippet) {
-    console.log('generateTrendContent called for title:', title);
+    showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async (formats) => {
+        showToast(`بدأ توليد المحتوى لترند: ${title}`);
     try {
-        showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async (formats) => {
-            console.log('generate confirmed, formats:', formats);
-            showToast(`بدأ توليد المحتوى لترند: ${title}`);
-            try {
-                const token = localStorage.getItem('cm_token');
-                const res = await fetch(`${API_BASE}/trends/generate`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ title, snippet, formats })
-                });
-                if (res.ok) {
-                    showToast(`تم إرسال الطلب لـ Claude بنجاح! سيظهر قريباً في المراجعة`, 'success');
-                } else {
-                    showToast('حدث خطأ أثناء إرسال الطلب', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('خطأ في الاتصال بالسيرفر', 'error');
-            }
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/trends/generate`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ title, snippet, formats })
         });
-    } catch (err) {
-        console.error('generateTrendContent failed:', err);
-        showToast('خطأ داخلي أثناء محاولة فتح مربع التأكيد', 'error');
-    }
+        if (res.ok) {
+            showToast(`تم إرسال الطلب لـ Claude بنجاح! سيظهر قريباً في المراجعة`, 'success');
+        } else {
+            showToast('حدث خطأ أثناء إرسال الطلب', 'error');
+        }
+        } catch (err) {
+            console.error(err);
+            showToast('خطأ في الاتصال بالسيرفر', 'error');
+        }
+    });
 }
 
 async function openNewsModal(url, title, safeTitle, safeSnippet) {
@@ -2097,8 +1929,7 @@ async function openNewsModal(url, title, safeTitle, safeSnippet) {
     document.getElementById('news-modal-text').innerHTML = '';
     
     document.getElementById('news-modal').style.display = 'flex';
-    const _newsModalGenerate = document.getElementById('news-modal-generate');
-    if (_newsModalGenerate) _newsModalGenerate.onclick = () => {
+    document.getElementById('news-modal-generate').onclick = () => {
         closeNewsModal();
         generateTrendContent(safeTitle, safeSnippet);
     };
@@ -2133,8 +1964,7 @@ async function openNewsModal(url, title, safeTitle, safeSnippet) {
         if (!contentText || contentText.trim() === '') {
              contentText = 'عذراً، لم نتمكن من قراءة النص كاملاً من المصدر. قد يكون الموقع يمنع النسخ الآلي.';
         }
-        // Split on real newlines (handle CRLF) and render paragraphs
-        const contentHtml = contentText.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0).map(p => `<p style="margin-bottom:15px;">${p.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`).join('');
+        const contentHtml = contentText.split('\\n').map(p => p.trim()).filter(p => p.length > 0).map(p => `<p style="margin-bottom:15px;">${p}</p>`).join('');
         document.getElementById('news-modal-text').innerHTML = contentHtml;
         
     } catch (err) {
