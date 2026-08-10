@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright/python:v1.42.0-jammy
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -8,6 +8,11 @@ RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 # Install python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Force Playwright to install browsers in the local package directory
+ENV PLAYWRIGHT_BROWSERS_PATH=0
+RUN playwright install chromium
+RUN playwright install-deps
 
 # Copy application code
 COPY . .

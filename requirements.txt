@@ -12,7 +12,7 @@ httpx
 beautifulsoup4
 feedparser
 trafilatura
-playwright==1.42.0
+playwright
 pymupdf
 cloudinary
 pillow
