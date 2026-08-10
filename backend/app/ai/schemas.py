@@ -2,10 +2,8 @@ from pydantic import BaseModel, Field
 from typing import List
 
 class PostContent(BaseModel):
-    x_tweet: str = Field(..., description="Short engaging tweet for X (Twitter)")
-    linkedin_post: str = Field(..., description="Professional post for LinkedIn")
-    facebook_post: str = Field(..., description="Engaging community-focused post for Facebook")
-    instagram_caption: str = Field(..., description="Visual-focused caption for Instagram")
+    unified_post: str = Field(..., description="One unified Arabic post used for all platforms (Facebook, Instagram, X, Threads, Snapchat, TikTok). Same text everywhere.")
+    linkedin_post: str = Field(..., description="Professional post in ENGLISH ONLY for LinkedIn. Adapts the same news for a professional English-speaking audience.")
 
 from typing import List, Optional
 

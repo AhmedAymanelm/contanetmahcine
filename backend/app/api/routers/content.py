@@ -92,7 +92,8 @@ def _ensure_english_linkedin(item: ContentItem):
         backstory="Expert at translating social media posts to professional English."
     )
 
-    # 1. Translate linkedin_post text
+    # linkedin_post is now generated directly in English by Claude — no translation needed.
+    # Just verify it's not Arabic (safety net).
     caption = gen.get("linkedin_post", "")
     if caption and re.search(r"[\u0600-\u06FF]", caption):
         translated = client.execute_task(config, f"Translate the following LinkedIn post to professional English. Return ONLY the English translation without quotes or introductory text:\n\n{caption}")
@@ -193,7 +194,8 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
             ig_service = InstagramService()
             if ig_service._is_configured():
                 gen = item.generated_content
-                caption = gen.get("instagram_caption", gen.get("title", ""))
+                # Instagram: use unified_post as caption
+                caption = gen.get("unified_post", gen.get("instagram_caption", gen.get("title", "")))
                 if item.content_type == "CAROUSEL" and "carousel_urls" in gen:
                     urls = gen["carousel_urls"]
                     if urls:
@@ -213,7 +215,8 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
             fb_service = FacebookService()
             if fb_service._is_configured():
                 gen = item.generated_content
-                caption = gen.get("facebook_post", gen.get("title", ""))
+                # Facebook: use unified_post as caption
+                caption = gen.get("unified_post", gen.get("facebook_post", gen.get("title", "")))
                 if item.content_type == "CAROUSEL" and "carousel_urls" in gen:
                     urls = gen["carousel_urls"]
                     if urls:
@@ -238,7 +241,8 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
             status = th_service.get_status(db)
             if status.get("connected"):
                 gen = item.generated_content
-                caption = gen.get("x_tweet", gen.get("instagram_caption", gen.get("title", "")))
+                # X/Threads: use unified_post (truncate if needed)
+                caption = gen.get("unified_post", gen.get("x_tweet", gen.get("title", "")))
                 
                 # Truncate to 500 characters just in case, since Threads API strictly fails over 500
                 if len(caption) > 500:
@@ -258,8 +262,8 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
             tw_service = TwitterService()
             if tw_service._is_configured():
                 gen = item.generated_content
-                # Use x_tweet if available, else fallback
-                caption = gen.get("x_tweet", gen.get("title", ""))
+                # X (Twitter): use unified_post
+                caption = gen.get("unified_post", gen.get("x_tweet", gen.get("title", "")))
                 
                 # X limits to 280 chars
                 if len(caption) > 280:
