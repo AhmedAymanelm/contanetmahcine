@@ -13,6 +13,9 @@ function go(element) {
             if (targetId === 'page-trends') {
                 loadTrends();
             }
+            if (targetId === 'page-analytics') {
+                loadAnalytics();
+            }
         }
     }
 }

@@ -760,9 +760,13 @@ async function loadAnalytics() {
   document.getElementById('an-content').style.display = 'none';
 
   try {
-    const res = await apiFetch('/api/analytics/overview');
-    if (!res || res.error) throw new Error(res?.error || 'فشل التحميل');
-    renderAnalytics(res);
+    const token = localStorage.getItem('cm_token');
+    const res = await fetch('/api/analytics/overview', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderAnalytics(data);
     document.getElementById('an-loading-state').style.display = 'none';
     document.getElementById('an-content').style.display = 'block';
   } catch(e) {
