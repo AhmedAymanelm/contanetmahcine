@@ -38,9 +38,11 @@ def _progress_dark(current: int, total: int, accent: str) -> str:
     return f'<div style="display:flex;gap:10px;padding:30px 40px 10px;">{"".join(segs)}</div>'
 
 def _header_dark(current: int, total: int) -> str:
+    num = str(current + 1).zfill(2)
+    tot = str(total).zfill(2)
     return f"""
     <div style="padding: 10px 40px 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <span style="color: rgba(255,255,255,0.5); font-size: 22px; font-weight: 700;">{total}/{current+1}</span>
+        <span style="color: rgba(255,255,255,0.9); font-size: 26px; font-weight: 900; letter-spacing: 2px;">{num} <span style="color:rgba(255,255,255,0.35); font-weight:400;">/</span> {tot}</span>
     </div>
     """
 
@@ -60,8 +62,9 @@ def _slide_wrapper_dark(t: dict, progress_html: str, header_html: str, main_html
   {progress_html}
   {header_html}
   {main_html}
-  <div style="padding: 40px; margin-top: auto;">
-    <span style="font-size:24px;color:rgba(255,255,255,0.5);font-weight:600;">@{brand}</span>
+  <div style="padding: 30px 40px; margin-top: auto; display:flex; align-items:center; gap:12px; border-top:1px solid rgba(255,255,255,0.08);">
+    <div style="width:8px; height:8px; border-radius:50%; background:{t['accent']};"></div>
+    <span style="font-size:22px;color:rgba(255,255,255,0.55);font-weight:700; letter-spacing:1px;">@{brand}</span>
   </div>
 </body>
 </html>"""
@@ -176,14 +179,19 @@ def render_light_card_slide(t: dict, slide: dict, idx: int, total: int, brand: s
     <div style="position:absolute; top:-100px; right:-100px; width:450px; height:450px; background:{blob_color}; border-radius:150px; transform:rotate(15deg);"></div>
     <div style="position:absolute; bottom:-100px; right:-50px; width:500px; height:350px; background:{blob_color}; border-radius:150px; transform:rotate(-10deg);"></div>
     <div style="position:absolute; top:50%; left:0; transform:translateY(-50%); width:0; height:0; border-top:60px solid transparent; border-bottom:60px solid transparent; border-left:80px solid {accent_color};"></div>
-    <div style="position:absolute; top: 70px; right: 70px; color: #fff; font-size: 30px; font-weight: 700; z-index:20;">{total}/{idx+1}</div>
+    <div style="position:absolute; top: 70px; right: 70px; z-index:20;">
+        <span style="color: {accent_color}; font-size: 28px; font-weight: 900; letter-spacing:2px; background:rgba(255,255,255,0.92); padding: 6px 16px; border-radius: 50px;">{str(idx+1).zfill(2)} <span style="color:rgba(0,0,0,0.3); font-weight:400;">/</span> {str(total).zfill(2)}</span>
+    </div>
     <div style="width: 900px; height: 1150px; background:#ffffff; border-radius:60px; box-shadow:0 30px 60px rgba(0,0,0,0.08); display:flex; flex-direction:column; padding:80px 60px 50px; position:relative; z-index:10;">
         {watermark}
         <div style="flex:1; display:flex; flex-direction:column; justify-content:center; text-align:center;">{content_html}</div>
         <div style="text-align:center; position:relative; z-index:1;">
-            <div style="color:{accent_color}; font-size:60px; font-weight:900; line-height:0.5; margin-bottom: 20px;">..</div>
-            <div style="width:100%; height:2px; background:rgba(0,0,0,0.1); margin: 30px 0;"></div>
-            <div style="color:{text_color}; font-size:24px; font-weight:700;">@{brand}</div>
+            <div style="width:100%; height:1.5px; background:rgba(0,0,0,0.08); margin: 24px 0;"></div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                <div style="width:6px; height:6px; border-radius:50%; background:{accent_color};"></div>
+                <div style="color:{accent_color}; font-size:22px; font-weight:800; letter-spacing:1px;">@{brand}</div>
+                <div style="width:6px; height:6px; border-radius:50%; background:{accent_color};"></div>
+            </div>
         </div>
     </div>
 </body>
@@ -247,7 +255,9 @@ def render_cta_slide(t: dict, slide: dict, idx: int, total: int, brand: str) -> 
     <div class="bg-blob-1"></div>
     <div class="bg-blob-2"></div>
     
-    <div style="position:absolute; top: 70px; right: 70px; color: {text_color}; opacity: 0.5; font-size: 30px; font-weight: 700; z-index:20; background:rgba(0,0,0,0.2); padding:5px 20px; border-radius:20px;">{total}/{idx+1}</div>
+    <div style="position:absolute; top: 70px; right: 70px; z-index:20;">
+        <span style="color: {accent_color}; font-size: 26px; font-weight: 900; letter-spacing:2px; background:rgba(255,255,255,0.15); backdrop-filter:blur(4px); padding: 6px 18px; border-radius: 50px; border:1px solid rgba(255,255,255,0.2);">{str(idx+1).zfill(2)} <span style="opacity:0.5; font-weight:400;">/</span> {str(total).zfill(2)}</span>
+    </div>
     
     <div class="content-container">
         <div class="avatar-box">
