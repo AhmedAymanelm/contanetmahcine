@@ -1833,30 +1833,52 @@ function showCustomConfirm(msg, onConfirm) {
         modal.id = 'generation-confirm-modal';
         modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px);';
         modal.innerHTML = `
-            <div style="background:var(--panel-2); width:90%; max-width:400px; border-radius:16px; border: 1px solid var(--line); display:flex; flex-direction:column; padding:25px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align:center;">
-                <div style="font-size:40px; margin-bottom:15px;">🤖</div>
-                <h3 style="margin:0 0 15px 0; font-size:18px; color:var(--text);">تأكيد صناعة المحتوى</h3>
-                <p id="generation-confirm-msg" style="color:var(--muted); font-size:15px; margin-bottom:20px; line-height:1.6;"></p>
-                <div style="text-align:right; margin-bottom:25px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px solid var(--line);">
-                    <div style="margin-bottom:10px; color:var(--text); font-weight:bold; font-size:14px;">اختر صيغ المحتوى المطلوبة:</div>
-                    <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" checked style="width:16px; height:16px; accent-color:var(--teal);">
-                        <span>📱 كاروسيل (إنستجرام، لينكدإن)</span>
+            <div style="background:var(--panel-2); width:90%; max-width:420px; border-radius:20px; border: 1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; padding:30px; box-shadow: 0 30px 60px rgba(0,0,0,0.6); text-align:center; transform:scale(0.95); transition:transform 0.2s; animation: fadeUp 0.3s forwards;">
+                <h3 style="margin:0 0 15px 0; font-size:20px; color:var(--text); font-weight:800;">تأكيد صناعة المحتوى</h3>
+                <p id="generation-confirm-msg" style="color:var(--muted); font-size:14.5px; margin-bottom:25px; line-height:1.7;"></p>
+                
+                <div style="text-align:right; margin-bottom:30px;">
+                    <div style="margin-bottom:12px; color:var(--text); font-weight:bold; font-size:14px; padding-right:5px;">اختر صيغ المحتوى المطلوبة:</div>
+                    
+                    <label class="format-card">
+                        <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" checked>
+                        <span class="f-icon">📱</span>
+                        <div class="f-text">
+                            <span class="f-title">كاروسيل</span>
+                            <span class="f-desc">محتوى متعدد الشرائح (إنستجرام، لينكدإن)</span>
+                        </div>
                     </label>
-                    <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-post" value="POST" checked style="width:16px; height:16px; accent-color:var(--teal);">
-                        <span>📝 بوست (فيسبوك، تويتر، لينكدإن)</span>
+                    
+                    <label class="format-card">
+                        <input type="checkbox" id="chk-format-post" value="POST" checked>
+                        <span class="f-icon">📝</span>
+                        <div class="f-text">
+                            <span class="f-title">منشور (بوست)</span>
+                            <span class="f-desc">محتوى نصي جذاب (فيسبوك، تويتر، لينكدإن)</span>
+                        </div>
                     </label>
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:var(--text); font-size:14px;">
-                        <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" checked style="width:16px; height:16px; accent-color:var(--teal);">
-                        <span>🎬 سكريبت فيديو (تيك توك، ريلز)</span>
+                    
+                    <label class="format-card" style="margin-bottom:0;">
+                        <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" checked>
+                        <span class="f-icon">🎬</span>
+                        <div class="f-text">
+                            <span class="f-title">سكريبت فيديو</span>
+                            <span class="f-desc">سيناريو جاهز للتصوير (تيك توك، ريلز، شورتس)</span>
+                        </div>
                     </label>
                 </div>
-                <div style="display:flex; gap:10px;">
-                    <button id="generation-confirm-yes" class="btn" style="flex:1; background:var(--teal); border:none; padding:12px; font-size:15px; border-radius:8px;">نعم، ابدأ الصنع</button>
-                    <button id="generation-confirm-no" class="btn ghost" style="flex:1; padding:12px; font-size:15px; border-radius:8px; background: rgba(255,255,255,0.05);">إلغاء</button>
+                
+                <div style="display:flex; gap:12px;">
+                    <button id="generation-confirm-yes" class="btn" style="flex:1; background:var(--teal); color:#0a0a0a; border:none; padding:14px; font-size:15px; font-weight:bold; border-radius:12px; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">البدء في الصياغة</button>
+                    <button id="generation-confirm-no" class="btn ghost" style="flex:1; padding:14px; font-size:15px; border-radius:12px; background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">إلغاء الأمر</button>
                 </div>
             </div>
+            <style>
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(10px) scale(0.95); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+            </style>
         `;
         document.body.appendChild(modal);
         

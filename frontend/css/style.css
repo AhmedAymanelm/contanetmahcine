@@ -359,3 +359,46 @@
   .nb-actions button.approve{background:var(--teal); color:#0a0a0a; border-color:var(--teal);}
   .nb-actions button.reject{color:var(--red); border-color:rgba(214,69,69,.3);}
   @media (max-width:1100px){ .newsgrid{grid-template-columns:repeat(2,1fr);} }
+
+/* Format Selection Cards */
+.format-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 10px;
+}
+.format-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: var(--teal);
+    transform: translateY(-2px);
+}
+.format-card input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--teal);
+    cursor: pointer;
+}
+.format-card .f-icon {
+    font-size: 20px;
+}
+.format-card .f-text {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+}
+.format-card .f-title {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 14.5px;
+}
+.format-card .f-desc {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 2px;
+}
