@@ -1,3 +1,4 @@
+from cloudinary.api import delete_derived_resources
 import sys
 import os
 from pathlib import Path
@@ -69,6 +70,7 @@ def tiktok_verification():
 
 # ── Legal pages ───────────────────────────────────────────────────────────────
 FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
+
 
 @app.get("/terms", response_class=FileResponse, include_in_schema=False)
 def terms_page():
