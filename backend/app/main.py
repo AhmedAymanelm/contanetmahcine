@@ -65,7 +65,7 @@ from fastapi.responses import PlainTextResponse, FileResponse
 
 @app.get("/tiktokUl3sqscByg3q8nXurtLOC7HXdiExDMDf.txt", response_class=PlainTextResponse, include_in_schema=False)
 def tiktok_verification():
-    return "tiktok-developers-site-verification=Ul3sqscByg3q8nXurtLOC7HXdiExDMDf"
+    return "tiktok-developers-site-verification=SJ8XSVAnAVL4ewXcnsFkyzq47euAuVgp"
 
 # ── Legal pages ───────────────────────────────────────────────────────────────
 FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
