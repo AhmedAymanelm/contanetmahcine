@@ -64,9 +64,13 @@ def health_check():
 # ── TikTok URL-prefix ownership verification ──────────────────────────────────
 from fastapi.responses import PlainTextResponse, FileResponse
 
+TIKTOK_VERIFICATION_FILE = Path(__file__).parent.parent.parent / "tiktokSJ8XSVAnAVL4ewXcnsFkyzq47euAuVgp.txt"
+
 @app.get("/tiktokSJ8XSVAnAVL4ewXcnsFkyzq47euAuVgp.txt", response_class=PlainTextResponse, include_in_schema=False)
 def tiktok_verification():
-    return "SJ8XSVAnAVL4ewXcnsFkyzq47euAuVgp"
+    if TIKTOK_VERIFICATION_FILE.exists():
+        return TIKTOK_VERIFICATION_FILE.read_text(encoding="utf-8").strip()
+    return "tiktok-developers-site-verification=SJ8XSVAnAVL4ewXcnsFkyzq47euAuVgp"
 
 # ── Legal pages ───────────────────────────────────────────────────────────────
 FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
