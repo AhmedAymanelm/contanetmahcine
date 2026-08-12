@@ -83,6 +83,12 @@ function applyLogoToSidebar(logoUrl, appName) {
         sidebarMark.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;">`;
         sidebarMark.style.padding = '0';
         sidebarMark.style.background = 'transparent';
+        
+        // Also update the settings preview if it exists
+        const preview = document.getElementById('logo-preview');
+        if (preview) {
+            preview.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+        }
     }
     // Update sidebar app name (.name)
     if (appName) {
