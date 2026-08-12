@@ -41,8 +41,15 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     ).update({"status": "EXPIRED"}, synchronize_session=False)
     db.commit()
 
+    from datetime import timezone
+    now_utc = datetime.now(timezone.utc)
+    now_local = now_utc + timedelta(hours=3) # Africa/Cairo GMT+3
+    start_of_day_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    display_cutoff = (start_of_day_local - timedelta(hours=3)).replace(tzinfo=None)
+
     total_articles = db.query(RawArticle).filter(
-        func.lower(RawArticle.status) == 'pending'
+        func.lower(RawArticle.status) == 'pending',
+        RawArticle.created_at >= display_cutoff
     ).count()
     
     # 2. Pending Reviews
