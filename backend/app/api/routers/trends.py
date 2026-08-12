@@ -37,7 +37,7 @@ def fetch_trends_for_geo(geo: str) -> List[TrendItem]:
     if country_code == "AITNEWS":
         country_code = "EG" # Fallback
         
-    url = f"https://trends.google.com/trends/trendingsearches/daily/rss?geo={country_code}"
+    url = f"https://trends.google.com/trending/rss?geo={country_code}"
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -56,7 +56,7 @@ def fetch_trends_for_geo(geo: str) -> List[TrendItem]:
             return []
             
         # Namespaces used in Google Trends RSS
-        ns = {"ht": "https://trends.google.com/trends/trendingsearches/daily"}
+        ns = {"ht": "https://trends.google.com/trending/rss"}
         
         for item in channel.findall("item")[:15]:
             title = item.findtext("title") or "بدون عنوان"
