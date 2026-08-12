@@ -136,12 +136,15 @@ function saveAppIdentity() {
 // ── Save Account Settings ─────────────────────────────────────────────────────
 
 async function saveAccountSettings() {
+    const btn = document.querySelector('button[onclick="saveAccountSettings()"]');
+    const originalText = btn ? btn.textContent : 'حفظ بيانات الحساب';
+    
     const currentPassword = document.getElementById('setting-current-password')?.value;
     const newUsername = document.getElementById('setting-new-username')?.value.trim();
     const newPassword = document.getElementById('setting-new-password')?.value;
 
     if (!currentPassword) {
-        showSettingsMsg('❌ يجب إدخال كلمة السر الحالية للتحقق', 'error');
+        showSettingsMsg('❌ يجب إدخال كلمة السر الحالية للتحقق من هويتك', 'error');
         return;
     }
     if (!newUsername && !newPassword) {
@@ -150,6 +153,11 @@ async function saveAccountSettings() {
     }
 
     try {
+        if (btn) {
+            btn.textContent = '⏳ جاري الحفظ...';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+        }
         const token = localStorage.getItem('cm_token');
         const payload = { current_password: currentPassword };
         if (newUsername) payload.new_username = newUsername;
@@ -164,6 +172,12 @@ async function saveAccountSettings() {
             body: JSON.stringify(payload)
         });
         const data = await res.json();
+        
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        }
 
         if (!res.ok) {
             showSettingsMsg(`❌ ${data.detail || 'حدث خطأ'}`, 'error');
@@ -200,20 +214,45 @@ async function saveAccountSettings() {
 // ── Helper: Show message ──────────────────────────────────────────────────────
 
 function showSettingsMsg(text, type) {
-    const el = document.getElementById('settings-msg');
-    if (!el) return;
+    let el = document.getElementById('settings-msg');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'settings-msg';
+        document.body.appendChild(el);
+    }
+    
+    // Convert it into a floating toast
+    el.style.position = 'fixed';
+    el.style.bottom = '30px';
+    el.style.left = '50%';
+    el.style.transform = 'translateX(-50%)';
+    el.style.zIndex = '999999';
+    el.style.padding = '14px 24px';
+    el.style.borderRadius = '12px';
+    el.style.fontWeight = '700';
+    el.style.fontSize = '0.95rem';
+    el.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+    el.style.transition = 'opacity 0.3s';
     el.style.display = 'block';
+    el.style.opacity = '1';
+    el.style.textAlign = 'center';
+    el.style.minWidth = '300px';
+    
     el.textContent = text;
     if (type === 'success') {
-        el.style.background = 'rgba(16,185,129,0.12)';
-        el.style.border = '1px solid rgba(16,185,129,0.3)';
-        el.style.color = '#34d399';
+        el.style.background = 'rgba(16,185,129,0.95)';
+        el.style.border = '1px solid #10b981';
+        el.style.color = '#fff';
     } else {
-        el.style.background = 'rgba(239,68,68,0.1)';
-        el.style.border = '1px solid rgba(239,68,68,0.3)';
-        el.style.color = '#f87171';
+        el.style.background = 'rgba(239,68,68,0.95)';
+        el.style.border = '1px solid #ef4444';
+        el.style.color = '#fff';
     }
-    setTimeout(() => el.style.display = 'none', 4000);
+    
+    setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.style.display = 'none', 300);
+    }, 4000);
 }
 
 // ── Apply saved identity on page load ────────────────────────────────────────
