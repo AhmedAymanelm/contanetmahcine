@@ -1,5 +1,27 @@
 const API_BASE = '/api';
 
+// ════════════════════════════════════════════════
+// DARK / LIGHT THEME
+// ════════════════════════════════════════════════
+(function initTheme() {
+    const saved = localStorage.getItem('cm_theme') || 'dark';
+    applyTheme(saved);
+})();
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cm_theme', theme);
+    const icon  = document.getElementById('theme-icon');
+    const label = document.getElementById('theme-label');
+    if (icon)  icon.textContent  = theme === 'light' ? '☀️' : '🌙';
+    if (label) label.textContent = theme === 'light' ? 'الوضع النهاري' : 'الوضع الليلي';
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
 // Custom Toast Notification System
 window.showToast = function(message, type = 'success') {
     const existing = document.querySelector('.toast-notification');
