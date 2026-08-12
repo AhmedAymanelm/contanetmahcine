@@ -604,15 +604,19 @@ if(document.getElementById('save-edit-btn')) {
         btn.disabled = true;
 
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('cm_token');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
             const res = await fetch(`${API_BASE}/content/${currentEditId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ generated_content: newContent })
+                body: JSON.stringify({ generated_content: newContent }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             
             if (res.ok) {
-                showToast("تم حفظ التعديلات بنجاح", "success");
+                showToast("تم حفظ التعديلات بنجاح ✅", "success");
                 closeEditModal();
                 fetchReviewContent();
             } else {
