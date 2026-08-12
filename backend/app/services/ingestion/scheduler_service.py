@@ -1,7 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from app.api.deps import SessionLocal
 from app.models.source import Source
 from app.models.raw_article import RawArticle
@@ -76,12 +76,24 @@ def check_and_run_ingestion():
 def clear_raw_articles_at_midnight():
     db = SessionLocal()
     try:
-        # Delete pending articles only, to avoid breaking links with generated content
-        deleted = db.query(RawArticle).filter(RawArticle.status == "PENDING").delete(synchronize_session=False)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        
+        # Delete ContentItems older than 24h that are NOT SCHEDULED/PUBLISHED
+        deleted_content = db.query(ContentItem).filter(
+            ContentItem.created_at < cutoff,
+            ContentItem.status.notin_(["SCHEDULED", "PUBLISHED"])
+        ).delete(synchronize_session=False)
+        
+        # Delete ALL raw articles older than 24h (regardless of status)
+        deleted_raw = db.query(RawArticle).filter(
+            RawArticle.created_at < cutoff
+        ).delete(synchronize_session=False)
+        
         db.commit()
-        logger.info(f"Midnight Cleanup: Deleted {deleted} pending raw articles.")
+        logger.info(f"Cleanup (24h): Deleted {deleted_content} content items and {deleted_raw} raw articles older than 24 hours.")
     except Exception as e:
-        logger.error(f"Midnight Cleanup Error: {e}")
+        db.rollback()
+        logger.error(f"Cleanup Error: {e}")
     finally:
         db.close()
 
@@ -358,12 +370,12 @@ def start_scheduler():
             replace_existing=True
         )
         
-        # Run exactly at midnight every day
+        # Run every hour to clean articles older than 24h
         scheduler.add_job(
             clear_raw_articles_at_midnight,
-            trigger=CronTrigger(hour=0, minute=0),
-            id='midnight_cleanup_job',
-            name='Midnight Cleanup Job',
+            trigger=IntervalTrigger(hours=1),
+            id='cleanup_job',
+            name='24h Cleanup Job',
             replace_existing=True
         )
         

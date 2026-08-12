@@ -464,7 +464,7 @@ async function fetchRawArticles() {
                             <div class="snippet" style="font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:12px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${art.content || 'لا يوجد محتوى نصي...'}</div>
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:10px; margin-top:10px;">
-                            <div class="m" style="font-family:var(--mono); font-size:11px">${new Date(art.created_at).toLocaleTimeString('ar-EG')}</div>
+                            <div class="m" style="font-family:var(--mono); font-size:11px">${new Date(art.created_at).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'})}</div>
                             <div style="display:flex; gap:6px;">
                                 <button class="btn ghost" style="padding:4px 10px; font-size:11px;" onclick='openArticleModal(${JSON.stringify(art.title || "بدون عنوان")}, ${JSON.stringify(art.content || "")}, ${JSON.stringify(art.url)}, ${JSON.stringify(art.image_url || "")})'>قراءة</button>
                                 <button class="btn" style="padding:4px 10px; font-size:11px; background:var(--teal); color:#0a0a0a; border:none;" onclick='approveArticle(${art.id}, this)'>موافقة ⚡</button>
@@ -742,7 +742,7 @@ function renderContentList() {
                 if (gen && gen.trend_title) title = `🔥 ترند: ${gen.trend_title}`;
 
                 const d = new Date(item.created_at);
-                const dateStr = d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
+                const dateStr = d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
 
                 allContentList.innerHTML += `
                     <tr>
