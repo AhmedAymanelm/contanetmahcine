@@ -338,19 +338,74 @@
       </div>
 
       <!-- ================= EDIT MODAL ================= -->
-      <div id="edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-        <div style="background:var(--panel); width:100%; max-width:800px; max-height:90vh; border-radius:12px; display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden;">
-            <div style="padding:20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
-                <h2 style="margin:0; font-size:20px; color:var(--text);">تعديل المحتوى</h2>
-                <button onclick="closeEditModal()" style="background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer;">&times;</button>
+      <style>
+        @keyframes pulse-amber{0%{box-shadow:0 0 0 0 rgba(224,181,99,0.45);}70%{box-shadow:0 0 0 7px rgba(224,181,99,0);}100%{box-shadow:0 0 0 0 rgba(224,181,99,0);}}
+        .edit-tab{display:flex;align-items:center;gap:8px;padding:11px 16px;border-radius:10px 10px 0 0;font-size:13px;color:var(--muted);cursor:pointer;border:1px solid transparent;border-bottom:none;background:transparent;transition:all .15s ease;position:relative;top:1px;font-family:inherit;}
+        .edit-tab.active{color:var(--text);background:var(--panel-2);border-color:var(--line);border-bottom:1px solid var(--panel-2);}
+        .edit-tab:hover:not(.active){color:var(--text);}
+        .etab-badge{font-size:10px;padding:1px 7px;border-radius:20px;background:rgba(255,255,255,0.05);color:var(--muted);transition:all .15s;}
+        .edit-tab.active .etab-badge{background:rgba(53,211,153,0.15);color:var(--teal);}
+        .edit-panel{padding:22px 24px;}
+        .edit-field{margin-bottom:20px;}
+        .edit-field:last-child{margin-bottom:0;}
+        .edit-field-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+        .ename{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+        .ename code{font-family:monospace;font-size:11px;color:var(--muted);background:var(--panel);padding:2px 7px;border-radius:6px;}
+        .edit-field textarea{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;line-height:1.9;padding:13px 15px;resize:vertical;min-height:90px;transition:border-color .15s,box-shadow .15s;}
+        .edit-field textarea:focus{outline:none;border-color:rgba(53,211,153,0.4);box-shadow:0 0 0 4px rgba(53,211,153,0.1);}
+        .edit-field textarea.mono{font-family:monospace;font-size:12.5px;direction:ltr;text-align:left;line-height:1.7;}
+        .slide-card-em{border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow:hidden;margin-bottom:14px;}
+        .slide-card-em-head{display:flex;align-items:center;justify-content:space-between;padding:10px 15px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--line);}
+        .slide-num-em{width:22px;height:22px;border-radius:7px;background:rgba(53,211,153,0.12);color:var(--teal);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:11px;font-weight:700;}
+        .slide-body-em{padding:14px;display:flex;flex-direction:column;gap:12px;}
+        .mini-label-em{font-size:11px;color:var(--muted);margin-bottom:6px;}
+        .mini-label-em code{font-family:monospace;font-size:10px;background:var(--panel-2,#1a2521);padding:1px 5px;border-radius:4px;}
+        .mini-ta{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:inherit;font-size:13.5px;padding:9px 12px;resize:vertical;transition:border-color .15s,box-shadow .15s;}
+        .mini-ta:focus{outline:none;border-color:rgba(53,211,153,0.4);box-shadow:0 0 0 4px rgba(53,211,153,0.1);}
+        .add-slide-em{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;border:1.5px dashed var(--line);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;width:100%;font-family:inherit;transition:all .15s;margin-top:4px;}
+        .add-slide-em:hover{border-color:rgba(53,211,153,0.4);color:var(--teal);background:rgba(53,211,153,0.06);}
+        .em-del-btn{width:26px;height:26px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+        .em-del-btn:hover{background:rgba(224,116,95,0.1);color:#e0745f;border-color:rgba(224,116,95,0.3);}
+      </style>
+      <div id="edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.78); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+        <div style="width:100%; max-width:900px; max-height:92vh; display:flex; flex-direction:column; border-radius:20px; overflow:hidden; border:1px solid var(--line); box-shadow:0 30px 80px -20px rgba(0,0,0,0.8); background:var(--panel);">
+
+          <!-- Header -->
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--line); background:linear-gradient(180deg, rgba(53,211,153,0.05), transparent); flex-shrink:0;">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:38px;height:38px;border-radius:11px; background:rgba(53,211,153,0.12); border:1px solid rgba(53,211,153,0.3); display:flex;align-items:center;justify-content:center; color:var(--teal);">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </div>
+              <div>
+                <div style="font-size:17px; font-weight:600; color:var(--text);">تعديل المحتوى</div>
+                <div id="edit-modal-subtitle" style="font-size:12px; color:var(--muted); margin-top:2px;"></div>
+              </div>
             </div>
-            <div id="edit-modal-content" style="padding:20px; overflow-y:auto; flex:1;">
-                <!-- dynamic form fields will be injected here -->
+            <button onclick="closeEditModal()" style="width:32px;height:32px;border-radius:9px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; display:flex;align-items:center;justify-content:center; transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,0.06)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Type tabs -->
+          <div id="edit-modal-tabs" style="display:flex; gap:0; border-bottom:1px solid var(--line); padding:0 20px; flex-shrink:0; background:var(--panel);"></div>
+
+          <!-- Body panels -->
+          <div id="edit-modal-content" style="overflow-y:auto; flex:1; background:var(--panel-2,#17211d);"></div>
+
+          <!-- Footer -->
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-top:1px solid var(--line); background:var(--panel); flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
+              <span style="width:7px;height:7px;border-radius:50%;background:#e0b563; display:inline-block; animation:pulse-amber 2s infinite;"></span>
+              تعديلات غير محفوظة
             </div>
-            <div style="padding:15px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; background:var(--bg);">
-                <button class="btn ghost" onclick="closeEditModal()">إلغاء</button>
-                <button class="btn" style="background:var(--teal); color:#000; border:none;" id="save-edit-btn">حفظ التعديلات</button>
+            <div style="display:flex; gap:10px;">
+              <button class="btn ghost" onclick="closeEditModal()">إلغاء</button>
+              <button id="save-edit-btn" style="background:var(--teal); color:#06231a; border:none; border-radius:10px; padding:10px 22px; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; display:flex;align-items:center;gap:8px; box-shadow:0 8px 22px -8px rgba(53,211,153,0.5); transition:all .15s;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+                حفظ التعديلات
+              </button>
             </div>
+          </div>
         </div>
       </div>
 

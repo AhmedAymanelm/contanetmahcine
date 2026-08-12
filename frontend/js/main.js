@@ -322,55 +322,237 @@ async function addNewSource() {
 }
 
 let currentEditId = null;
+let currentEditData = null;
+let activeEditTab = null;
 
 function openEditModal(id) {
     currentEditId = id;
-    const currentEditData = window.reviewItemsData[id];
-    const container = document.getElementById('edit-modal-content');
-    container.innerHTML = '';
+    currentEditData = JSON.parse(JSON.stringify(window.reviewItemsData[id])); // deep copy
+    const tabs = document.getElementById('edit-modal-tabs');
+    const content = document.getElementById('edit-modal-content');
+    const subtitle = document.getElementById('edit-modal-subtitle');
+    tabs.innerHTML = '';
+    content.innerHTML = '';
 
-    if (typeof currentEditData !== 'object') {
-        container.innerHTML = `<textarea id="edit-raw" class="input" style="width:100%; height:300px; background:var(--bg); border:1px solid var(--line); color:var(--text); padding:10px;">${currentEditData}</textarea>`;
+    // Subtitle from the content
+    if (currentEditData && currentEditData.title) {
+        subtitle.innerText = currentEditData.title;
+    } else if (currentEditData && currentEditData.unified_post) {
+        subtitle.innerText = (currentEditData.unified_post || '').substring(0, 60) + '...';
     } else {
-        for (const [key, val] of Object.entries(currentEditData)) {
-            let label = document.createElement('label');
-            label.innerText = key;
-            label.style.display = 'block';
-            label.style.marginBottom = '8px';
-            label.style.color = 'var(--text)';
-            label.style.fontWeight = 'bold';
-            
-            let input = document.createElement('textarea');
-            input.className = 'input';
-            input.style.width = '100%';
-            input.style.minHeight = typeof val === 'string' ? '100px' : '200px';
-            input.style.marginBottom = '20px';
-            input.style.background = 'var(--bg)';
-            input.style.border = '1px solid var(--line)';
-            input.style.color = 'var(--text)';
-            input.style.padding = '10px';
-            
-            if (typeof val === 'string') {
-                input.value = val;
-            } else {
-                input.style.fontFamily = 'monospace';
-                input.style.direction = 'ltr';
-                input.value = JSON.stringify(val, null, 2);
-                input.dataset.json = 'true';
-            }
-            input.dataset.key = key;
-            
-            container.appendChild(label);
-            container.appendChild(input);
+        subtitle.innerText = '';
+    }
+
+    if (typeof currentEditData !== 'object' || currentEditData === null) {
+        // Raw string fallback
+        tabs.innerHTML = '';
+        content.innerHTML = `<div class="edit-panel"><div class="edit-field"><textarea id="edit-raw" style="width:100%;height:300px;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:11px;font-family:inherit;">${currentEditData}</textarea></div></div>`;
+    } else {
+        // Detect content type by keys present
+        const keys = Object.keys(currentEditData);
+        const isPost = keys.includes('unified_post') || keys.includes('linkedin_post');
+        const isCarousel = keys.includes('slides') || keys.includes('title');
+        const isReel = keys.includes('hook') || keys.includes('body') || keys.includes('visual_cues');
+
+        const tabDefs = [];
+        if (isPost) tabDefs.push({ id: 'post', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>', label: 'منشور موحّد', badge: '2 حقل' });
+        if (isCarousel) tabDefs.push({ id: 'slides', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>', label: 'شرائح', badge: 'كاروسيل' });
+        if (isReel) tabDefs.push({ id: 'reel', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>', label: 'سكريبت ريلز', badge: '4 حقول' });
+
+        // If no type detected, show raw JSON
+        if (tabDefs.length === 0) {
+            content.innerHTML = `<div class="edit-panel"><div class="edit-field"><textarea id="edit-raw" class="mono" style="width:100%;height:350px;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:11px;font-family:monospace;direction:ltr;">${JSON.stringify(currentEditData, null, 2)}</textarea></div></div>`;
+        } else {
+            // Build tabs
+            tabDefs.forEach((t, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'edit-tab' + (i === 0 ? ' active' : '');
+                btn.innerHTML = t.icon + ' ' + t.label + ` <span class="etab-badge">${t.badge}</span>`;
+                btn.onclick = () => {
+                    document.querySelectorAll('.edit-tab').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('.edit-panel-section').forEach(p => p.style.display = 'none');
+                    const panel = document.getElementById('em-panel-' + t.id);
+                    if (panel) panel.style.display = 'block';
+                };
+                tabs.appendChild(btn);
+            });
+
+            // Build panels
+            const wrap = document.createElement('div');
+            if (isPost) wrap.appendChild(buildPostPanel(currentEditData));
+            if (isCarousel) wrap.appendChild(buildCarouselPanel(currentEditData));
+            if (isReel) wrap.appendChild(buildReelPanel(currentEditData));
+            content.appendChild(wrap);
+
+            // Show first
+            document.querySelectorAll('.edit-panel-section').forEach((p, i) => p.style.display = i === 0 ? 'block' : 'none');
         }
     }
 
     document.getElementById('edit-modal').style.display = 'flex';
 }
 
+function buildPostPanel(data) {
+    const div = document.createElement('div');
+    div.id = 'em-panel-post';
+    div.className = 'edit-panel-section edit-panel';
+    div.innerHTML = `
+        <div class="edit-field">
+            <div class="edit-field-label">
+                <span class="ename"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> المنشور الموحّد <code>unified_post</code></span>
+            </div>
+            <textarea data-key="unified_post" rows="6">${data.unified_post || ''}</textarea>
+        </div>
+        ${data.linkedin_post !== undefined ? `
+        <div class="edit-field">
+            <div class="edit-field-label">
+                <span class="ename"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/><path d="M10 9h4v12h-4zM10 13a4 4 0 0 1 8 0v8h-4v-8a2 2 0 0 0-2-2h-2"/></svg> منشور لينكدإن <code>linkedin_post</code></span>
+            </div>
+            <textarea data-key="linkedin_post" rows="5" style="direction:ltr;text-align:left;">${data.linkedin_post || ''}</textarea>
+        </div>
+        ` : ''}
+    `;
+    return div;
+}
+
+function buildCarouselPanel(data) {
+    const div = document.createElement('div');
+    div.id = 'em-panel-slides';
+    div.className = 'edit-panel-section edit-panel';
+
+    const titleHtml = `
+        <div class="edit-field">
+            <div class="edit-field-label">
+                <span class="ename"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg> العنوان <code>title</code></span>
+            </div>
+            <textarea data-key="title" rows="2">${data.title || ''}</textarea>
+        </div>
+    `;
+
+    let slidesHtml = '<div id="em-slides-container">';
+    const slides = Array.isArray(data.slides) ? data.slides : [];
+    slides.forEach((slide, idx) => slidesHtml += buildSlideCard(slide, idx));
+    slidesHtml += '</div>';
+    slidesHtml += `<button class="add-slide-em" onclick="emAddSlide()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> إضافة شريحة جديدة</button>`;
+
+    div.innerHTML = titleHtml + slidesHtml;
+    return div;
+}
+
+function buildSlideCard(slide, idx) {
+    const heading = slide.heading || '';
+    const body = slide.body || '';
+    const tips = Array.isArray(slide.tips_list) ? slide.tips_list : [];
+    const tipsHtml = tips.length > 0 ? `
+        <div>
+            <div class="mini-label-em"><code>tips_list</code> نقاط إضافية</div>
+            <div class="em-tips-list" data-slide="${idx}">
+                ${tips.map((t, ti) => `
+                <div class="em-tip-row" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <span style="color:#e0b563;">●</span>
+                    <input type="text" class="mini-ta" value="${t.replace(/"/g, '&quot;')}" data-slide="${idx}" data-tip="${ti}" style="flex:1;min-height:unset;resize:none;padding:8px 12px;">
+                    <button class="em-del-btn" onclick="emRemoveTip(${idx},${ti})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                </div>`).join('')}
+            </div>
+            <button class="add-slide-em" style="padding:8px;margin-top:0;border-radius:9px;font-size:12px;" onclick="emAddTip(${idx})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> إضافة نقطة</button>
+        </div>
+    ` : '';
+
+    return `
+    <div class="slide-card-em" data-slide-idx="${idx}">
+        <div class="slide-card-em-head">
+            <div style="display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);font-weight:500;">
+                <span class="slide-num-em">${String(idx+1).padStart(2,'0')}</span> الشريحة ${idx === 0 ? 'الأولى' : idx === 1 ? 'الثانية' : idx + 1}
+            </div>
+            <button class="em-del-btn" onclick="emRemoveSlide(${idx})" title="حذف الشريحة"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+        </div>
+        <div class="slide-body-em">
+            <div>
+                <div class="mini-label-em"><code>heading</code> العنوان</div>
+                <textarea class="mini-ta" rows="1" data-slide="${idx}" data-field="heading">${heading}</textarea>
+            </div>
+            <div>
+                <div class="mini-label-em"><code>body</code> النص</div>
+                <textarea class="mini-ta" rows="3" data-slide="${idx}" data-field="body">${body}</textarea>
+            </div>
+            ${tipsHtml}
+        </div>
+    </div>`;
+}
+
+function emRemoveSlide(idx) {
+    const container = document.getElementById('em-slides-container');
+    const cards = container.querySelectorAll('.slide-card-em');
+    if (cards.length <= 1) return;
+    cards[idx].remove();
+    // Re-number
+    container.querySelectorAll('.slide-card-em').forEach((c, i) => {
+        c.dataset.slideIdx = i;
+        const num = c.querySelector('.slide-num-em');
+        if (num) num.textContent = String(i+1).padStart(2,'0');
+    });
+}
+
+function emAddSlide() {
+    const container = document.getElementById('em-slides-container');
+    const idx = container.querySelectorAll('.slide-card-em').length;
+    container.insertAdjacentHTML('beforeend', buildSlideCard({ heading:'', body:'' }, idx));
+}
+
+function emAddTip(slideIdx) {
+    const container = document.getElementById('em-slides-container');
+    const card = container.querySelector(`.slide-card-em[data-slide-idx="${slideIdx}"]`);
+    if (!card) return;
+    const tipsList = card.querySelector('.em-tips-list');
+    if (!tipsList) return;
+    const tipCount = tipsList.querySelectorAll('.em-tip-row').length;
+    tipsList.insertAdjacentHTML('beforeend', `
+        <div class="em-tip-row" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="color:#e0b563;">●</span>
+            <input type="text" class="mini-ta" value="" data-slide="${slideIdx}" data-tip="${tipCount}" style="flex:1;min-height:unset;resize:none;padding:8px 12px;">
+            <button class="em-del-btn" onclick="this.parentElement.remove()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+    `);
+}
+
+function emRemoveTip(slideIdx, tipIdx) {
+    const container = document.getElementById('em-slides-container');
+    const card = container.querySelector(`.slide-card-em[data-slide-idx="${slideIdx}"]`);
+    if (!card) return;
+    const tips = card.querySelectorAll('.em-tip-row');
+    if (tips[tipIdx]) tips[tipIdx].remove();
+}
+
+function buildReelPanel(data) {
+    const div = document.createElement('div');
+    div.id = 'em-panel-reel';
+    div.className = 'edit-panel-section edit-panel';
+    div.innerHTML = `
+        <div class="edit-field">
+            <div class="edit-field-label"><span class="ename" style="color:#e0745f;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg> الجملة الافتتاحية <code>hook</code></span></div>
+            <textarea data-key="hook" rows="2">${data.hook || ''}</textarea>
+        </div>
+        <div class="edit-field">
+            <div class="edit-field-label"><span class="ename"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> المحتوى <code>body</code></span></div>
+            <textarea data-key="body" rows="5">${data.body || ''}</textarea>
+        </div>
+        <div class="edit-field">
+            <div class="edit-field-label"><span class="ename" style="color:#e0b563;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg> دعوة للتفاعل <code>call_to_action</code></span></div>
+            <textarea data-key="call_to_action" rows="3">${data.call_to_action || ''}</textarea>
+        </div>
+        <div class="edit-field">
+            <div class="edit-field-label"><span class="ename"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L7 21"/></svg> إرشادات بصرية <code>visual_cues</code></span></div>
+            <textarea data-key="visual_cues" rows="4">${data.visual_cues || ''}</textarea>
+        </div>
+    `;
+    return div;
+}
+
 function closeEditModal() {
     document.getElementById('edit-modal').style.display = 'none';
     currentEditId = null;
+    currentEditData = null;
 }
 
 if(document.getElementById('save-edit-btn')) {
@@ -379,34 +561,53 @@ if(document.getElementById('save-edit-btn')) {
         
         let newContent = {};
         const container = document.getElementById('edit-modal-content');
-        
+
         if (document.getElementById('edit-raw')) {
-            newContent = document.getElementById('edit-raw').value;
+            try { newContent = JSON.parse(document.getElementById('edit-raw').value); }
+            catch(e) { newContent = document.getElementById('edit-raw').value; }
         } else {
-            const inputs = container.querySelectorAll('textarea');
-            inputs.forEach(input => {
-                const key = input.dataset.key;
-                if (input.dataset.json) {
-                    try {
-                        newContent[key] = JSON.parse(input.value);
-                    } catch(e) {
-                        newContent[key] = input.value;
-                    }
-                } else {
-                    newContent[key] = input.value;
-                }
+            // Copy original data
+            newContent = JSON.parse(JSON.stringify(currentEditData));
+
+            // Collect simple key fields (post & reel)
+            container.querySelectorAll('textarea[data-key]').forEach(ta => {
+                newContent[ta.dataset.key] = ta.value;
             });
+
+            // Collect carousel title
+            const titleTA = container.querySelector('textarea[data-key="title"]');
+            if (titleTA) newContent.title = titleTA.value;
+
+            // Collect slides
+            const slidesContainer = document.getElementById('em-slides-container');
+            if (slidesContainer) {
+                const slides = [];
+                slidesContainer.querySelectorAll('.slide-card-em').forEach(card => {
+                    const slide = {};
+                    const headingTA = card.querySelector('textarea[data-field="heading"]');
+                    const bodyTA = card.querySelector('textarea[data-field="body"]');
+                    if (headingTA) slide.heading = headingTA.value;
+                    if (bodyTA) slide.body = bodyTA.value;
+                    const tipInputs = card.querySelectorAll('input[data-tip]');
+                    if (tipInputs.length > 0) {
+                        slide.tips_list = Array.from(tipInputs).map(i => i.value).filter(v => v.trim());
+                    }
+                    slides.push(slide);
+                });
+                newContent.slides = slides;
+            }
         }
 
         const btn = document.getElementById('save-edit-btn');
-        const orig = btn.innerText;
-        btn.innerText = "جاري الحفظ...";
+        const origHTML = btn.innerHTML;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> جاري الحفظ...';
         btn.disabled = true;
 
         try {
+            const token = localStorage.getItem('auth_token');
             const res = await fetch(`${API_BASE}/content/${currentEditId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ generated_content: newContent })
             });
             
