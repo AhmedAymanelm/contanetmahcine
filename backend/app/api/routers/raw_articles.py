@@ -6,7 +6,7 @@ import concurrent.futures
 from app.api.deps import get_db
 from app.models.raw_article import RawArticle
 from app.schemas.raw_article import RawArticleResponse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.services.ingestion.runner import ingest_all_active_sources
 from app.services.generation.runner import process_article_generation
 import logging
