@@ -1003,116 +1003,170 @@ async function fetchReviewContent() {
         if (reviewCount) reviewCount.innerText = data.length || '-';
         
         if(reviewList) {
-            // Prevent rebuilding the DOM if the data hasn't changed to avoid interrupting clicks
             const currentHash = JSON.stringify({data, generatingData});
             if (window.lastReviewDataHash === currentHash) {
-                if (generatingData.length > 0) {
-                    setTimeout(fetchReviewContent, 3000);
-                }
+                if (generatingData.length > 0) setTimeout(fetchReviewContent, 3000);
                 return;
             }
             window.lastReviewDataHash = currentHash;
-            
             reviewList.innerHTML = '';
-            
+
             if (data.length === 0 && generatingData.length === 0) {
                 reviewList.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px;">لا يوجد محتوى بانتظار المراجعة.</div>`;
                 return;
             }
 
-            generatingData.forEach(art => {
-                reviewList.innerHTML += `
-                    <div class="panel" style="display:flex; flex-direction:column; height:100%; opacity:0.6; border: 1px dashed var(--teal);">
-                        <div class="thumb" style="width:100%; height:120px; margin-bottom:12px; font-size:12px; background:linear-gradient(160deg,#202428,#15181a); color:#fff; display:flex; align-items:center; justify-content:center; text-align:center; padding:10px;">
-                            ${art.title || "بدون عنوان"}
-                        </div>
-                        <div class="review-body" style="display:flex; flex-direction:column; flex:1; text-align:center; align-items:center; justify-content:center;">
-                            <div style="width: 30px; height: 30px; border: 3px solid var(--line); border-top: 3px solid var(--teal); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
-                            <div style="color:var(--teal); font-weight:bold;">جاري الصياغة بالذكاء الاصطناعي...</div>
-                            <div style="font-size:12px; color:var(--muted); margin-top:5px;">هذا يستغرق بضع ثوانٍ</div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            window.reviewItemsData = window.reviewItemsData || {};
+            window.reviewItemsData    = window.reviewItemsData    || {};
             window.reviewItemsDataRaw = window.reviewItemsDataRaw || {};
-            
+
+            // ── Group content items by raw_article_id ──────────────────────────
+            const groups = {}; // key = raw_article_id (or "noarticle_<id>")
+            const groupOrder = [];
+
             data.forEach(item => {
-                let generated = typeof item.generated_content === 'string' ? JSON.parse(item.generated_content) : item.generated_content;
-                window.reviewItemsData[item.id] = generated;
+                let generated = typeof item.generated_content === 'string'
+                    ? JSON.parse(item.generated_content)
+                    : item.generated_content;
+                window.reviewItemsData[item.id]    = generated;
                 window.reviewItemsDataRaw[item.id] = item;
-                
-                let title = item.raw_article ? item.raw_article.title : 'بدون عنوان';
-                if (generated && generated.trend_title) {
-                    title = `🔥 ترند: ${generated.trend_title}`;
+
+                const gKey = item.raw_article_id != null ? String(item.raw_article_id) : `solo_${item.id}`;
+                if (!groups[gKey]) {
+                    groups[gKey] = { article: item.raw_article || null, items: [] };
+                    groupOrder.push(gKey);
                 }
-                let sourceName = item.raw_article && item.raw_article.source ? item.raw_article.source.name : 'AI';
-                let typeText = item.content_type;
-                let snippetHtml = '';
-                
-                if (item.content_type === 'POST') {
-                } else if (item.content_type === 'CAROUSEL') {
-                    snippetHtml = `<b>العنوان:</b> ${generated.title || ''}<br><br><b>الشريحة 1:</b> ${generated.slides && generated.slides[0] ? generated.slides[0].heading : ''}`;
-                } else if (item.content_type === 'VIDEO_SCRIPT') {
-                    snippetHtml = `<b>Hook:</b> ${generated.hook || ''}<br><br><b>Body:</b> ${generated.body || ''}`;
-                }
-                
-                let platforms = item.platform ? item.platform : (Array.isArray(item.platforms) ? item.platforms.join(', ') : item.platforms);
-                if (!platforms) platforms = '';
-                
-                reviewList.innerHTML += `
-                    <div class="panel" style="display:flex; flex-direction:column; height:100%;" id="review-card-${item.id}">
-                        <div class="thumb" style="width:100%; height:120px; margin-bottom:12px; font-size:12px; background:linear-gradient(160deg,#202428,#15181a); color:#fff; display:flex; align-items:center; justify-content:center; text-align:center; padding:10px;">${title}</div>
-                        <div class="review-body" style="display:flex; flex-direction:column; flex:1;">
-                            <div class="t">${typeText} — ${sourceName}</div>
-                            <div class="m" style="margin-top:4px;">المنصات: ${platforms}</div>
-                            <div class="snippet" style="margin-top:10px; font-size:13px; line-height:1.5; color:var(--text); flex-grow:1; max-height:100px; overflow-y:auto; padding-right:5px;">
-                                ${snippetHtml}
-                            </div>
-                            ${item.content_type === 'CAROUSEL' ? (() => {
-                                let hasUrls = generated.carousel_urls && generated.carousel_urls.length > 0;
-                                let html = `
-                                <div style="margin-top:10px; display:flex; gap:6px;">
-                                    <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7); color:#fff; border:none; padding:10px 15px; font-size:14px; border-radius:10px; cursor:pointer; width:100%; display:flex; justify-content:center; gap:8px;" onclick="openTemplatePickerModal(${item.id})">
-                                        <span>✨</span> ${hasUrls ? 'إعادة توليد الكاروسيل' : 'توليد الكاروسيل بالصور'}
-                                    </button>
-                                </div>`;
-                                
-                                if (hasUrls) {
-                                    const slidesJson = JSON.stringify(generated.carousel_urls).replace(/"/g, '&quot;');
-                                    html += `
-                                    <div id="carousel-slides-${item.id}" style="margin-top:10px; display:flex; gap:6px; width:100%; align-items:stretch;">
-                                        <button class="btn" style="flex:1; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:8px 12px; font-size:13px; border-radius:8px; cursor:pointer;" onclick="openSwiperModal(${slidesJson})">
-                                            👀 معاينة
-                                        </button>
-                                        <button class="btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:8px; border-radius:8px; cursor:pointer; width:45px; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'" onclick="deleteCarouselSlides(${item.id})" title="حذف الصور">
-                                            🗑️
-                                        </button>
-                                    </div>`;
-                                } else {
-                                    html += `<div id="carousel-slides-${item.id}" style="display:none; margin-top:10px; display:flex; gap:6px;"></div>`;
-                                }
-                                return html;
-                            })() : ''}
-                            <div class="review-actions" style="margin-top:auto; border-top:1px solid var(--line); padding-top:10px; display:flex; gap:8px;">
-                                <button class="btn ghost" style="color:var(--red); padding:6px 12px;" onclick="rejectContentItem(${item.id}, this)">رفض</button>
-                                <button class="btn ghost" style="padding:6px 12px;" onclick="openEditModal(${item.id})">تعديل</button>
-                                <button class="btn" style="background:var(--teal); color:#000; padding:6px 12px; flex-grow:1;" onclick="openPreviewModal(${item.id}, this)">موافقة واعتماد</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                groups[gKey].items.push({ item, generated });
             });
 
-            if (generatingData.length > 0) {
-                setTimeout(fetchReviewContent, 3000);
-            }
+            // ── Render "generating" placeholders (one per generating article) ──
+            generatingData.forEach(art => {
+                reviewList.innerHTML += `
+                <div style="grid-column: 1 / -1;">
+                  <div style="border:1.5px dashed var(--teal); border-radius:16px; background:var(--panel); padding:0; overflow:hidden; opacity:0.65; margin-bottom:0;">
+                    <!-- Article header -->
+                    <div style="display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line); background:linear-gradient(90deg,rgba(53,211,153,0.06),transparent);">
+                      ${art.image_url ? `<img src="${art.image_url}" style="width:46px;height:46px;object-fit:cover;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
+                      <div style="flex:1; min-width:0;">
+                        <div style="font-size:13.5px;font-weight:600;color:var(--text);line-height:1.4;">${art.title || 'بدون عنوان'}</div>
+                        <div style="font-size:11px;color:var(--muted);margin-top:2px;">📡 ${art.source_name || ''}</div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:8px;color:var(--teal);font-size:12px;white-space:nowrap;">
+                        <div style="width:16px;height:16px;border:2px solid var(--line);border-top:2px solid var(--teal);border-radius:50%;animation:spin 1s linear infinite;"></div>
+                        جاري الصياغة...
+                      </div>
+                    </div>
+                  </div>
+                </div>`;
+            });
+
+            // ── Render grouped article boxes ────────────────────────────────────
+            groupOrder.forEach(gKey => {
+                const { article, items: groupItems } = groups[gKey];
+
+                const articleTitle  = article ? (article.title || 'بدون عنوان') : 'محتوى مستقل';
+                const articleSource = article && article.source ? article.source.name : 'AI';
+                const articleImage  = article ? article.image_url : null;
+                const articleDate   = article && article.published_at
+                    ? new Date(article.published_at).toLocaleDateString('ar-SA', {day:'numeric', month:'short'})
+                    : '';
+
+                // Type badge colours
+                const typeMeta = {
+                    'POST':         { label:'منشور',    bg:'rgba(53,211,153,0.12)',  color:'var(--teal)' },
+                    'CAROUSEL':     { label:'كاروسيل',  bg:'rgba(139,92,246,0.12)',  color:'#a78bfa' },
+                    'VIDEO_SCRIPT': { label:'سكريبت',   bg:'rgba(251,146,60,0.12)',  color:'#fb923c' },
+                };
+
+                // Build sub-cards HTML for each item in this group
+                let subCardsHtml = '';
+                groupItems.forEach(({ item, generated }) => {
+                    const tm  = typeMeta[item.content_type] || { label: item.content_type, bg:'rgba(255,255,255,0.06)', color:'var(--muted)' };
+                    let platforms = Array.isArray(item.platforms)
+                        ? item.platforms.join(' · ')
+                        : (item.platforms || item.platform || '');
+
+                    // Snippet preview
+                    let snippetHtml = '';
+                    if (item.content_type === 'POST') {
+                        const txt = generated && (generated.unified_post || generated.post_text || '');
+                        snippetHtml = `<div style="font-size:12.5px;line-height:1.7;color:var(--text);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${txt}</div>`;
+                    } else if (item.content_type === 'CAROUSEL') {
+                        snippetHtml = `<div style="font-size:12.5px;line-height:1.6;color:var(--text);">
+                            <b style="color:var(--muted);font-size:11px;">العنوان</b><br>${generated && generated.title || ''}
+                            ${generated && generated.slides && generated.slides[0] ? `<br><b style="color:var(--muted);font-size:11px;margin-top:6px;display:block;">الشريحة الأولى</b><br>${generated.slides[0].heading || ''}` : ''}
+                        </div>`;
+                    } else if (item.content_type === 'VIDEO_SCRIPT') {
+                        snippetHtml = `<div style="font-size:12.5px;line-height:1.6;color:var(--text);">
+                            <b style="color:#fb923c;font-size:11px;">Hook</b><br>${generated && generated.hook || ''}
+                            ${generated && generated.body ? `<br><b style="color:var(--muted);font-size:11px;margin-top:6px;display:block;">Body</b><br><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${generated.body}</span>` : ''}
+                        </div>`;
+                    }
+
+                    // Carousel image generation controls
+                    let carouselControls = '';
+                    if (item.content_type === 'CAROUSEL') {
+                        const hasUrls = generated && generated.carousel_urls && generated.carousel_urls.length > 0;
+                        carouselControls = `<div style="margin-bottom:10px;display:flex;gap:6px;">
+                            <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;padding:8px 14px;font-size:12.5px;border-radius:9px;cursor:pointer;flex:1;display:flex;justify-content:center;gap:6px;" onclick="openTemplatePickerModal(${item.id})">
+                                ✨ ${hasUrls ? 'إعادة توليد الكاروسيل' : 'توليد الكاروسيل بالصور'}
+                            </button>
+                            ${hasUrls ? `
+                            <button class="btn" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);padding:8px 12px;border-radius:9px;cursor:pointer;font-size:12.5px;" onclick="openSwiperModal(${JSON.stringify(generated.carousel_urls).replace(/"/g,'&quot;')})">👀</button>
+                            <button class="btn" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.25);padding:8px 10px;border-radius:9px;cursor:pointer;font-size:12.5px;" onclick="deleteCarouselSlides(${item.id})">🗑️</button>` : ''}
+                        </div>`;
+                    }
+
+                    subCardsHtml += `
+                    <div id="review-card-${item.id}" style="background:var(--bg);border:1px solid var(--line);border-radius:13px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s;" onmouseover="this.style.borderColor='rgba(53,211,153,0.3)'" onmouseout="this.style.borderColor='var(--line)'">
+                        <!-- Type badge + platforms -->
+                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                            <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${tm.bg};color:${tm.color};">${tm.label}</span>
+                            <span style="font-size:11px;color:var(--muted);">${platforms}</span>
+                        </div>
+                        <!-- Snippet -->
+                        <div style="flex:1;">${snippetHtml}</div>
+                        <!-- Carousel controls -->
+                        ${carouselControls}
+                        <!-- Actions -->
+                        <div style="display:flex;gap:7px;padding-top:8px;border-top:1px solid var(--line);">
+                            <button class="btn ghost" style="color:var(--red);padding:6px 10px;font-size:12.5px;" onclick="rejectContentItem(${item.id}, this)">رفض</button>
+                            <button class="btn ghost" style="padding:6px 10px;font-size:12.5px;" onclick="openEditModal(${item.id})">تعديل</button>
+                            <button class="btn" style="background:var(--teal);color:#000;padding:6px 12px;flex-grow:1;font-size:12.5px;" onclick="openPreviewModal(${item.id}, this)">موافقة واعتماد</button>
+                        </div>
+                    </div>`;
+                });
+
+                reviewList.innerHTML += `
+                <div style="grid-column: 1 / -1;">
+                  <div style="border:1px solid var(--line);border-radius:18px;background:var(--panel);overflow:hidden;margin-bottom:4px;">
+                    <!-- Article header row -->
+                    <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(53,211,153,0.04),transparent);">
+                        ${articleImage ? `<img src="${articleImage}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">` : `<div style="width:52px;height:52px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">📰</div>`}
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:14px;font-weight:600;color:var(--text);line-height:1.4;">${articleTitle}</div>
+                            <div style="font-size:11.5px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:8px;">
+                                <span>📡 ${articleSource}</span>
+                                ${articleDate ? `<span style="opacity:0.5;">•</span><span>🗓️ ${articleDate}</span>` : ''}
+                                <span style="opacity:0.5;">•</span>
+                                <span style="color:var(--teal);">${groupItems.length} ${groupItems.length === 1 ? 'صيغة' : 'صيغ'} مُولَّدة</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Sub-cards grid -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:14px 16px;">
+                        ${subCardsHtml}
+                    </div>
+                  </div>
+                </div>`;
+            });
+
+            if (generatingData.length > 0) setTimeout(fetchReviewContent, 3000);
         }
     } catch(err) {
         console.error(err);
     }
 }
+
 
 window.currentWeekOffset = 0;
 
