@@ -94,7 +94,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         from app.core.config import settings
         import httpx
         if settings.INSTAGRAM_ACCESS_TOKEN and settings.INSTAGRAM_ACCOUNT_ID:
-            url = f"https://graph.instagram.com/v19.0/{settings.INSTAGRAM_ACCOUNT_ID}/media?fields=like_count,comments_count&access_token={settings.INSTAGRAM_ACCESS_TOKEN}"
+            url = f"https://graph.instagram.com/v19.0/{settings.INSTAGRAM_ACCOUNT_ID}/media?fields=like_count,comments_count&limit=50&access_token={settings.INSTAGRAM_ACCESS_TOKEN}"
             with httpx.Client(timeout=3.0) as client:
                 res = client.get(url)
                 if res.status_code == 200:
@@ -107,7 +107,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     # Fetch real Facebook stats
     try:
         if settings.FACEBOOK_ACCESS_TOKEN and settings.FACEBOOK_PAGE_ID:
-            fb_url = f"https://graph.facebook.com/v19.0/{settings.FACEBOOK_PAGE_ID}/posts?fields=likes.summary(true),comments.summary(true)&access_token={settings.FACEBOOK_ACCESS_TOKEN}"
+            fb_url = f"https://graph.facebook.com/v19.0/{settings.FACEBOOK_PAGE_ID}/posts?fields=likes.summary(true),comments.summary(true)&limit=50&access_token={settings.FACEBOOK_ACCESS_TOKEN}"
             with httpx.Client(timeout=3.0) as client:
                 fb_res = client.get(fb_url)
                 if fb_res.status_code == 200:
