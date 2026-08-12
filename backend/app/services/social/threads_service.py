@@ -164,6 +164,7 @@ class ThreadsService:
                 "configured": True, 
                 "connected": True, 
                 "account_id": token_entry.account_id,
+                "username": token_entry.account_id,  # Threads uses numeric ID as username
                 "expires_at": token_entry.expires_at
             }
         

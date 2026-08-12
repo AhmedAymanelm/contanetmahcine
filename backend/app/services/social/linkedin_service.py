@@ -180,6 +180,7 @@ class LinkedInService:
                 "configured": True, 
                 "connected": True, 
                 "account_id": token_entry.account_id,
+                "username": token_entry.account_id,  # LinkedIn URN used as identifier
                 "expires_at": token_entry.expires_at
             }
         

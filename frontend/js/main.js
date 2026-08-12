@@ -1656,11 +1656,19 @@ async function fetchPlatformStatus() {
     let thConnected = false;
     let thDesc = 'غير مربوط';
     try {
-        const res = await fetch(`${API_BASE}/threads/status`);
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/threads/status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
             const data = await res.json();
             thConnected = data.connected;
-            thDesc = thConnected ? 'حساب مربوط' : 'فشل الاتصال';
+            if (thConnected) {
+                const uid = data.username || data.account_id || '';
+                thDesc = uid ? `حساب مربوط (${uid})` : 'حساب مربوط';
+            } else {
+                thDesc = data.configured === false ? 'غير مفعّل' : 'غير مربوط';
+            }
         }
     } catch (e) {
         console.error("Failed to fetch Threads status", e);
@@ -1669,11 +1677,19 @@ async function fetchPlatformStatus() {
     let liConnected = false;
     let liDesc = 'غير مربوط';
     try {
-        const res = await fetch(`${API_BASE}/social/linkedin/status`);
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/social/linkedin/status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
             const data = await res.json();
             liConnected = data.connected;
-            liDesc = liConnected ? 'حساب مربوط' : 'فشل الاتصال';
+            if (liConnected) {
+                const uid = data.username || data.account_id || '';
+                liDesc = uid ? `حساب مربوط (${uid})` : 'حساب مربوط';
+            } else {
+                liDesc = data.configured === false ? 'غير مفعّل' : 'غير مربوط';
+            }
         }
     } catch (e) {
         console.error("Failed to fetch LinkedIn status", e);
