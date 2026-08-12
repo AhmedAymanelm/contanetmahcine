@@ -1624,19 +1624,29 @@ function renderPreview(platformId, gen, item) {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' });
 
+    // Resolve the image to show in the preview
+    const previewImg = (type === 'POST')
+        ? (gen.image_url || (item.raw_article && item.raw_article.image_url) || null)
+        : null;
+
+    const imgBlock = (height = '220px') => previewImg
+        ? `<img src="${previewImg}" style="width:100%;height:${height};object-fit:cover;display:block;" onerror="this.style.display='none'">`
+        : `<div style="width:100%;height:${height};background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;">📸</span></div>`;
+
     let mockupHtml = '';
 
     if (platformId === 'FB' || platformId === 'Li') {
-        // LinkedIn/Facebook card style
         const headerColor = platformId === 'Li' ? '#0077b5' : '#1877f2';
+        const platformName = platformId === 'Li' ? 'LinkedIn' : 'Facebook';
         mockupHtml = `
         <div style="background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.3); font-family:'Segoe UI',sans-serif; direction:ltr;">
             <div style="background:${headerColor}; padding:12px 16px; display:flex; align-items:center; gap:10px;">
-                <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
-                <div><div style="color:#fff;font-weight:700;font-size:14px;">غرفة المحتوى</div><div style="color:rgba(255,255,255,0.7);font-size:11px;">${timeStr} • 🌐</div></div>
+                <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
+                <div><div style="color:#fff;font-weight:700;font-size:14px;">غرفة المحتوى</div><div style="color:rgba(255,255,255,0.7);font-size:11px;">${timeStr} · 🌐 ${platformName}</div></div>
             </div>
-            <div style="padding:16px; color:#1c1e21; font-size:14px; line-height:1.7; text-align:right; direction:rtl;">${escHtml(postText)}</div>
-            <div style="padding:8px 16px 12px; border-top:1px solid #e4e6eb; display:flex; gap:20px; color:#65676b; font-size:13px;">
+            <div style="padding:14px 16px; color:#1c1e21; font-size:14px; line-height:1.75; text-align:right; direction:rtl;">${escHtml(postText)}</div>
+            ${imgBlock('220px')}
+            <div style="padding:10px 16px 12px; border-top:1px solid #e4e6eb; display:flex; gap:22px; color:#65676b; font-size:13px;">
                 <span>👍 إعجاب</span><span>💬 تعليق</span><span>↗️ مشاركة</span>
             </div>
         </div>`;
@@ -1648,9 +1658,7 @@ function renderPreview(platformId, gen, item) {
                 <div style="font-weight:600;font-size:13px;color:#000;">content_machine</div>
                 <div style="margin-right:auto;color:#0095f6;font-size:12px;font-weight:600;">متابعة</div>
             </div>
-            <div style="width:100%;height:200px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;">
-                <span style="font-size:48px;">📸</span>
-            </div>
+            ${imgBlock('260px')}
             <div style="padding:10px 12px;">
                 <div style="display:flex;gap:14px;margin-bottom:8px;font-size:22px;">❤️ 💬 ✈️</div>
                 <div style="font-size:13px;color:#000;line-height:1.5;text-align:right;direction:rtl;"><b>content_machine</b> ${escHtml(postText.substring(0,200))}${postText.length>200?'...':''}</div>
@@ -1668,6 +1676,7 @@ function renderPreview(platformId, gen, item) {
                         <span style="color:#71767b;font-size:13px;">@content_machine · ${timeStr}</span>
                     </div>
                     <div style="font-size:14px;line-height:1.7;text-align:right;direction:rtl;">${escHtml(postText.substring(0,280))}${postText.length>280?'...':''}</div>
+                    ${previewImg ? `<img src="${previewImg}" style="width:100%;border-radius:12px;margin-top:10px;max-height:200px;object-fit:cover;" onerror="this.style.display='none'">` : ''}
                     <div style="display:flex;gap:20px;margin-top:12px;color:#71767b;font-size:13px;">
                         <span>💬 رد</span><span>🔁 إعادة تغريد</span><span>❤️ إعجاب</span>
                     </div>
@@ -1678,12 +1687,10 @@ function renderPreview(platformId, gen, item) {
         const bgColor = platformId === 'TT' ? '#010101' : '#101010';
         mockupHtml = `
         <div style="background:${bgColor}; border-radius:14px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.5); color:#fff; font-family:-apple-system,sans-serif; direction:ltr;">
-            <div style="width:100%;height:160px;background:linear-gradient(135deg,#1a1a2e,#0f3460);display:flex;align-items:center;justify-content:center;">
-                <span style="font-size:48px;">${platformId === 'TT' ? '🎬' : '🧵'}</span>
-            </div>
+            ${imgBlock('180px')}
             <div style="padding:14px;">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                    <div style="width:32px;height:32px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;">👤</div>
+                    <div style="width:32px;height:32px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;">${platformId === 'TT' ? '🎬' : '🧵'}</div>
                     <span style="font-weight:700;font-size:13px;">content_machine</span>
                 </div>
                 <div style="font-size:13px;line-height:1.6;text-align:right;direction:rtl;">${escHtml(postText.substring(0,250))}${postText.length>250?'...':''}</div>
@@ -1695,6 +1702,7 @@ function renderPreview(platformId, gen, item) {
     } else {
         mockupHtml = `<div style="background:var(--panel);border-radius:14px;padding:20px;border:1px solid var(--line);"><div style="font-size:14px;line-height:1.8;text-align:right;direction:rtl;color:var(--text);">${escHtml(postText)}</div></div>`;
     }
+
 
     // Carousel extra info
     let extraHtml = '';
