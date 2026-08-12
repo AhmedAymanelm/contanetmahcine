@@ -292,7 +292,7 @@ def update_account(
 ):
     """Update username and/or password. Requires current password verification."""
     if not verify_password(body.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=401, detail="كلمة السر الحالية غير صحيحة")
+        raise HTTPException(status_code=400, detail="كلمة السر الحالية غير صحيحة")
 
     if body.new_username and body.new_username != current_user.username:
         existing = db.query(User).filter(User.username == body.new_username).first()
