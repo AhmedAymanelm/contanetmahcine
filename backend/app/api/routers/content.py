@@ -62,6 +62,8 @@ def update_content(item_id: int, content_update: ContentItemUpdate, db: Session 
         raise HTTPException(status_code=404, detail="Content not found")
     item.generated_content = content_update.generated_content
     db.commit()
+    db.refresh(item)
+    return item
 from typing import List, Optional, Any
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
