@@ -1085,9 +1085,14 @@ async function fetchReviewContent() {
                         <div style="font-size:13.5px;font-weight:600;color:var(--text);line-height:1.4;">${art.title || 'بدون عنوان'}</div>
                         <div style="font-size:11px;color:var(--muted);margin-top:2px;">📡 ${art.source_name || ''}</div>
                       </div>
-                      <div style="display:flex;align-items:center;gap:8px;color:var(--teal);font-size:12px;white-space:nowrap;">
-                        <div style="width:16px;height:16px;border:2px solid var(--line);border-top:2px solid var(--teal);border-radius:50%;animation:spin 1s linear infinite;"></div>
-                        جاري الصياغة...
+                      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:140px;">
+                        <div style="display:flex;align-items:center;gap:8px;color:var(--teal);font-size:12px;white-space:nowrap;">
+                          <div style="width:14px;height:14px;border:2px solid rgba(53,211,153,0.3);border-top:2px solid var(--teal);border-radius:50%;animation:spin 1s linear infinite;"></div>
+                          جاري الصياغة...
+                        </div>
+                        <div style="width:100%;height:4px;background:rgba(53,211,153,0.15);border-radius:2px;overflow:hidden;">
+                          <div style="height:100%;background:var(--teal);border-radius:2px;animation:simulatedProgress 25s cubic-bezier(0.1, 0.7, 0.1, 1) forwards;"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
