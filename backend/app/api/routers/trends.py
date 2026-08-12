@@ -26,55 +26,67 @@ class TrendGenerateRequest(BaseModel):
 
 def fetch_trends_for_geo(geo: str) -> List[TrendItem]:
     """
-    Core function to fetch trends for a specific geo so it can be called by both API and background workers.
+    Fetch actual Google Trends for the specified country.
     """
-    import feedparser
     import httpx
-    import urllib.parse
+    import xml.etree.ElementTree as ET
     
-    # Niche topics specifically for a tech/finance/crypto content creator
-    # Added when:2d to restrict results to the last 48 hours
-    query = '(الذكاء الاصطناعي OR بيتكوين OR انفيديا OR مايكروسوفت OR جوجل OR OpenAI OR عملات رقمية OR تداول OR آبل OR ايلون ماسك) when:2d'
-    encoded_query = urllib.parse.quote(query)
-    
-    if geo == "AITNEWS":
-        url = "https://aitnews.com/feed/"
-    elif geo == "GLOBAL":
-        url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ar&gl=AE&ceid=AE:ar"
-    else:
-        url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ar&gl={geo}&ceid={geo}:ar"
+    # Map 'GLOBAL' to 'US' or 'WW' if possible, but Trends Daily RSS requires a specific country.
+    # We will use US for GLOBAL as a fallback.
+    country_code = geo if geo != "GLOBAL" else "US"
+    if country_code == "AITNEWS":
+        country_code = "EG" # Fallback
         
+    url = f"https://trends.google.com/trends/trendingsearches/daily/rss?geo={country_code}"
+    
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     
-    # Fetch using httpx to bypass basic blocks
-    response = httpx.get(url, headers=headers, follow_redirects=True)
+    response = httpx.get(url, headers=headers, follow_redirects=True, timeout=10.0)
     
     if response.status_code != 200:
         return []
 
-    feed = feedparser.parse(response.text)
-    
     trends = []
-    for entry in feed.entries[:15]:  # Limit to top 15 news
-        # Handle source name for Google News vs AITnews
-        if geo == "AITNEWS":
-            source_name = "البوابة العربية للأخبار التقنية"
-        else:
-            source_name = ""
-            if hasattr(entry, 'source') and hasattr(entry.source, 'title'):
-                source_name = entry.source.title
+    try:
+        root = ET.fromstring(response.content)
+        channel = root.find("channel")
+        if not channel:
+            return []
             
-        trends.append(TrendItem(
-            title=entry.title,
-            traffic=source_name, # Use traffic field to show the news source
-            description="أخبار تكنولوجية عاجلة",
-            pub_date=entry.get("published", ""),
-            news_title=entry.title,
-            news_url=entry.link,
-            news_snippet=entry.title
-        ))
+        # Namespaces used in Google Trends RSS
+        ns = {"ht": "https://trends.google.com/trends/trendingsearches/daily"}
+        
+        for item in channel.findall("item")[:15]:
+            title = item.findtext("title") or "بدون عنوان"
+            traffic = item.findtext("ht:approx_traffic", namespaces=ns) or "10K+"
+            pub_date = item.findtext("pubDate") or ""
+            
+            # Fetch the first news item if available
+            news_item = item.find("ht:news_item", namespaces=ns)
+            news_title = title
+            news_url = ""
+            news_snippet = title
+            source_name = "بحث جوجل"
+            
+            if news_item is not None:
+                news_title = news_item.findtext("ht:news_item_title", namespaces=ns) or title
+                news_url = news_item.findtext("ht:news_item_url", namespaces=ns) or ""
+                news_snippet = news_item.findtext("ht:news_item_snippet", namespaces=ns) or title
+                source_name = news_item.findtext("ht:news_item_source", namespaces=ns) or "أخبار"
+                
+            trends.append(TrendItem(
+                title=title,
+                traffic=f"عمليات بحث: {traffic} - {source_name}",
+                description=news_snippet,
+                pub_date=pub_date,
+                news_title=news_title,
+                news_url=news_url,
+                news_snippet=news_snippet
+            ))
+    except Exception as e:
+        print(f"Error parsing trends XML: {e}")
         
     return trends
 
