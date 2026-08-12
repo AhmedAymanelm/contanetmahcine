@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
+import concurrent.futures
 
 from app.api.deps import get_db
 from app.models.raw_article import RawArticle
@@ -8,6 +9,10 @@ from app.schemas.raw_article import RawArticleResponse
 from datetime import datetime, timedelta
 from app.services.ingestion.runner import ingest_all_active_sources
 from app.services.generation.runner import process_article_generation
+import logging
+
+logger = logging.getLogger(__name__)
+_thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 router = APIRouter()
 
@@ -51,13 +56,16 @@ class ArticleGenerateRequest(BaseModel):
     formats: List[str] = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
 
 @router.post("/{article_id}/generate")
-def generate_article_content(article_id: int, request: ArticleGenerateRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def generate_article_content(article_id: int, request: ArticleGenerateRequest, db: Session = Depends(get_db)):
     article = db.query(RawArticle).filter(RawArticle.id == article_id).first()
     if not article:
         return {"error": "Article not found"}
         
     article.status = "APPROVED_FOR_GENERATION"
     db.commit()
+    db.close()
     
-    background_tasks.add_task(process_article_generation, article_id, request.formats)
+    # Run in thread pool so it doesn't block FastAPI's event loop
+    _thread_pool.submit(process_article_generation, article_id, request.formats)
+    logger.info(f"Generation task submitted for article {article_id} with formats {request.formats}")
     return {"detail": "Generation started in the background"}

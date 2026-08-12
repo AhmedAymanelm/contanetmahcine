@@ -485,24 +485,37 @@ async function approveArticle(id, btn) {
         btn.innerText = "جاري الصياغة...";
         btn.disabled = true;
         try {
+            const token = localStorage.getItem('cm_token');
             const res = await fetch(`${API_BASE}/raw-articles/${id}/generate`, { 
                 method: "POST",
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ formats: formats })
             });
             if (res.ok) {
                 btn.parentElement.parentElement.parentElement.style.opacity = '0.4';
-                showToast("تم تحويل الخبر للصياغة عبر Claude بنجاح", "success");
+                showToast("✅ تم إرسال الخبر لكلود... سيظهر في المراجعة خلال ثوانٍ", "success");
+                // Refresh raw articles after 2s
                 setTimeout(fetchRawArticles, 2000);
                 fetchDashboardStats();
+                // Smart poll: check review page every 5s for 60s
+                let polls = 0;
+                const pollInterval = setInterval(() => {
+                    polls++;
+                    fetchDashboardStats();
+                    if (polls >= 12) clearInterval(pollInterval);
+                }, 5000);
             } else {
-                showToast("حدث خطأ أثناء الصياغة", "error");
+                const err = await res.json().catch(() => ({}));
+                showToast(`❌ خطأ: ${err.detail || err.error || 'حدث خطأ أثناء الصياغة'}`, "error");
                 btn.innerText = orig;
                 btn.disabled = false;
             }
         } catch (err) {
             console.error(err);
-            showToast("خطأ في الاتصال بالخادم", "error");
+            showToast("❌ خطأ في الاتصال بالخادم", "error");
             btn.innerText = orig;
             btn.disabled = false;
         }
