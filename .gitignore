@@ -1,6 +1,8 @@
 # Environment variables
 .env
 .env.test
+.env.local
+.env.*.local
 
 # Python
 __pycache__/
@@ -8,24 +10,21 @@ __pycache__/
 *$py.class
 *.so
 .Python
-backend/venv/
-env/
+build/
+dist/
+*.egg-info/
+.eggs/
 venv/
+env/
 ENV/
-env.bak/
-venv.bak/
+.venv/
 
-# Database
+# Database files
 *.sqlite3
 *.db
-backend/content_machine.db
-backend/database.db
 
 # Logs
 *.log
-backend/uvicorn_dev.log
-backend/uvicorn_error.log
-frontend/frontend.log
 
 # OS
 .DS_Store
@@ -35,12 +34,24 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Temp files
-backend/scratch_test*.py
-backend/render_test.py
+# Node
+node_modules/
+npm-debug.log*
+
+# Temporary / scratch files
+backend/scratch_*.py
 backend/check_*.py
 backend/test_*.py
-backend/test*.html
-backend/test*.js
+backend/*.html
+backend/*.js
 backend/all.json
 backend/review.json
+backend/dummy.*
+backend/insert_env_tokens.py
+backend/cleanup.py
+backend/wipe_db.py
+backend/seed_admin.py
+backend/migrate_*.py
+
+# Static generated output (Railway uses ephemeral storage)
+backend/static/carousels/
