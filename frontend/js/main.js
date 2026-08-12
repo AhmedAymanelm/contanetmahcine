@@ -1098,7 +1098,7 @@ async function fetchReviewContent() {
                             <div class="review-actions" style="margin-top:auto; border-top:1px solid var(--line); padding-top:10px; display:flex; gap:8px;">
                                 <button class="btn ghost" style="color:var(--red); padding:6px 12px;" onclick="rejectContentItem(${item.id}, this)">رفض</button>
                                 <button class="btn ghost" style="padding:6px 12px;" onclick="openEditModal(${item.id})">تعديل</button>
-                                <button class="btn" style="background:var(--teal); color:#000; padding:6px 12px; flex-grow:1;" onclick="approveContentItem(${item.id}, this)">موافقة واعتماد</button>
+                                <button class="btn" style="background:var(--teal); color:#000; padding:6px 12px; flex-grow:1;" onclick="openPreviewModal(${item.id}, this)">موافقة واعتماد</button>
                             </div>
                         </div>
                     </div>
@@ -1475,10 +1475,206 @@ function selectTemplateForContent(contentId, templateId) {
     renderCarouselImages(contentId, templateId, textColor, accentColor);
 }
 
+// ────────────────────────────────────────────────────
+// CONTENT PREVIEW MODAL
+// ────────────────────────────────────────────────────
 let currentApproveId = null;
 let currentApproveBtn = null;
+let previewScheduleMode = false;
 
-async function approveContentItem(id, btn) {
+const PLATFORM_INFO = {
+    'FB':  { name:'Facebook',  icon:'🔵', color:'#1877f2', textColor:'#fff', bg:'#1877f2' },
+    'IG':  { name:'Instagram', icon:'🟣', color:'#e1306c', textColor:'#fff', bg:'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)' },
+    'X':   { name:'X (تويتر)', icon:'⚫', color:'#000',    textColor:'#fff', bg:'#000' },
+    'Li':  { name:'LinkedIn',  icon:'🔷', color:'#0077b5', textColor:'#fff', bg:'#0077b5' },
+    'TT':  { name:'TikTok',    icon:'🖤', color:'#010101', textColor:'#fff', bg:'#010101' },
+    'Th':  { name:'Threads',   icon:'⚫', color:'#101010', textColor:'#fff', bg:'#101010' },
+    'SC':  { name:'Snapchat',  icon:'🟡', color:'#fffc00', textColor:'#000', bg:'#fffc00' },
+};
+
+function openPreviewModal(id, btn) {
+    currentApproveId = id;
+    currentApproveBtn = btn;
+
+    const item = window.reviewItemsDataRaw ? window.reviewItemsDataRaw[id] : null;
+    if (!item) { openApproveOptionsModal(id, btn); return; }
+
+    let gen = item.generated_content || {};
+    if (typeof gen === 'string') { try { gen = JSON.parse(gen); } catch(e) {} }
+
+    // Figure out platforms
+    let platforms = [];
+    if (Array.isArray(item.platforms)) platforms = item.platforms;
+    else if (typeof item.platforms === 'string') platforms = item.platforms.split(',');
+
+    // Build tabs
+    const tabsEl = document.getElementById('preview-tabs');
+    tabsEl.innerHTML = '';
+
+    const activePlatforms = platforms.filter(p => PLATFORM_INFO[p]);
+    if (activePlatforms.length === 0) {
+        // no known platforms, skip preview
+        openApproveOptionsModal(id, btn);
+        return;
+    }
+
+    activePlatforms.forEach((pId, i) => {
+        const p = PLATFORM_INFO[pId];
+        const btn2 = document.createElement('button');
+        btn2.style.cssText = `display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px 10px 0 0;font-size:12.5px;color:var(--muted);cursor:pointer;border:1px solid transparent;border-bottom:none;background:transparent;transition:all .15s;position:relative;top:1px;font-family:inherit;white-space:nowrap;`;
+        btn2.innerHTML = `${p.icon} ${p.name}`;
+        if (i === 0) {
+            btn2.style.color = 'var(--text)';
+            btn2.style.background = 'var(--bg)';
+            btn2.style.borderColor = 'var(--line)';
+            btn2.style.borderBottom = '1px solid var(--bg)';
+        }
+        btn2.onclick = () => {
+            tabsEl.querySelectorAll('button').forEach(b => {
+                b.style.color = 'var(--muted)'; b.style.background = 'transparent'; b.style.borderColor = 'transparent'; b.style.borderBottom = 'none';
+            });
+            btn2.style.color = 'var(--text)'; btn2.style.background = 'var(--bg)'; btn2.style.borderColor = 'var(--line)'; btn2.style.borderBottom = '1px solid var(--bg)';
+            renderPreview(pId, gen, item);
+        };
+        tabsEl.appendChild(btn2);
+    });
+
+    // Show first tab
+    renderPreview(activePlatforms[0], gen, item);
+
+    // Show modal
+    const modal = document.getElementById('preview-modal');
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.style.opacity = '1';
+        document.getElementById('preview-modal-content').style.transform = 'scale(1)';
+    }, 10);
+}
+
+function renderPreview(platformId, gen, item) {
+    const area = document.getElementById('preview-area');
+    const p = PLATFORM_INFO[platformId] || { name: platformId, color:'#333', textColor:'#fff' };
+    const type = item.content_type;
+
+    let postText = '';
+    if (type === 'POST') {
+        if (platformId === 'Li' && gen.linkedin_post) postText = gen.linkedin_post;
+        else postText = gen.unified_post || gen.post_text || JSON.stringify(gen);
+    } else if (type === 'VIDEO_SCRIPT') {
+        postText = (gen.hook ? gen.hook + '\n\n' : '') + (gen.body || '') + (gen.call_to_action ? '\n\n' + gen.call_to_action : '');
+    } else if (type === 'CAROUSEL') {
+        postText = gen.title || '';
+    }
+
+    const escHtml = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' });
+
+    let mockupHtml = '';
+
+    if (platformId === 'FB' || platformId === 'Li') {
+        // LinkedIn/Facebook card style
+        const headerColor = platformId === 'Li' ? '#0077b5' : '#1877f2';
+        mockupHtml = `
+        <div style="background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.3); font-family:'Segoe UI',sans-serif; direction:ltr;">
+            <div style="background:${headerColor}; padding:12px 16px; display:flex; align-items:center; gap:10px;">
+                <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
+                <div><div style="color:#fff;font-weight:700;font-size:14px;">غرفة المحتوى</div><div style="color:rgba(255,255,255,0.7);font-size:11px;">${timeStr} • 🌐</div></div>
+            </div>
+            <div style="padding:16px; color:#1c1e21; font-size:14px; line-height:1.7; text-align:right; direction:rtl;">${escHtml(postText)}</div>
+            <div style="padding:8px 16px 12px; border-top:1px solid #e4e6eb; display:flex; gap:20px; color:#65676b; font-size:13px;">
+                <span>👍 إعجاب</span><span>💬 تعليق</span><span>↗️ مشاركة</span>
+            </div>
+        </div>`;
+    } else if (platformId === 'IG') {
+        mockupHtml = `
+        <div style="background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.3); font-family:-apple-system,sans-serif; direction:ltr;">
+            <div style="padding:10px 12px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #efefef;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366);padding:2px;"><div style="width:100%;height:100%;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;">📸</div></div>
+                <div style="font-weight:600;font-size:13px;color:#000;">content_machine</div>
+                <div style="margin-right:auto;color:#0095f6;font-size:12px;font-weight:600;">متابعة</div>
+            </div>
+            <div style="width:100%;height:200px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;">
+                <span style="font-size:48px;">📸</span>
+            </div>
+            <div style="padding:10px 12px;">
+                <div style="display:flex;gap:14px;margin-bottom:8px;font-size:22px;">❤️ 💬 ✈️</div>
+                <div style="font-size:13px;color:#000;line-height:1.5;text-align:right;direction:rtl;"><b>content_machine</b> ${escHtml(postText.substring(0,200))}${postText.length>200?'...':''}</div>
+                <div style="color:#8e8e8e;font-size:11px;margin-top:6px;">${timeStr}</div>
+            </div>
+        </div>`;
+    } else if (platformId === 'X') {
+        mockupHtml = `
+        <div style="background:#000; border-radius:14px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.5); font-family:-apple-system,sans-serif; color:#fff; padding:16px; direction:ltr;">
+            <div style="display:flex; gap:12px;">
+                <div style="width:40px;height:40px;border-radius:50%;background:#333;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
+                <div style="flex:1;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                        <span style="font-weight:700;font-size:14px;">غرفة المحتوى</span>
+                        <span style="color:#71767b;font-size:13px;">@content_machine · ${timeStr}</span>
+                    </div>
+                    <div style="font-size:14px;line-height:1.7;text-align:right;direction:rtl;">${escHtml(postText.substring(0,280))}${postText.length>280?'...':''}</div>
+                    <div style="display:flex;gap:20px;margin-top:12px;color:#71767b;font-size:13px;">
+                        <span>💬 رد</span><span>🔁 إعادة تغريد</span><span>❤️ إعجاب</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    } else if (platformId === 'TT' || platformId === 'Th') {
+        const bgColor = platformId === 'TT' ? '#010101' : '#101010';
+        mockupHtml = `
+        <div style="background:${bgColor}; border-radius:14px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.5); color:#fff; font-family:-apple-system,sans-serif; direction:ltr;">
+            <div style="width:100%;height:160px;background:linear-gradient(135deg,#1a1a2e,#0f3460);display:flex;align-items:center;justify-content:center;">
+                <span style="font-size:48px;">${platformId === 'TT' ? '🎬' : '🧵'}</span>
+            </div>
+            <div style="padding:14px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;">👤</div>
+                    <span style="font-weight:700;font-size:13px;">content_machine</span>
+                </div>
+                <div style="font-size:13px;line-height:1.6;text-align:right;direction:rtl;">${escHtml(postText.substring(0,250))}${postText.length>250?'...':''}</div>
+                <div style="display:flex;gap:16px;margin-top:12px;color:#aaa;font-size:12px;">
+                    <span>❤️ إعجاب</span><span>💬 تعليق</span><span>↗️ مشاركة</span>
+                </div>
+            </div>
+        </div>`;
+    } else {
+        mockupHtml = `<div style="background:var(--panel);border-radius:14px;padding:20px;border:1px solid var(--line);"><div style="font-size:14px;line-height:1.8;text-align:right;direction:rtl;color:var(--text);">${escHtml(postText)}</div></div>`;
+    }
+
+    // Carousel extra info
+    let extraHtml = '';
+    if (type === 'CAROUSEL' && gen.slides && gen.slides.length > 0) {
+        extraHtml = `<div style="margin-top:14px;padding:14px;background:var(--panel);border-radius:12px;border:1px solid var(--line);">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">🖼️ شرائح الكاروسيل (${gen.slides.length} شريحة)</div>
+            ${gen.slides.slice(0,3).map((s,i) => `<div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;"><div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px;">${i+1}. ${escHtml(s.heading||'')}</div><div style="font-size:12px;color:var(--muted);line-height:1.6;">${escHtml((s.body||'').substring(0,100))}${(s.body||'').length>100?'...':''}</div></div>`).join('')}
+            ${gen.slides.length > 3 ? `<div style="color:var(--muted);font-size:12px;text-align:center;">+ ${gen.slides.length - 3} شرائح أخرى</div>` : ''}
+        </div>`;
+    }
+    if (type === 'VIDEO_SCRIPT' && gen.visual_cues) {
+        extraHtml = `<div style="margin-top:14px;padding:12px;background:rgba(224,181,99,0.08);border-radius:12px;border:1px solid rgba(224,181,99,0.2);">
+            <div style="font-size:12px;color:#e0b563;margin-bottom:6px;">🎬 إرشادات بصرية</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.6;text-align:right;direction:rtl;">${escHtml(gen.visual_cues)}</div>
+        </div>`;
+    }
+
+    area.innerHTML = `<div style="max-width:460px;margin:0 auto;">${mockupHtml}${extraHtml}</div>`;
+}
+
+function closePreviewModal() {
+    const modal = document.getElementById('preview-modal');
+    modal.style.opacity = '0';
+    setTimeout(() => modal.style.display = 'none', 220);
+}
+
+function confirmFromPreview(scheduleMode) {
+    previewScheduleMode = scheduleMode;
+    closePreviewModal();
+    setTimeout(() => openApproveOptionsModal(currentApproveId, currentApproveBtn, scheduleMode), 250);
+}
+
+function openApproveOptionsModal(id, btn, autoSchedule = false) {
+
     const item = window.reviewItemsDataRaw ? window.reviewItemsDataRaw[id] : null;
     if (item && item.content_type === 'CAROUSEL') {
         let generated = item.generated_content || {};
