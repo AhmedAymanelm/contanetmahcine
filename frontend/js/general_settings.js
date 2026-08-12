@@ -14,15 +14,30 @@ async function loadGeneralSettings() {
         }
     } catch (e) { console.error(e); }
 
-    // Check server status
+    // Check server status and get system info
     try {
         const res = await fetch('/api/health');
         const el = document.getElementById('settings-server-status');
-        if (el) el.textContent = res.ok ? 'يعمل بكفاءة' : 'مشكلة';
-        if (el) el.style.color = res.ok ? '#34d399' : '#f87171';
+        const vEl = document.getElementById('settings-app-version');
+        const mEl = document.getElementById('settings-ai-model');
+        
+        if (res.ok) {
+            const data = await res.json();
+            if (el) { el.textContent = 'يعمل بكفاءة'; el.style.color = '#34d399'; }
+            if (vEl && data.version) vEl.textContent = data.version;
+            if (mEl && data.model) mEl.textContent = data.model;
+        } else {
+            if (el) { el.textContent = 'مشكلة'; el.style.color = '#f87171'; }
+            if (vEl) vEl.textContent = '—';
+            if (mEl) mEl.textContent = '—';
+        }
     } catch (e) {
         const el = document.getElementById('settings-server-status');
+        const vEl = document.getElementById('settings-app-version');
+        const mEl = document.getElementById('settings-ai-model');
         if (el) { el.textContent = 'غير متاح'; el.style.color = '#f87171'; }
+        if (vEl) vEl.textContent = '—';
+        if (mEl) mEl.textContent = '—';
     }
 
     // Load saved app identity

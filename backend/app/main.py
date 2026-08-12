@@ -79,7 +79,12 @@ app.include_router(settings_router_module.router, prefix="/api/settings", tags=[
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "environment": settings.ENVIRONMENT}
+    return {
+        "status": "ok", 
+        "environment": settings.ENVIRONMENT,
+        "version": getattr(settings, "VERSION", "v1.0.0"),
+        "model": getattr(settings, "CLAUDE_MODEL", "Claude 3.5 Sonnet")
+    }
 
 # ── TikTok URL-prefix ownership verification ──────────────────────────────────
 from fastapi.responses import PlainTextResponse, FileResponse
