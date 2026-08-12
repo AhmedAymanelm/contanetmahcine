@@ -324,10 +324,15 @@ async function addNewSource() {
 let currentEditId = null;
 let currentEditData = null;
 let activeEditTab = null;
+let saveController = null;
+const SAVE_BTN_ORIG_HTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg> حفظ التعديلات`;
 
 function openEditModal(id) {
     currentEditId = id;
     currentEditData = JSON.parse(JSON.stringify(window.reviewItemsData[id])); // deep copy
+    // Always reset save button when opening fresh
+    const saveBtn = document.getElementById('save-edit-btn');
+    if (saveBtn) { saveBtn.innerHTML = SAVE_BTN_ORIG_HTML; saveBtn.disabled = false; }
     const tabs = document.getElementById('edit-modal-tabs');
     const content = document.getElementById('edit-modal-content');
     const subtitle = document.getElementById('edit-modal-subtitle');
@@ -550,6 +555,11 @@ function buildReelPanel(data) {
 }
 
 function closeEditModal() {
+    // Abort any pending save request
+    if (saveController) { saveController.abort(); saveController = null; }
+    // Reset button state
+    const saveBtn = document.getElementById('save-edit-btn');
+    if (saveBtn) { saveBtn.innerHTML = SAVE_BTN_ORIG_HTML; saveBtn.disabled = false; }
     document.getElementById('edit-modal').style.display = 'none';
     currentEditId = null;
     currentEditData = null;
@@ -605,15 +615,16 @@ if(document.getElementById('save-edit-btn')) {
 
         try {
             const token = localStorage.getItem('cm_token');
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            saveController = new AbortController();
+            const timeoutId = setTimeout(() => saveController.abort(), 15000);
             const res = await fetch(`${API_BASE}/content/${currentEditId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ generated_content: newContent }),
-                signal: controller.signal
+                signal: saveController.signal
             });
             clearTimeout(timeoutId);
+            saveController = null;
             
             if (res.ok) {
                 showToast("تم حفظ التعديلات بنجاح ✅", "success");
@@ -623,9 +634,11 @@ if(document.getElementById('save-edit-btn')) {
                 showToast("حدث خطأ أثناء الحفظ", "error");
             }
         } catch(err) {
-            showToast("خطأ في الاتصال بالخادم", "error");
+            if (err.name !== 'AbortError') {
+                showToast("خطأ في الاتصال بالخادم", "error");
+            }
         } finally {
-            btn.innerText = orig;
+            btn.innerHTML = SAVE_BTN_ORIG_HTML;
             btn.disabled = false;
         }
     });
