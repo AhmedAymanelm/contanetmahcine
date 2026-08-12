@@ -51,6 +51,7 @@ app.include_router(templates.router, prefix="/api/templates", tags=["Templates"]
 app.include_router(stats.router, prefix="/api/stats", tags=["Stats"], dependencies=[Depends(get_current_user)])
 app.include_router(social.router, prefix="/api/social", tags=["Social Integration"], dependencies=[Depends(get_current_user)])
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"]) # Move to /api/auth
+app.include_router(auth.router, prefix="/auth", tags=["Authentication Legacy"]) # For old redirect URIs
 app.include_router(threads.router, prefix="/api/threads", tags=["Threads API"], dependencies=[Depends(get_current_user)])
 app.include_router(trends.router, prefix="/api/trends", tags=["Trends Radar"], dependencies=[Depends(get_current_user)])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"], dependencies=[Depends(get_current_user)])
