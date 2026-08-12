@@ -86,31 +86,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     
     total_sources = db.query(Source).count()
     
-    # Platform Mapping for consistent names
-    PLATFORM_MAP = {
-        "IG": "Instagram", "Instagram": "Instagram",
-        "FB": "Facebook", "Facebook": "Facebook",
-        "TT": "TikTok", "TikTok": "TikTok",
-        "Li": "LinkedIn", "LinkedIn": "LinkedIn",
-        "X": "X", "Twitter": "X",
-        "Snapchat": "Snapchat", "Threads": "Threads"
-    }
-
-    # Initialize all main platforms so they appear in UI
-    platforms_count = {p: 0 for p in set(PLATFORM_MAP.values())}
-    
-    # Calculate base performance from published posts (Real data: 1 activity point per post)
-    published_items = db.query(ContentItem).filter(
-        func.lower(ContentItem.status) == 'published'
-    ).all()
-    
-    for item in published_items:
-        if item.platforms:
-            for p in item.platforms:
-                mapped_p = PLATFORM_MAP.get(p, p)
-                if mapped_p not in platforms_count:
-                    platforms_count[mapped_p] = 0
-                platforms_count[mapped_p] += 1
+    # Platform Performance (Engagement/Interactions)
+    platforms_count = {"Instagram": 0, "Facebook": 0}
     
     # Fetch real Instagram stats
     try:
@@ -123,7 +100,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
                 if res.status_code == 200:
                     data = res.json().get("data", [])
                     total_ig_eng = sum(item.get("like_count", 0) + item.get("comments_count", 0) for item in data)
-                    platforms_count["Instagram"] += total_ig_eng # Add engagement to base post count
+                    platforms_count["Instagram"] = total_ig_eng # REAL ENGAGEMENT ONLY
     except Exception as e:
         print(f"Error fetching IG stats: {e}")
         
@@ -140,7 +117,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
                         likes = post.get("likes", {}).get("summary", {}).get("total_count", 0)
                         comments = post.get("comments", {}).get("summary", {}).get("total_count", 0)
                         total_fb_eng += (likes + comments)
-                    platforms_count["Facebook"] += total_fb_eng # Add engagement to base post count
+                    platforms_count["Facebook"] = total_fb_eng # REAL ENGAGEMENT ONLY
     except Exception as e:
         print(f"Error fetching FB stats: {e}")
     
