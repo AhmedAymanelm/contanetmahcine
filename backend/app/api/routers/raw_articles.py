@@ -16,31 +16,40 @@ _thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 router = APIRouter()
 
+def get_start_of_day_utc():
+    now_utc = datetime.now(timezone.utc)
+    now_local = now_utc + timedelta(hours=3) # Africa/Cairo GMT+3
+    start_of_day_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_day_utc = start_of_day_local - timedelta(hours=3)
+    return start_of_day_utc.replace(tzinfo=None)
+
 @router.get("/", response_model=List[RawArticleResponse])
 def get_raw_articles(db: Session = Depends(get_db)):
     # Auto-cleanup: Delete pending articles older than 24 hours ONLY if they don't have ContentItems
-    cutoff = datetime.utcnow() - timedelta(hours=24)
+    cleanup_cutoff = datetime.utcnow() - timedelta(hours=24)
     from app.models.content_item import ContentItem
     subquery = db.query(ContentItem.raw_article_id).subquery()
     db.query(RawArticle).filter(
         RawArticle.status == "PENDING", 
-        RawArticle.created_at < cutoff,
+        RawArticle.created_at < cleanup_cutoff,
         ~RawArticle.id.in_(subquery)
     ).delete(synchronize_session=False)
     db.commit()
     
+    # Filter for UI: Only show articles from TODAY (since midnight local time)
+    display_cutoff = get_start_of_day_utc()
     articles = db.query(RawArticle).filter(
         RawArticle.status == "PENDING",
-        RawArticle.created_at >= cutoff
+        RawArticle.created_at >= display_cutoff
     ).order_by(RawArticle.created_at.desc()).limit(100).all()
     return articles
 
 @router.get("/generating", response_model=List[RawArticleResponse])
 def get_generating_articles(db: Session = Depends(get_db)):
-    cutoff = datetime.utcnow() - timedelta(hours=24)
+    display_cutoff = get_start_of_day_utc()
     articles = db.query(RawArticle).filter(
         RawArticle.status == "APPROVED_FOR_GENERATION",
-        RawArticle.created_at >= cutoff
+        RawArticle.created_at >= display_cutoff
     ).order_by(RawArticle.created_at.desc()).all()
     return articles
 

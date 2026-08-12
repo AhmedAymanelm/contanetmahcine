@@ -84,13 +84,11 @@ def clear_raw_articles_at_midnight():
             ContentItem.status.notin_(["SCHEDULED", "PUBLISHED"])
         ).delete(synchronize_session=False)
         
-        # Delete ALL raw articles older than 24h (regardless of status)
-        deleted_raw = db.query(RawArticle).filter(
-            RawArticle.created_at < cutoff
-        ).delete(synchronize_session=False)
+        # Delete ALL raw articles to start the new day fresh
+        deleted_raw = db.query(RawArticle).delete(synchronize_session=False)
         
         db.commit()
-        logger.info(f"Cleanup (24h): Deleted {deleted_content} content items and {deleted_raw} raw articles older than 24 hours.")
+        logger.info(f"Midnight Cleanup: Deleted {deleted_content} old content items and wiped {deleted_raw} raw articles for the new day.")
     except Exception as e:
         db.rollback()
         logger.error(f"Cleanup Error: {e}")
@@ -370,12 +368,12 @@ def start_scheduler():
             replace_existing=True
         )
         
-        # Run every hour to clean articles older than 24h
+        # Run exactly at midnight Cairo time to clear raw articles for the new day
         scheduler.add_job(
             clear_raw_articles_at_midnight,
-            trigger=IntervalTrigger(hours=1),
+            trigger=CronTrigger(hour=0, minute=0, timezone='Africa/Cairo'),
             id='cleanup_job',
-            name='24h Cleanup Job',
+            name='Midnight Cleanup Job',
             replace_existing=True
         )
         
