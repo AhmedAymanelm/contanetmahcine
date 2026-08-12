@@ -1,13 +1,13 @@
 import json
+import os
 import anthropic
-from app.core.config import settings
 
-def get_client():
-    if not settings.ANTHROPIC_API_KEY:
+def get_client(api_key: str):
+    if not api_key:
         return None
-    return anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    return anthropic.Anthropic(api_key=api_key)
 
-def generate_structured_content(system_prompt: str, user_prompt: str, schema: dict) -> dict:
+def generate_structured_content(api_key: str, system_prompt: str, user_prompt: str, schema: dict) -> dict:
     """
     Calls Claude using Tool Use (Structured Output) to force JSON adherence based on a JSON schema.
     """
@@ -20,7 +20,7 @@ def generate_structured_content(system_prompt: str, user_prompt: str, schema: di
         }
     ]
 
-    client = get_client()
+    client = get_client(api_key)
     if not client:
         print("Anthropic API key not configured")
         return {}

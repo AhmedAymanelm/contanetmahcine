@@ -8,9 +8,9 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../../")))
 
-from app.ai.claude_client import generate_structured_content
-from app.ai.schemas import ExtractedArticle
-from app.ai.prompts.extraction_prompt import EXTRACTION_SYSTEM_PROMPT, get_extraction_prompt
+from ai_service.claude_client import generate_structured_content
+from ai_service.schemas import ExtractedArticle
+from ai_service.prompts.extraction_prompt import EXTRACTION_SYSTEM_PROMPT, get_extraction_prompt
 
 def extract(url: str) -> List[Dict]:
     """Layer 4: AI Extraction Fallback"""
@@ -33,7 +33,7 @@ def extract(url: str) -> List[Dict]:
         """
         
         schema = ExtractedArticle.model_json_schema()
-        result = generate_structured_content(EXTRACTION_SYSTEM_PROMPT, prompt, schema)
+        result = generate_structured_content(settings.ANTHROPIC_API_KEY, EXTRACTION_SYSTEM_PROMPT, prompt, schema)
         
         if result and len(result.get("content", "")) > 100:
             return [{

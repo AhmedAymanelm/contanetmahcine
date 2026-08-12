@@ -9,7 +9,7 @@ import os
 import copy
 import re
 from sqlalchemy.orm.attributes import flag_modified
-from app.ai.agents.base_agent import AgentClient, AgentConfig
+from ai_service.agents.base_agent import AgentClient, AgentConfig
 import logging
 logger = logging.getLogger(__name__)
 
@@ -84,9 +84,10 @@ def _ensure_english_linkedin(item: ContentItem):
             return
     
     import re, copy
+    from app.core.config import settings
     changed = False
     new_content = copy.deepcopy(gen)
-    client = AgentClient()
+    client = AgentClient(api_key=settings.ANTHROPIC_API_KEY)
     config = AgentConfig(
         name="Translator",
         role="Professional translator",

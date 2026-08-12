@@ -3,7 +3,6 @@ import json
 from typing import Dict, Any, List
 from pydantic import BaseModel
 import anthropic
-from app.core.config import settings
 
 class AgentConfig(BaseModel):
     name: str
@@ -12,10 +11,13 @@ class AgentConfig(BaseModel):
     backstory: str
     
 class AgentClient:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or settings.ANTHROPIC_API_KEY
-        self.client = anthropic.Anthropic(api_key=self.api_key) if self.api_key else None
+    def __init__(self, api_key: str):
+        if not api_key:
+            raise ValueError("api_key must be provided to AgentClient")
+        self.api_key = api_key
+        self.client = anthropic.Anthropic(api_key=self.api_key)
         self.model_name = os.environ.get("DEFAULT_MODEL", "claude-3-5-sonnet-20240620")
+
 
     def execute_task(self, agent_config: AgentConfig, task_description: str, tools: List[Any] = None) -> str:
         """Executes a generic task as the specified agent."""

@@ -2,7 +2,9 @@ import logging
 from sqlalchemy.orm import Session
 from app.models.raw_article import RawArticle
 from app.models.content_item import ContentItem
-from app.ai.generation_pipeline import generate_selected_content
+from ai_service.generation_pipeline import generate_selected_content
+from app.services.carousel_renderer import render_carousel_sync
+from app.core.config import settings
 
 from app.db.session import SessionLocal
 
@@ -28,7 +30,10 @@ def process_article_generation(raw_article_id: int, formats: list = None):
         carousel_platforms = ["IG", "Li"]  # default carousel platforms
         text_to_process = article.content if article.content else article.title
         generated = generate_selected_content(
-            article.title, text_to_process, formats,
+            api_key=settings.ANTHROPIC_API_KEY,
+            title=article.title, 
+            content=text_to_process, 
+            formats=formats,
             platforms=carousel_platforms
         )
         
@@ -53,15 +58,20 @@ def process_article_generation(raw_article_id: int, formats: list = None):
             
         # 2. Carousel
         if "carousel" in generated and generated["carousel"]:
-            items_to_add.append(
-                ContentItem(
-                    raw_article_id=article.id,
-                    content_type="CAROUSEL",
-                    status="pending_review",
-                    platforms=["IG", "Li"],
-                    generated_content=generated["carousel"]
-                )
+            carousel_item = ContentItem(
+                raw_article_id=article.id,
+                content_type="CAROUSEL",
+                status="pending_review",
+                platforms=["IG", "Li"],
+                generated_content=generated["carousel"]
             )
+            items_to_add.append(carousel_item)
+            
+            # Flush to get the carousel_item ID, then render
+            db.add(carousel_item)
+            db.flush() 
+            if "slides" in generated["carousel"]:
+                render_carousel_sync(carousel_item.id, generated["carousel"])
             
         # 3. Video Script
         if "video_script" in generated and generated["video_script"]:
@@ -77,7 +87,8 @@ def process_article_generation(raw_article_id: int, formats: list = None):
             
         if items_to_add:
             for item in items_to_add:
-                db.add(item)
+                if item not in db.new:
+                    db.add(item)
                 
             # Update article status only if generation succeeded
             article.status = "GENERATED"
@@ -134,7 +145,10 @@ def process_trend_generation(trend_title: str, trend_snippet: str, formats: list
         text_to_process = f"Trend: {trend_title}\n\nContext/News: {trend_snippet}"
         carousel_platforms = ["IG", "Li"]
         generated = generate_selected_content(
-            trend_title, text_to_process, formats,
+            api_key=settings.ANTHROPIC_API_KEY,
+            title=trend_title, 
+            content=text_to_process, 
+            formats=formats,
             platforms=carousel_platforms
         )
         
@@ -156,6 +170,10 @@ def process_trend_generation(trend_title: str, trend_snippet: str, formats: list
             generated["carousel"]["trend_title"] = trend_title
             draft_items["CAROUSEL"].generated_content = generated["carousel"]
             draft_items["CAROUSEL"].status = "pending_review"
+            
+            # Render images
+            if "slides" in generated["carousel"]:
+                render_carousel_sync(draft_items["CAROUSEL"].id, generated["carousel"])
         elif "CAROUSEL" in draft_items:
             db.delete(draft_items["CAROUSEL"])
             
