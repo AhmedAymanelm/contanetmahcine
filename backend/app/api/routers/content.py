@@ -205,11 +205,14 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                         if not res.get("success"):
                             raise HTTPException(status_code=400, detail=f"IG: {res}")
                         ig_published = True
-                elif item.content_type == "POST" and "image_url" in gen:
-                    res = await ig_service.publish_image(gen["image_url"], caption)
-                    if not res.get("success"):
-                        raise HTTPException(status_code=400, detail=f"IG: {res}")
-                    ig_published = True
+                elif item.content_type == "POST":
+                    # Use generated image_url or fall back to raw article image
+                    img_url = gen.get("image_url") or (item.raw_article.image_url if item.raw_article else None)
+                    if img_url:
+                        res = await ig_service.publish_image(img_url, caption)
+                        if not res.get("success"):
+                            raise HTTPException(status_code=400, detail=f"IG: {res}")
+                        ig_published = True
 
         # Check FB
         fb_published = False
@@ -227,11 +230,12 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                             raise HTTPException(status_code=400, detail=f"FB: {res}")
                         fb_published = True
                 elif item.content_type == "POST":
-                    if "image_url" in gen and gen["image_url"]:
-                        res = await fb_service.publish_image(gen["image_url"], caption)
+                    # Use generated image_url or fall back to raw article image
+                    img_url = gen.get("image_url") or (item.raw_article.image_url if item.raw_article else None)
+                    if img_url:
+                        res = await fb_service.publish_image(img_url, caption)
                     else:
                         res = await fb_service.publish_text(caption)
-                    
                     if not res.get("success"):
                         raise HTTPException(status_code=400, detail=f"FB: {res}")
                     fb_published = True
@@ -252,7 +256,14 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                     
                 access_token = await th_service.check_and_refresh_token(db)
                 if access_token and status.get("account_id"):
-                    res = await th_service.publish_text(caption, access_token, status.get("account_id"))
+                    img_url = gen.get("image_url") or (item.raw_article.image_url if item.raw_article and item.content_type == "POST" else None)
+                    if img_url:
+                        res = await th_service.publish_with_image(caption, img_url, access_token, status.get("account_id"))
+                        if not res or not res.get("success"):
+                            # Fallback to text if image publish fails
+                            res = await th_service.publish_text(caption, access_token, status.get("account_id"))
+                    else:
+                        res = await th_service.publish_text(caption, access_token, status.get("account_id"))
                     if not res.get("success"):
                         raise HTTPException(status_code=400, detail=f"Threads: {res}")
                     th_published = True
@@ -272,7 +283,13 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                     caption = caption[:277] + "..."
                     
                 # Twitter service is sync (tweepy), but we can call it here since it's fast
-                res = tw_service.publish_text(caption)
+                img_url = gen.get("image_url") or (item.raw_article.image_url if item.raw_article and item.content_type == "POST" else None)
+                if img_url:
+                    res = tw_service.publish_with_image(caption, img_url)
+                    if not res or not res.get("success"):
+                        res = tw_service.publish_text(caption)
+                else:
+                    res = tw_service.publish_text(caption)
                 if not res.get("success"):
                     raise HTTPException(status_code=400, detail=f"X/Twitter: {res}")
                 tw_published = True

@@ -132,6 +132,36 @@ class ThreadsService:
             
             return {"success": True, "data": pub_res.json()}
 
+    async def publish_with_image(self, text: str, image_url: str, access_token: str, user_id: str) -> dict:
+        """Publishes an image post to Threads with caption."""
+        create_url = f"{self.base_url}/{user_id}/threads"
+        async with httpx.AsyncClient() as client:
+            create_payload = {
+                "media_type": "IMAGE",
+                "image_url": image_url,
+                "text": text,
+                "access_token": access_token
+            }
+            create_res = await client.post(create_url, data=create_payload)
+            if create_res.status_code != 200:
+                logger.error(f"Failed to create Threads image container: {create_res.text}")
+                return {"success": False, "error": create_res.json()}
+
+            container_id = create_res.json().get("id")
+            if not container_id:
+                return {"success": False, "error": "No container ID returned"}
+
+            await asyncio.sleep(3)
+
+            publish_url = f"{self.base_url}/{user_id}/threads_publish"
+            pub_res = await client.post(publish_url, data={"creation_id": container_id, "access_token": access_token})
+            if pub_res.status_code != 200:
+                logger.error(f"Failed to publish Threads image: {pub_res.text}")
+                return {"success": False, "error": pub_res.json()}
+
+            return {"success": True, "data": pub_res.json()}
+
+
     async def check_and_refresh_token(self, db: Session) -> str:
         """Retrieves the token from the DB. Refreshes if needed."""
         token_entry = db.query(OAuthToken).filter(OAuthToken.platform == "threads").first()
