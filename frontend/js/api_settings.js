@@ -1,14 +1,14 @@
 // api_settings.js
 
 const platformsMeta = {
-    anthropic: { title: "Claude AI", type: "ai" },
-    facebook: { title: "Facebook", type: "social" },
-    instagram: { title: "Instagram", type: "social" },
-    twitter: { title: "X (Twitter)", type: "social" },
-    linkedin: { title: "LinkedIn", type: "social" },
-    threads: { title: "Threads", type: "social" },
-    tiktok: { title: "TikTok", type: "social" },
-    snapchat: { title: "Snapchat", type: "social" },
+    anthropic: { title: "Claude AI", type: "ai", oauth: false },
+    facebook: { title: "Facebook", type: "social", oauth: false },
+    instagram: { title: "Instagram", type: "social", oauth: false },
+    twitter: { title: "X (Twitter)", type: "social", oauth: false },
+    linkedin: { title: "LinkedIn", type: "social", oauth: true },
+    threads: { title: "Threads", type: "social", oauth: true },
+    tiktok: { title: "TikTok", type: "social", oauth: true },
+    snapchat: { title: "Snapchat", type: "social", oauth: true },
 };
 
 async function loadApiSettings() {
@@ -69,7 +69,13 @@ function renderApiCards(containerId, platformsData) {
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button onclick="openApiModal('${key}', '${encodeURIComponent(JSON.stringify(data.keys))}')" style="flex:1; background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.3); color:#818cf8; padding:8px; border-radius:8px; cursor:pointer; font-weight:600; font-family:inherit;">⚙️ الإعدادات</button>
                 
-                ${data.connected ? `
+                ${meta.oauth ? `
+                <button onclick="window.location.href='/api/auth/${key}'" style="flex:1; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#10b981; padding:8px; border-radius:8px; cursor:pointer; font-weight:600; font-family:inherit;">
+                    🔗 ${data.connected ? 'إعادة الربط' : 'ربط الحساب'}
+                </button>
+                ` : ''}
+
+                ${data.connected && !meta.oauth ? `
                 <button onclick="togglePlatformPause('${key}', ${!data.paused})" style="flex:1; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#fbbf24; padding:8px; border-radius:8px; cursor:pointer; font-weight:600; font-family:inherit;">
                     ${data.paused ? '▶️ تفعيل' : '⏸️ إيقاف'}
                 </button>
@@ -170,9 +176,9 @@ async function savePlatformKeys(platform, keysListEncoded) {
         
         closeApiModal();
         loadApiSettings(); // Refresh
-        alert("✅ تم حفظ المفاتيح وتحديث النظام بنجاح");
+        window.showToast("✅ تم حفظ المفاتيح وتحديث النظام بنجاح");
     } catch (e) {
-        alert("❌ حدث خطأ أثناء الحفظ");
+        window.showToast("❌ حدث خطأ أثناء الحفظ", "error");
     }
 }
 
@@ -188,9 +194,9 @@ async function deletePlatformKeys(platform) {
         
         closeApiModal();
         loadApiSettings(); // Refresh
-        alert("✅ تم إزالة الربط ومسح المفاتيح بنجاح");
+        window.showToast("✅ تم إزالة الربط ومسح المفاتيح بنجاح");
     } catch (e) {
-        alert("❌ حدث خطأ أثناء مسح المفاتيح");
+        window.showToast("❌ حدث خطأ أثناء مسح المفاتيح", "error");
     }
 }
 
@@ -208,7 +214,7 @@ async function togglePlatformPause(platform, paused) {
         
         loadApiSettings(); // Refresh
     } catch (e) {
-        alert("❌ حدث خطأ أثناء تغيير الحالة");
+        window.showToast("❌ حدث خطأ أثناء تغيير الحالة", "error");
     }
 }
 

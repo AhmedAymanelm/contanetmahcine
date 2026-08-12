@@ -634,3 +634,39 @@
     max-width: 100% !important;
   }
 }
+
+/* Custom Toast Notification */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(17, 24, 39, 0.95);
+    color: #fff;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-family: inherit;
+    font-size: 0.9rem;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    backdrop-filter: blur(10px);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.toast-notification.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast-notification.success {
+    border-left: 4px solid #10b981;
+}
+
+.toast-notification.error {
+    border-left: 4px solid #ef4444;
+}

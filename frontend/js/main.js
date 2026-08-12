@@ -1,5 +1,26 @@
 const API_BASE = '/api';
 
+// Custom Toast Notification System
+window.showToast = function(message, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    toast.innerHTML = message;
+    
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Auto remove
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+};
+
 // ── Page map: which pages need auto-load on activation ──────────────────────
 const PAGE_LOADERS = {
     'page-trends':    () => loadTrends(),
