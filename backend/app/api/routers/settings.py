@@ -12,13 +12,18 @@ from app.models.oauth_token import OAuthToken
 
 router = APIRouter()
 
-# Locate the .env file
-ENV_PATH = Path(settings.model_config.get("env_file", ".env"))
+from app.models.app_setting import AppSetting
 
-def _update_env(key: str, value: str):
-    """Updates the .env file and the in-memory settings."""
-    # Update .env
-    dotenv.set_key(str(ENV_PATH), key, value)
+def _update_setting(db: Session, key: str, value: str):
+    """Updates the setting in the database and the in-memory settings."""
+    # Update Database
+    setting = db.query(AppSetting).filter(AppSetting.key == key).first()
+    if not setting:
+        setting = AppSetting(key=key, value=value)
+        db.add(setting)
+    else:
+        setting.value = value
+    db.commit()
     
     # Also update settings in memory
     if hasattr(settings, key):
@@ -29,6 +34,7 @@ def _update_env(key: str, value: str):
             setattr(settings, key, False)
         else:
             setattr(settings, key, value)
+
 
 
 @router.get("/platforms")
@@ -119,11 +125,11 @@ async def get_platforms(db: Session = Depends(get_db)):
 
 @router.post("/platforms/{platform}")
 async def save_platform_keys(platform: str, keys: Dict[str, str], db: Session = Depends(get_db)):
-    """Save or update API keys in .env"""
+    """Save or update API keys in DB"""
     for key, value in keys.items():
         # Only update if a value is provided and not masked
         if value and not value.startswith("*") and not value.endswith("*"):
-            _update_env(key, value)
+            _update_setting(db, key, value)
     return {"message": "Keys updated successfully"}
 
 @router.delete("/platforms/{platform}")
@@ -143,7 +149,7 @@ async def delete_platform_keys(platform: str, db: Session = Depends(get_db)):
     
     if platform in keys_map:
         for key in keys_map[platform]:
-            _update_env(key, "")
+            _update_setting(db, key, "")
             
     # Also delete oauth token if exists
     token = db.query(OAuthToken).filter(OAuthToken.platform == platform).first()
@@ -160,5 +166,5 @@ async def toggle_platform(platform: str, body: Dict[str, bool], db: Session = De
     paused = body.get("paused", False)
     key = f"{platform.upper()}_PAUSED"
     
-    _update_env(key, "true" if paused else "false")
+    _update_setting(db, key, "true" if paused else "false")
     return {"message": f"{platform} pause state updated"}

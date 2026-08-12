@@ -17,12 +17,31 @@ from fastapi import Depends
 
 from contextlib import asynccontextmanager
 from app.services.ingestion.scheduler_service import start_scheduler, stop_scheduler
+from app.db.session import SessionLocal
+from app.models.app_setting import AppSetting
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Load dynamic settings from database
+    try:
+        db = SessionLocal()
+        db_settings = db.query(AppSetting).all()
+        for s in db_settings:
+            if hasattr(settings, s.key):
+                if s.value.lower() == "true":
+                    setattr(settings, s.key, True)
+                elif s.value.lower() == "false":
+                    setattr(settings, s.key, False)
+                else:
+                    setattr(settings, s.key, s.value)
+        db.close()
+    except Exception as e:
+        print(f"Failed to load DB settings on startup: {e}")
+
     start_scheduler()
     yield
     stop_scheduler()
+
 
 app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
 
