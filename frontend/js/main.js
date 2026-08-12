@@ -76,6 +76,7 @@ function toggleSidebar() {
     const isOpen  = sidebar.classList.toggle('open');
     overlay.classList.toggle('active', isOpen);
     document.body.style.overflow = isOpen ? 'hidden' : '';
+    document.documentElement.style.overflow = isOpen ? 'hidden' : '';
 }
 
 function closeSidebar() {
@@ -84,6 +85,7 @@ function closeSidebar() {
     if (sidebar) sidebar.classList.remove('open');
     if (overlay) overlay.classList.remove('active');
     document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
 }
 
 function goId(pageId) {
