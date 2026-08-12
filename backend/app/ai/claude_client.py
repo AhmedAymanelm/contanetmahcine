@@ -1,11 +1,11 @@
-import os
 import json
 import anthropic
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv(override=True)
-api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-client = anthropic.Anthropic(api_key=api_key)
+def get_client():
+    if not settings.ANTHROPIC_API_KEY:
+        return None
+    return anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 def generate_structured_content(system_prompt: str, user_prompt: str, schema: dict) -> dict:
     """
@@ -19,6 +19,11 @@ def generate_structured_content(system_prompt: str, user_prompt: str, schema: di
             "input_schema": schema
         }
     ]
+
+    client = get_client()
+    if not client:
+        print("Anthropic API key not configured")
+        return {}
 
     try:
         response = client.messages.create(
