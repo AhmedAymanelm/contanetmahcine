@@ -92,10 +92,11 @@ def process_article_generation(raw_article_id: int, formats: list = None):
         logger.error(f"Generation failed: {e}")
         db.rollback()
         try:
-            # Attempt to reset status on failure
+            # Attempt to reset status on failure and show error
             article = db.query(RawArticle).filter(RawArticle.id == raw_article_id).first()
             if article:
                 article.status = "PENDING"
+                article.content = f"ERROR: {str(e)}"
                 db.commit()
         except:
             pass

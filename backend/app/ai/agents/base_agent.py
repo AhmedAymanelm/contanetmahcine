@@ -86,7 +86,7 @@ Execute the following task exactly as requested. You must respond using the outp
                 if content.type == "tool_use" and content.name == "output_formatter":
                     return content.input
                     
-            return {}
+            raise ValueError(f"Claude API did not return tool_use. Response: {response.content}")
         except Exception as e:
             print(f"Error calling Claude API: {e}")
-            return {}
+            raise e
