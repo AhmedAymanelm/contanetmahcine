@@ -128,7 +128,20 @@ async function fetchDashboardStats() {
         document.getElementById('sidebar-count-content').innerText = data.sidebar_counts.content;
         document.getElementById('sidebar-count-review').innerText = data.sidebar_counts.review;
 
+        // Update Last Ingestion Time
+        const timeEl = document.getElementById('last-ingestion-time');
+        if (timeEl) {
+            const todayStr = new Date().toLocaleDateString('ar-AE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Dubai' });
+            let ingestStr = 'لم يتم السحب بعد';
+            if (data.stats.last_ingestion_time) {
+                const ingestDate = new Date(data.stats.last_ingestion_time);
+                ingestStr = ingestDate.toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dubai' });
+            }
+            timeEl.innerText = `${todayStr} — آخر عملية سحب أخبار: ${ingestStr}`;
+        }
+
         // Update Pipeline Counts
+
         document.getElementById('pipeline-count-raw').innerText = data.pipeline_counts.raw;
         document.getElementById('pipeline-count-draft').innerText = data.pipeline_counts.draft;
         document.getElementById('pipeline-count-review').innerText = data.pipeline_counts.review;

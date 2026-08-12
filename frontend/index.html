@@ -55,8 +55,6 @@
         <span class="toggle-label" id="theme-label">الوضع الليلي</span>
         <div class="toggle-track"><div class="toggle-thumb"></div></div>
       </button>
-
-      <div class="side-foot">حالة الاتصال بـ Claude<br><b>● متصل</b> — Sonnet 4.6</div>
     </aside>
 
     <main>
@@ -64,7 +62,8 @@
       <!-- ================= DASHBOARD ================= -->
       <section class="page active" id="page-dashboard">
         <div class="topline">
-          <div><h1>لوحة القيادة</h1><p>الإثنين، ٣ أغسطس ٢٠٢٦ — آخر عملية سحب أخبار: 09:15 صباحًا</p></div>
+          <div><h1>لوحة القيادة</h1><p id="last-ingestion-time">جاري التحميل...</p></div>
+
           <div style="display:flex; gap:10px;">
             <button class="btn ghost" id="btn-run-ingestion" onclick="runIngestion()">تشغيل السحب الآن</button>
             <button class="btn">+ إنشاء محتوى يدويًا</button>

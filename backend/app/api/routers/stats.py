@@ -127,12 +127,17 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Error fetching FB stats: {e}")
     
+    # Last Ingestion Time
+    last_article = db.query(RawArticle).order_by(RawArticle.created_at.desc()).first()
+    last_ingestion_time = last_article.created_at.isoformat() if last_article and last_article.created_at else None
+
     return {
         "stats": {
             "articles_today": total_articles,
             "pending_reviews": pending_count,
             "approval_rate": f"{approval_rate}%",
-            "scheduled": scheduled_count
+            "scheduled": scheduled_count,
+            "last_ingestion_time": last_ingestion_time
         },
         "sidebar_counts": {
             "sources": total_sources,
@@ -140,6 +145,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
             "content": total_content,
             "review": pending_count
         },
+
         "pipeline_counts": {
             "raw": total_articles,
             "draft": draft_count,
