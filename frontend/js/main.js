@@ -689,6 +689,9 @@ async function fetchRawArticles() {
         const res = await fetch(`${API_BASE}/raw-articles/`);
         if(!res.ok) return;
         const data = await res.json();
+        // Store all articles in a map for safe access
+        window._rawArticlesMap = {};
+        data.forEach(a => { window._rawArticlesMap[a.id] = a; });
         
         const rawList = document.getElementById('raw-articles-list');
         if(rawList) {
@@ -723,7 +726,7 @@ async function fetchRawArticles() {
                         <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:10px; margin-top:10px;">
                             <div class="m" style="font-family:var(--mono); font-size:11px">${new Date(art.created_at).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'})}</div>
                             <div style="display:flex; gap:6px;">
-                                <button class="btn ghost" style="padding:4px 10px; font-size:11px;" onclick='openArticleModal(${JSON.stringify(art.title || "بدون عنوان")}, ${JSON.stringify(art.content || "")}, ${JSON.stringify(art.url)}, ${JSON.stringify(art.image_url || "")})'>قراءة</button>
+                                <button class="btn ghost" style="padding:4px 10px; font-size:11px;" onclick="openArticleById(${art.id})">قراءة</button>
                                 <button class="btn" style="padding:4px 10px; font-size:11px; background:var(--teal); color:#0a0a0a; border:none;" onclick='approveArticle(${art.id}, this)'>موافقة ⚡</button>
                             </div>
                         </div>
@@ -777,6 +780,12 @@ async function approveArticle(id, btn) {
             btn.disabled = false;
         }
     });
+}
+
+function openArticleById(id) {
+    const art = (window._rawArticlesMap || {})[id];
+    if (!art) return;
+    openArticleModal(art.title || 'بدون عنوان', art.content || '', art.url || '#', art.image_url || '');
 }
 
 function openArticleModal(title, content, url, imageUrl) {
