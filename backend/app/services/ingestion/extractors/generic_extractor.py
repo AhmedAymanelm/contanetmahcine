@@ -41,9 +41,12 @@ def extract_article_content(url: str) -> Dict:
                     if tw_img and tw_img.get("content"):
                         image_url = tw_img.get("content")
                 if not image_url:
-                    # Try first large img tag in the page
-                    for img in soup.find_all("img"):
-                        src = img.get("src", "")
+                    # Try first large img tag - check lazy-loading attrs too
+                    for img in soup.find_all(["img", "source"]):
+                        # Check all possible src attributes (lazy loading uses data-* attrs)
+                        src = (img.get("src") or img.get("data-src") or
+                               img.get("data-lazy-src") or img.get("data-original") or
+                               img.get("data-lazy") or img.get("srcset", "").split()[0] or "")
                         if not src or src.startswith("data:"):
                             continue
                         # Skip tiny icons/logos (check width/height attrs)

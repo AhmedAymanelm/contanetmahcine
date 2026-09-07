@@ -386,9 +386,38 @@ def auto_scrape_trend_radar():
                         if not image_url:
                             try:
                                 soup = BeautifulSoup(downloaded, "html.parser")
+                                # og:image
                                 meta_img = soup.find("meta", property="og:image")
                                 if meta_img and meta_img.get("content"):
                                     image_url = meta_img["content"]
+                                # twitter:image
+                                if not image_url:
+                                    tw_img = soup.find("meta", attrs={"name": "twitter:image"})
+                                    if tw_img and tw_img.get("content"):
+                                        image_url = tw_img["content"]
+                                # lazy-loaded img tags
+                                if not image_url:
+                                    from urllib.parse import urlparse as _urlparse
+                                    for img in soup.find_all(["img", "source"]):
+                                        src = (img.get("src") or img.get("data-src") or
+                                               img.get("data-lazy-src") or img.get("data-original") or
+                                               img.get("data-lazy") or img.get("srcset", "").split()[0] or "")
+                                        if not src or src.startswith("data:"):
+                                            continue
+                                        w = img.get("width", "")
+                                        h = img.get("height", "")
+                                        if w and str(w).isdigit() and int(w) < 100:
+                                            continue
+                                        if h and str(h).isdigit() and int(h) < 100:
+                                            continue
+                                        if src.startswith("//"):
+                                            src = "https:" + src
+                                        elif src.startswith("/"):
+                                            _p = _urlparse(real_url)
+                                            src = f"{_p.scheme}://{_p.netloc}{src}"
+                                        if src.startswith("http"):
+                                            image_url = src
+                                            break
                             except Exception:
                                 pass
                                 
