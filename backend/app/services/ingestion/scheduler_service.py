@@ -78,17 +78,35 @@ def clear_raw_articles_at_midnight():
     try:
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
         
-        # Delete ContentItems older than 24h that are NOT SCHEDULED/PUBLISHED
+        # Step 1: Delete old ContentItems that are NOT SCHEDULED/PUBLISHED
         deleted_content = db.query(ContentItem).filter(
             ContentItem.created_at < cutoff,
             ContentItem.status.notin_(["SCHEDULED", "PUBLISHED"])
         ).delete(synchronize_session=False)
-        
-        # Delete ALL raw articles to start the new day fresh
-        deleted_raw = db.query(RawArticle).delete(synchronize_session=False)
-        
         db.commit()
+        
+        # Step 2: Nullify raw_article_id on any remaining ContentItems still linked to raw articles
+        # (to break FK before deleting raw articles)
+        from sqlalchemy import update
+        db.execute(
+            update(ContentItem)
+            .where(ContentItem.raw_article_id.isnot(None))
+            .values(raw_article_id=None)
+        )
+        db.commit()
+        
+        # Step 3: Now safely delete ALL raw articles to start the new day fresh
+        deleted_raw = db.query(RawArticle).delete(synchronize_session=False)
+        db.commit()
+        
         logger.info(f"Midnight Cleanup: Deleted {deleted_content} old content items and wiped {deleted_raw} raw articles for the new day.")
+        
+        # Step 4: Immediately trigger a fresh trend radar scrape for the new day
+        import threading
+        t = threading.Thread(target=auto_scrape_trend_radar, daemon=True)
+        t.start()
+        logger.info("Midnight Cleanup: Triggered fresh trend radar scrape for new day.")
+        
     except Exception as e:
         db.rollback()
         logger.error(f"Cleanup Error: {e}")
