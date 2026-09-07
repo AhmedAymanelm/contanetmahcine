@@ -2028,11 +2028,11 @@ async function runIngestion() {
 
     // Animated steps
     const steps = [
-        { text: "🔌 جاري الاتصال بالمصادر...", pct: 10 },
-        { text: "📡 جاري سحب RSS وأخبار الشبكة...", pct: 35 },
-        { text: "🔍 جاري استخراج المحتوى...", pct: 60 },
-        { text: "💾 جاري حفظ الأخبار الجديدة...", pct: 80 },
-        { text: "✅ تقريباً خلص...", pct: 95 },
+        { text: " جاري الاتصال بالمصادر...", pct: 10 },
+        { text: " جاري سحب RSS وأخبار الشبكة...", pct: 35 },
+        { text: " جاري استخراج المحتوى...", pct: 60 },
+        { text: " جاري حفظ الأخبار الجديدة...", pct: 80 },
+        { text: " تقريباً خلص...", pct: 95 },
     ];
     let stepIdx = 0;
     const stepEl = document.getElementById('ingestion-step');
