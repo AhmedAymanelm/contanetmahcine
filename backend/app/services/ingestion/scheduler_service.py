@@ -73,39 +73,59 @@ def check_and_run_ingestion():
     finally:
         db.close()
 
-def clear_raw_articles_at_midnight():
+def cleanup_old_raw_articles():
+    """Runs every hour. Deletes raw articles older than 24h that have no SCHEDULED/PUBLISHED content linked."""
     db = SessionLocal()
     try:
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
         
-        # Step 1: Delete old ContentItems that are NOT SCHEDULED/PUBLISHED
-        deleted_content = db.query(ContentItem).filter(
-            ContentItem.created_at < cutoff,
+        # Find raw article IDs older than 24h
+        old_raw_ids = [
+            r.id for r in db.query(RawArticle.id)
+            .filter(RawArticle.created_at < cutoff).all()
+        ]
+        
+        if not old_raw_ids:
+            db.close()
+            return
+        
+        # Exclude raw articles that have SCHEDULED or PUBLISHED content linked
+        protected_ids = [
+            r.raw_article_id for r in db.query(ContentItem.raw_article_id)
+            .filter(
+                ContentItem.raw_article_id.in_(old_raw_ids),
+                ContentItem.status.in_(["SCHEDULED", "PUBLISHED"])
+            ).all()
+            if r.raw_article_id is not None
+        ]
+        
+        ids_to_delete = [i for i in old_raw_ids if i not in protected_ids]
+        
+        if not ids_to_delete:
+            db.close()
+            return
+        
+        # Delete old ContentItems linked to these raw articles (non-protected)
+        db.query(ContentItem).filter(
+            ContentItem.raw_article_id.in_(ids_to_delete),
             ContentItem.status.notin_(["SCHEDULED", "PUBLISHED"])
         ).delete(synchronize_session=False)
         db.commit()
         
-        # Step 2: Nullify raw_article_id on any remaining ContentItems still linked to raw articles
-        # (to break FK before deleting raw articles)
+        # Break FK on any remaining content items
         from sqlalchemy import update
         db.execute(
             update(ContentItem)
-            .where(ContentItem.raw_article_id.isnot(None))
+            .where(ContentItem.raw_article_id.in_(ids_to_delete))
             .values(raw_article_id=None)
         )
         db.commit()
         
-        # Step 3: Now safely delete ALL raw articles to start the new day fresh
-        deleted_raw = db.query(RawArticle).delete(synchronize_session=False)
+        # Delete old raw articles
+        deleted = db.query(RawArticle).filter(RawArticle.id.in_(ids_to_delete)).delete(synchronize_session=False)
         db.commit()
         
-        logger.info(f"Midnight Cleanup: Deleted {deleted_content} old content items and wiped {deleted_raw} raw articles for the new day.")
-        
-        # Step 4: Immediately trigger a fresh trend radar scrape for the new day
-        import threading
-        t = threading.Thread(target=auto_scrape_trend_radar, daemon=True)
-        t.start()
-        logger.info("Midnight Cleanup: Triggered fresh trend radar scrape for new day.")
+        logger.info(f"Hourly Cleanup: Deleted {deleted} raw articles older than 24h.")
         
     except Exception as e:
         db.rollback()
@@ -406,12 +426,12 @@ def start_scheduler():
             replace_existing=True
         )
         
-        # Run exactly at midnight Cairo time to clear raw articles for the new day
+        # Run every hour to delete raw articles older than 24h
         scheduler.add_job(
-            clear_raw_articles_at_midnight,
-            trigger=CronTrigger(hour=0, minute=0, timezone='Africa/Cairo'),
+            cleanup_old_raw_articles,
+            trigger=IntervalTrigger(hours=1),
             id='cleanup_job',
-            name='Midnight Cleanup Job',
+            name='24h Rolling Cleanup Job',
             replace_existing=True
         )
         

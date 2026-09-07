@@ -25,28 +25,17 @@ def get_start_of_day_utc():
 
 @router.get("/", response_model=List[RawArticleResponse])
 def get_raw_articles(db: Session = Depends(get_db)):
-    # Auto-cleanup: Delete pending articles older than 24 hours ONLY if they don't have ContentItems
-    cleanup_cutoff = datetime.utcnow() - timedelta(hours=24)
-    from app.models.content_item import ContentItem
-    subquery = db.query(ContentItem.raw_article_id).subquery()
-    db.query(RawArticle).filter(
-        RawArticle.status == "PENDING", 
-        RawArticle.created_at < cleanup_cutoff,
-        ~RawArticle.id.in_(subquery)
-    ).delete(synchronize_session=False)
-    db.commit()
-    
-    # Filter for UI: Only show articles from TODAY (since midnight local time)
-    display_cutoff = get_start_of_day_utc()
+    # Show articles from the last 24 hours only (rolling window)
+    display_cutoff = datetime.utcnow() - timedelta(hours=24)
     articles = db.query(RawArticle).filter(
         RawArticle.status == "PENDING",
         RawArticle.created_at >= display_cutoff
-    ).order_by(RawArticle.created_at.desc()).limit(100).all()
+    ).order_by(RawArticle.created_at.desc()).limit(200).all()
     return articles
 
 @router.get("/generating", response_model=List[RawArticleResponse])
 def get_generating_articles(db: Session = Depends(get_db)):
-    display_cutoff = get_start_of_day_utc()
+    display_cutoff = datetime.utcnow() - timedelta(hours=24)
     articles = db.query(RawArticle).filter(
         RawArticle.status == "APPROVED_FOR_GENERATION",
         RawArticle.created_at >= display_cutoff
