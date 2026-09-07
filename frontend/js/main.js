@@ -713,6 +713,9 @@ async function fetchRawArticles() {
                 const hue = (idx * 137.5) % 360;
                 const gradient = `linear-gradient(160deg, hsl(${hue}, 70%, 90%), hsl(${hue}, 40%, 80%))`;
                 
+                const _tmpDiv = document.createElement('div');
+                _tmpDiv.innerHTML = art.content || '';
+                const cleanSnippet = _tmpDiv.textContent || _tmpDiv.innerText || 'لا يوجد محتوى نصي...';
                 const thumbStyle = art.image_url ? `background-image:url('${art.image_url}'); background-size:cover; background-position:center;` : `background:${gradient};`;
                 const thumbContent = art.image_url ? '' : (art.source ? art.source.name : 'مجهول');
                 
@@ -721,7 +724,7 @@ async function fetchRawArticles() {
                         <div>
                             <div class="thumb" style="width:100%; height:180px; margin-bottom:12px; border-radius:8px; ${thumbStyle} display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:18px; text-shadow:0 2px 4px rgba(0,0,0,0.2);">${thumbContent}</div>
                             <div class="t" style="margin-bottom:8px; line-height:1.4;">${art.title || 'بدون عنوان'}</div>
-                            <div class="snippet" style="font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:12px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${art.content || 'لا يوجد محتوى نصي...'}</div>
+                            <div class="snippet" style="font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:12px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${cleanSnippet}</div>
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:10px; margin-top:10px;">
                             <div class="m" style="font-family:var(--mono); font-size:11px">${new Date(art.created_at).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'})}</div>
