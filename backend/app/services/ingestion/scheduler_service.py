@@ -303,6 +303,23 @@ def auto_scrape_trend_radar():
             try:
                 trends = fetch_trends_for_geo(geo)
                 for trend in trends:
+                    # Filter to tech/AI/crypto topics only
+                    tech_keywords = [
+                        "ai", "artificial intelligence", "ذكاء اصطناعي", "chatgpt", "gpt", "openai", "gemini", "claude", "llm",
+                        "tech", "تكنولوجيا", "تقنية", "technology",
+                        "iphone", "apple", "samsung", "google", "microsoft", "meta", "amazon", "tesla",
+                        "crypto", "bitcoin", "blockchain", "ethereum", "web3",
+                        "app", "software", "hardware", "robot", "robotics", "cybersecurity", "hack", "data",
+                        "startup", "gaming", "electric vehicle", "ev", "chip", "semiconductor", "quantum",
+                        "social media", "tiktok", "instagram", "twitter", "x.com", "youtube",
+                        "space", "nasa", "spacex", "satellite",
+                        "5g", "6g", "internet", "cloud", "saas",
+                    ]
+                    title_lower = trend.title.lower()
+                    is_tech = any(kw in title_lower for kw in tech_keywords)
+                    if not is_tech:
+                        continue
+                    
                     # Check if already in DB
                     exists = db.query(RawArticle).filter(RawArticle.url == trend.news_url).first()
                     if exists:
