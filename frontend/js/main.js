@@ -2001,32 +2001,78 @@ async function rejectContentItem(id, btn) {
 
 async function runIngestion() {
     const btn = document.getElementById('btn-run-ingestion');
-    const originalText = btn.innerText;
-    btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border:2px solid rgba(255,255,255,0.3); border-radius:50%; border-top-color:#fff; animation:spin 1s linear infinite; margin-left:8px; vertical-align:middle;"></span> جاري السحب...`;
-    btn.style.opacity = '0.8';
-    btn.style.cursor = 'wait';
+    const originalHTML = btn.innerHTML;
     btn.disabled = true;
+    btn.style.cursor = 'wait';
+
+    // Create animated overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'ingestion-overlay';
+    overlay.style.cssText = `
+        position:fixed; top:0; left:0; width:100%; height:100%; 
+        background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);
+        z-index:99999; display:flex; align-items:center; justify-content:center;
+    `;
+    overlay.innerHTML = `
+        <div style="background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px 40px; min-width:340px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <div style="font-size:36px; margin-bottom:16px; animation: pulse 1s ease-in-out infinite;">🛰️</div>
+            <h3 style="margin:0 0 8px; color:var(--text); font-size:18px;">جاري سحب الأخبار...</h3>
+            <p id="ingestion-step" style="color:var(--muted); font-size:13px; margin-bottom:20px;">جاري الاتصال بالمصادر...</p>
+            <div style="background:var(--bg); border-radius:100px; height:6px; overflow:hidden;">
+                <div id="ingestion-bar" style="background:var(--teal); height:100%; width:0%; border-radius:100px; transition:width 0.5s ease;"></div>
+            </div>
+            <p style="color:var(--muted); font-size:11px; margin-top:12px; opacity:0.6;">يستغرق عادةً 30-60 ثانية</p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Animated steps
+    const steps = [
+        { text: "🔌 جاري الاتصال بالمصادر...", pct: 10 },
+        { text: "📡 جاري سحب RSS وأخبار الشبكة...", pct: 35 },
+        { text: "🔍 جاري استخراج المحتوى...", pct: 60 },
+        { text: "💾 جاري حفظ الأخبار الجديدة...", pct: 80 },
+        { text: "✅ تقريباً خلص...", pct: 95 },
+    ];
+    let stepIdx = 0;
+    const stepEl = document.getElementById('ingestion-step');
+    const barEl = document.getElementById('ingestion-bar');
+    const stepTimer = setInterval(() => {
+        if (stepIdx < steps.length) {
+            stepEl.textContent = steps[stepIdx].text;
+            barEl.style.width = steps[stepIdx].pct + '%';
+            stepIdx++;
+        }
+    }, 2000);
 
     try {
         const res = await fetch(`${API_BASE}/sources/run-ingestion`, { method: 'POST' });
         const data = await res.json();
-        if(res.ok) {
-            showToast(data.detail || "تم السحب بنجاح", "success");
-        } else {
-            showToast("حدث خطأ أثناء السحب", "error");
-        }
+        clearInterval(stepTimer);
+        barEl.style.width = '100%';
+        stepEl.textContent = '✅ اكتمل السحب بنجاح!';
         
-        // Refresh everything
-        fetchDashboardStats();
-        fetchSources();
-        fetchRawArticles();
-        fetchAllContent();
-        fetchReviewContent();
+        setTimeout(() => {
+            overlay.remove();
+            if(res.ok) {
+                showToast(data.detail || `تم السحب! 🎉`, "success");
+            } else {
+                showToast("حدث خطأ أثناء السحب", "error");
+            }
+            fetchDashboardStats();
+            fetchSources();
+            fetchRawArticles();
+            fetchAllContent();
+            fetchReviewContent();
+        }, 1000);
+
     } catch(err) {
+        clearInterval(stepTimer);
+        overlay.remove();
         console.error(err);
         showToast("حدث خطأ أثناء تشغيل السحب", "error");
     } finally {
-        btn.innerText = originalText;
+        btn.innerHTML = originalHTML;
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
         btn.disabled = false;
