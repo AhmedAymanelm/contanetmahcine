@@ -358,6 +358,9 @@ def auto_scrape_trend_radar():
                             
                         data = json.loads(result)
                         content = data.get("text", "")
+                        # Strip any residual HTML tags from content
+                        if "<" in content and ">" in content:
+                            content = BeautifulSoup(content, "html.parser").get_text(separator="\n")
                         image_url = data.get("image", "")
                         
                         if not image_url:

@@ -790,7 +790,11 @@ function openArticleModal(title, content, url, imageUrl) {
         imgEl.style.display = 'none';
     }
     
-    document.getElementById('modal-content').innerText = content;
+    // Strip any HTML tags from content before displaying
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    const cleanContent = tempDiv.textContent || tempDiv.innerText || content;
+    document.getElementById('modal-content').innerText = cleanContent;
     document.getElementById('modal-url').href = url;
     document.getElementById('article-modal').style.display = 'flex';
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
