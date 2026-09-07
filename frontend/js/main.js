@@ -2015,7 +2015,6 @@ async function runIngestion() {
     `;
     overlay.innerHTML = `
         <div style="background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px 40px; min-width:340px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-            <div style="font-size:36px; margin-bottom:16px; animation: pulse 1s ease-in-out infinite;">🛰️</div>
             <h3 style="margin:0 0 8px; color:var(--text); font-size:18px;">جاري سحب الأخبار...</h3>
             <p id="ingestion-step" style="color:var(--muted); font-size:13px; margin-bottom:20px;">جاري الاتصال بالمصادر...</p>
             <div style="background:var(--bg); border-radius:100px; height:6px; overflow:hidden;">
