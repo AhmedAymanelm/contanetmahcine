@@ -31,9 +31,38 @@ def extract_article_content(url: str) -> Dict:
             if downloaded:
                 soup = BeautifulSoup(downloaded, "html.parser")
                 if not image_url:
+                    # Try og:image first
                     og_img = soup.find("meta", property="og:image")
                     if og_img and og_img.get("content"):
                         image_url = og_img.get("content")
+                if not image_url:
+                    # Try twitter:image
+                    tw_img = soup.find("meta", attrs={"name": "twitter:image"})
+                    if tw_img and tw_img.get("content"):
+                        image_url = tw_img.get("content")
+                if not image_url:
+                    # Try first large img tag in the page
+                    for img in soup.find_all("img"):
+                        src = img.get("src", "")
+                        if not src or src.startswith("data:"):
+                            continue
+                        # Skip tiny icons/logos (check width/height attrs)
+                        w = img.get("width", "")
+                        h = img.get("height", "")
+                        if w and str(w).isdigit() and int(w) < 100:
+                            continue
+                        if h and str(h).isdigit() and int(h) < 100:
+                            continue
+                        # Build absolute URL
+                        if src.startswith("//"):
+                            src = "https:" + src
+                        elif src.startswith("/"):
+                            from urllib.parse import urlparse
+                            parsed = urlparse(url)
+                            src = f"{parsed.scheme}://{parsed.netloc}{src}"
+                        if src.startswith("http"):
+                            image_url = src
+                            break
                 if not title:
                     og_title = soup.find("meta", property="og:title")
                     if og_title and og_title.get("content"):
