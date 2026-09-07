@@ -2,6 +2,7 @@ from typing import List, Dict
 from playwright.sync_api import sync_playwright
 import trafilatura
 from bs4 import BeautifulSoup
+import os
 
 def extract_article_content(url: str, html: str) -> Dict:
     try:
@@ -28,9 +29,17 @@ def extract_article_content(url: str, html: str) -> Dict:
 
 def extract(url: str) -> List[Dict]:
     articles = []
+    # Use system chromium if set via env (Railway/Docker), otherwise let Playwright find its own
+    chromium_path = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
+    launch_kwargs = {
+        "headless": True,
+        "args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+    }
+    if chromium_path:
+        launch_kwargs["executable_path"] = chromium_path
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"])
+            browser = p.chromium.launch(**launch_kwargs)
             
             try:
                 page = browser.new_page()
