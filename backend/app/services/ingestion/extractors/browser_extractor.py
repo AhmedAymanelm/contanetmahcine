@@ -6,26 +6,72 @@ import os
 
 def extract_article_content(url: str, html: str) -> Dict:
     try:
+        import json
         result = trafilatura.extract(
             html,
             output_format="json",
             include_comments=False,
-            include_tables=False,
-            include_images=True
+            include_tables=True,
+            include_images=False,
+            favor_recall=True,
         )
+        content = ''
+        title = ''
+        published_at = ''
+        image_url = ''
+
         if result:
-            import json
             data = json.loads(result)
-            return {
-                "title": data.get("title", ""),
-                "url": url,
-                "content": data.get("text", ""),
-                "published_at": data.get("date", ""),
-                "image_url": data.get("image", "")
-            }
+            content = data.get("text", "")
+            title = data.get("title", "")
+            published_at = data.get("date", "")
+
+        # Always try og:image / JSON-LD from the rendered HTML (more reliable)
+        soup = BeautifulSoup(html, "html.parser")
+
+        # JSON-LD
+        for script in soup.find_all('script', type='application/ld+json'):
+            try:
+                ld = json.loads(script.string or '{}')
+                items = ld if isinstance(ld, list) else [ld]
+                for item in items:
+                    img = item.get('image')
+                    if isinstance(img, str) and img.startswith('http'):
+                        image_url = img; break
+                    if isinstance(img, dict):
+                        image_url = img.get('url', img.get('contentUrl', '')); break
+                    if isinstance(img, list) and img:
+                        first = img[0]
+                        image_url = first if isinstance(first, str) else first.get('url', ''); break
+                if image_url:
+                    break
+            except Exception:
+                pass
+
+        # og:image fallback
+        if not image_url:
+            for prop in ['og:image', 'twitter:image']:
+                tag = soup.find('meta', property=prop) or soup.find('meta', attrs={'name': prop})
+                if tag and tag.get('content', '').startswith('http'):
+                    image_url = tag['content'].strip()
+                    break
+
+        if not title:
+            og = soup.find('meta', property='og:title')
+            if og and og.get('content'):
+                title = og['content'].strip()
+
+        return {
+            "title": title.strip(),
+            "url": url,
+            "content": content.strip(),
+            "published_at": published_at,
+            "image_url": image_url,
+        }
     except Exception as e:
         print(f"Error in Browser Content Extractor for {url}: {e}")
     return {}
+
 
 def extract(url: str) -> List[Dict]:
     articles = []
