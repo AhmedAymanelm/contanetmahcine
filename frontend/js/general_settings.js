@@ -60,18 +60,38 @@ async function loadGeneralSettings() {
 
 // ── Logo Preview ─────────────────────────────────────────────────────────────
 
+function _compressImage(dataUrl, callback) {
+    /** Resize to max 128px and convert to JPEG 80% to fit localStorage */
+    const img = new Image();
+    img.onload = () => {
+        const MAX = 128;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+            const ratio = Math.min(MAX / w, MAX / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL('image/jpeg', 0.80));
+    };
+    img.src = dataUrl;
+}
+
 function previewLogo(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-        const url = e.target.result;
-        const preview = document.getElementById('logo-preview');
-        if (preview) {
-            preview.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
-        }
-        // Store for saving
-        input.dataset.logoUrl = url;
+        _compressImage(e.target.result, (compressed) => {
+            const preview = document.getElementById('logo-preview');
+            if (preview) {
+                preview.innerHTML = `<img src="${compressed}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+            }
+            // Store compressed version for saving
+            input.dataset.logoUrl = compressed;
+        });
     };
     reader.readAsDataURL(file);
 }
@@ -118,7 +138,12 @@ function saveAppIdentity() {
         if (tagEl) tagEl.textContent = tagline;
     }
     if (logoInput?.dataset.logoUrl) {
-        localStorage.setItem('app_logo_url', logoInput.dataset.logoUrl);
+        try {
+            localStorage.setItem('app_logo_url', logoInput.dataset.logoUrl);
+        } catch(e) {
+            showSettingsMsg('⚠️ الصورة كبيرة جداً، جرب صورة أصغر', 'error');
+            return;
+        }
         const sidebarMark = document.querySelector('.mark');
         if (sidebarMark) {
             sidebarMark.innerHTML = `<img src="${logoInput.dataset.logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;">`;
