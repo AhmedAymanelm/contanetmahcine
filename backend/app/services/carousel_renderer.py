@@ -478,7 +478,14 @@ async def render_carousel_images(
     slide_dir.mkdir(parents=True, exist_ok=True)
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch()
+        chromium_path = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
+        launch_kwargs = {
+            "headless": True,
+            "args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+        }
+        if chromium_path:
+            launch_kwargs["executable_path"] = chromium_path
+        browser = await p.chromium.launch(**launch_kwargs)
         page = await browser.new_page(viewport={"width": 1080, "height": 1350})
 
         for i, slide in enumerate(slides):

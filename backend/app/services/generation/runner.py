@@ -71,7 +71,10 @@ def process_article_generation(raw_article_id: int, formats: list = None):
             db.add(carousel_item)
             db.flush() 
             if "slides" in generated["carousel"]:
-                render_carousel_sync(carousel_item.id, generated["carousel"])
+                try:
+                    render_carousel_sync(carousel_item.id, generated["carousel"])
+                except Exception as render_err:
+                    logger.warning(f"Carousel rendering failed (will save without images): {render_err}")
             
         # 3. Video Script
         if "video_script" in generated and generated["video_script"]:
