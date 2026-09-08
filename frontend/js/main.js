@@ -1999,6 +1999,48 @@ async function rejectContentItem(id, btn) {
     }
 }
 
+async function deleteAllArticles() {
+    const confirmed = await new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);`;
+        overlay.innerHTML = `
+            <div style="background:#1a1d2e;border:1px solid rgba(251,146,60,0.4);border-radius:16px;padding:32px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+                <h3 style="color:#f1f5f9;font-size:18px;margin-bottom:10px;">مسح كل الأخبار</h3>
+                <p style="color:#94a3b8;font-size:14px;margin-bottom:24px;line-height:1.6;">سيتم حذف <strong style="color:#fb923c;">جميع الأخبار المسحوبة</strong> بغض النظر عن تاريخها (باستثناء المرتبطة بمنشور مجدول أو منشور). لا يمكن التراجع عن هذا الإجراء.</p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button id="del-cancel" style="flex:1;padding:10px 20px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-size:14px;">إلغاء</button>
+                    <button id="del-confirm" style="flex:1;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#fb923c,#f97316);color:#fff;cursor:pointer;font-size:14px;font-weight:600;">نعم، امسح الكل</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelector('#del-cancel').onclick = () => { overlay.remove(); resolve(false); };
+        overlay.querySelector('#del-confirm').onclick = () => { overlay.remove(); resolve(true); };
+    });
+    if (!confirmed) return;
+
+    const btn = event.target;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ جاري المسح...';
+    btn.disabled = true;
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/sources/delete-all`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        showToast(data.detail || '✅ تم مسح كل الأخبار', 'success');
+        fetchRawArticles();
+        fetchDashboardStats();
+    } catch(e) {
+        showToast('❌ حدث خطأ أثناء المسح', 'error');
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }
+}
+
 async function manualCleanup() {
     // Custom styled confirm modal
     const confirmed = await new Promise(resolve => {

@@ -116,3 +116,46 @@ def manual_cleanup(hours: int = 24, db: Session = Depends(get_db)):
     cleanup_old_raw_articles()
     return {"detail": f"Cleanup triggered. Articles older than {hours}h have been deleted."}
 
+@router.post("/delete-all")
+def delete_all_articles(db: Session = Depends(get_db)):
+    """Delete ALL raw articles not linked to SCHEDULED/PUBLISHED content."""
+    from app.models.raw_article import RawArticle
+    from app.models.content_item import ContentItem
+    from sqlalchemy import update
+
+    # Find raw articles that have SCHEDULED or PUBLISHED content
+    protected_ids = [
+        r.raw_article_id for r in db.query(ContentItem.raw_article_id)
+        .filter(ContentItem.status.in_(["SCHEDULED", "PUBLISHED"]))
+        .all()
+        if r.raw_article_id is not None
+    ]
+
+    # Delete ContentItems linked to unprotected raw articles
+    all_ids_q = db.query(RawArticle.id)
+    if protected_ids:
+        all_ids_q = all_ids_q.filter(~RawArticle.id.in_(protected_ids))
+    ids_to_delete = [r.id for r in all_ids_q.all()]
+
+    if not ids_to_delete:
+        return {"detail": "لا توجد أخبار قابلة للحذف."}
+
+    db.query(ContentItem).filter(
+        ContentItem.raw_article_id.in_(ids_to_delete),
+        ContentItem.status.notin_(["SCHEDULED", "PUBLISHED"])
+    ).delete(synchronize_session=False)
+    db.commit()
+
+    db.execute(
+        update(ContentItem)
+        .where(ContentItem.raw_article_id.in_(ids_to_delete))
+        .values(raw_article_id=None)
+    )
+    db.commit()
+
+    deleted = db.query(RawArticle).filter(RawArticle.id.in_(ids_to_delete)).delete(synchronize_session=False)
+    db.commit()
+
+    return {"detail": f"✅ تم حذف {deleted} خبر بنجاح."}
+
+
