@@ -1384,8 +1384,9 @@ async function renderCarouselImages(id, templateId, textColor = null, accentColo
     }
 
     try {
-        let url = `${API_BASE}/content/${id}/render-carousel?template_id=${templateId}`;
-        if (textColor) url += `&custom_text_color=${encodeURIComponent(textColor)}`;
+        let url = `${API_BASE}/content/${id}/render-carousel`;
+        if (templateId) url += `?template_id=${templateId}`;
+        if (textColor) url += `${templateId ? '&' : '?'}custom_text_color=${encodeURIComponent(textColor)}`;
         if (accentColor) url += `&custom_accent_color=${encodeURIComponent(accentColor)}`;
 
         const res = await fetch(url, { method: 'POST' });
@@ -1540,7 +1541,7 @@ function openTemplatePickerModal(contentId) {
     templates.forEach(tpl => {
         html += `
             <div onclick="selectTemplateForContent(${contentId}, ${tpl.id})" style="cursor:pointer; background:var(--panel-2); border:1px solid rgba(255,255,255,0.05); border-radius:16px; overflow:hidden; transition:transform 0.2s; display:flex; flex-direction:column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='var(--teal)'" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.05)'">
-                <div style="height:170px; background-image:url(${tpl.cover_bg_path.startsWith('http') ? tpl.cover_bg_path : tpl.cover_bg_path}); background-size:cover; background-position:center;"></div>
+                <div style="height:170px; background-image:url('${tpl.cover_bg_path && tpl.cover_bg_path.startsWith('http') ? tpl.cover_bg_path : '/' + tpl.cover_bg_path}'); background-size:cover; background-position:center;"></div>
                 <div style="padding:15px; text-align:center; flex-grow:1; display:flex; align-items:center; justify-content:center;">
                     <h4 style="margin:0; color:var(--text); font-size:16px; font-weight:700;">${tpl.name}</h4>
                 </div>
