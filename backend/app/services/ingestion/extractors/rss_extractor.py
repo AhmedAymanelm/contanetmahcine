@@ -141,12 +141,17 @@ def extract(url: str) -> List[Dict]:
             image_url = _extract_image_from_entry(entry)
             full_content = clean_summary
 
-            # If summary is too short, fetch the full article
-            if len(clean_summary) < 400:
+            # Fetch full article page if:
+            # - summary is short (need more content), OR
+            # - no image found in RSS (always try to get og:image from the page)
+            needs_content = len(clean_summary) < 400
+            needs_image   = not image_url
+
+            if needs_content or needs_image:
                 fetched_content, fetched_image = _fetch_article_content_and_image(link)
-                if fetched_content and len(fetched_content) > len(clean_summary):
+                if needs_content and fetched_content and len(fetched_content) > len(clean_summary):
                     full_content = fetched_content
-                if not image_url and fetched_image:
+                if needs_image and fetched_image:
                     image_url = fetched_image
 
             if not full_content or len(full_content) < 50:
