@@ -10,13 +10,15 @@ from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-def process_article_generation(raw_article_id: int, formats: list = None):
+def process_article_generation(raw_article_id: int, formats: list = None, carousel_platforms: list = None):
     """
     Takes a RawArticle ID, sends it to Claude for generation,
     saves the results as ContentItems, and updates status.
     """
     if formats is None:
         formats = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
+    if carousel_platforms is None:
+        carousel_platforms = ["IG", "Li"]
         
     db = SessionLocal()
     try:
@@ -25,9 +27,7 @@ def process_article_generation(raw_article_id: int, formats: list = None):
             logger.error(f"Article {raw_article_id} not found for generation.")
             return
 
-        # Call AI pipeline — pass carousel platforms so language is chosen correctly
-        # (Arabic for IG/FB/etc, English only when LinkedIn is the sole platform)
-        carousel_platforms = ["IG", "Li"]  # default carousel platforms
+        # Call AI pipeline with chosen carousel platform language
         text_to_process = article.content if article.content else article.title
         generated = generate_selected_content(
             api_key=settings.ANTHROPIC_API_KEY,

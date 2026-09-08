@@ -52,6 +52,7 @@ from pydantic import BaseModel
 
 class ArticleGenerateRequest(BaseModel):
     formats: List[str] = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
+    carousel_platforms: List[str] = ["IG", "Li"]
 
 @router.post("/{article_id}/generate")
 def generate_article_content(article_id: int, request: ArticleGenerateRequest, db: Session = Depends(get_db)):
@@ -64,6 +65,6 @@ def generate_article_content(article_id: int, request: ArticleGenerateRequest, d
     db.close()
     
     # Run in thread pool so it doesn't block FastAPI's event loop
-    _thread_pool.submit(process_article_generation, article_id, request.formats)
-    logger.info(f"Generation task submitted for article {article_id} with formats {request.formats}")
+    _thread_pool.submit(process_article_generation, article_id, request.formats, request.carousel_platforms)
+    logger.info(f"Generation task submitted for article {article_id} with formats {request.formats}, carousel_platforms {request.carousel_platforms}")
     return {"detail": "Generation started in the background"}

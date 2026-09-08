@@ -743,7 +743,7 @@ async function fetchRawArticles() {
 }
 
 async function approveArticle(id, btn) {
-    showCustomConfirm(`ما هي صيغ المحتوى التي تود توليدها لهذا الخبر؟`, async (formats) => {
+    showCustomConfirm(`ما هي صيغ المحتوى التي تود توليدها لهذا الخبر؟`, async (formats, carouselPlatforms) => {
         const orig = btn.innerText;
         btn.innerText = "جاري الصياغة...";
         btn.disabled = true;
@@ -755,15 +755,13 @@ async function approveArticle(id, btn) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ formats: formats })
+                body: JSON.stringify({ formats: formats, carousel_platforms: carouselPlatforms || ['IG', 'Li'] })
             });
             if (res.ok) {
                 btn.parentElement.parentElement.parentElement.style.opacity = '0.4';
                 showToast("✅ تم إرسال الخبر لكلود... سيظهر في المراجعة خلال ثوانٍ", "success");
-                // Refresh raw articles after 2s
                 setTimeout(fetchRawArticles, 2000);
                 fetchDashboardStats();
-                // Smart poll: check review page every 5s for 60s
                 let polls = 0;
                 const pollInterval = setInterval(() => {
                     polls++;
@@ -784,6 +782,7 @@ async function approveArticle(id, btn) {
         }
     });
 }
+
 
 function openArticleById(id) {
     const art = (window._rawArticlesMap || {})[id];
@@ -2651,6 +2650,21 @@ function showCustomConfirm(msg, onConfirm) {
                             <span class="f-desc">سيناريو جاهز للتصوير (تيك توك، ريلز، شورتس)</span>
                         </div>
                     </label>
+
+                    <!-- Carousel Language Picker - shows only when CAROUSEL is checked -->
+                    <div id="carousel-lang-picker" style="margin-top:16px; padding:14px; background:rgba(255,255,255,0.04); border-radius:12px; border:1px solid rgba(255,255,255,0.07);">
+                        <div style="font-size:13px; color:var(--muted); margin-bottom:10px; font-weight:600;">🌍 لغة الكاروسيل:</div>
+                        <div style="display:flex; gap:10px;">
+                            <label style="flex:1; display:flex; align-items:center; gap:8px; cursor:pointer; padding:10px 14px; border-radius:10px; border:2px solid transparent; transition:all 0.2s;" id="lang-ig-label">
+                                <input type="radio" name="carousel-lang" id="carousel-lang-ig" value="IG" checked style="accent-color:var(--red);">
+                                <span>🟣 إنستجرام<br><small style="color:var(--muted); font-size:11px;">عربي</small></span>
+                            </label>
+                            <label style="flex:1; display:flex; align-items:center; gap:8px; cursor:pointer; padding:10px 14px; border-radius:10px; border:2px solid transparent; transition:all 0.2s;" id="lang-li-label">
+                                <input type="radio" name="carousel-lang" id="carousel-lang-li" value="Li"  style="accent-color:#0077b5;">
+                                <span>🔷 لينكدإن<br><small style="color:var(--muted); font-size:11px;">إنجليزي</small></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 
                 <div style="display:flex; gap:12px;">
@@ -2670,6 +2684,15 @@ function showCustomConfirm(msg, onConfirm) {
         document.getElementById('generation-confirm-no').onclick = () => {
             modal.style.display = 'none';
         };
+    }
+    
+    // Wire up carousel checkbox to show/hide lang picker
+    const chkCarEl = document.getElementById('chk-format-carousel');
+    if (chkCarEl) {
+        chkCarEl.addEventListener('change', () => {
+            const picker = document.getElementById('carousel-lang-picker');
+            if (picker) picker.style.display = chkCarEl.checked ? '' : 'none';
+        });
     }
     
     document.getElementById('generation-confirm-msg').innerText = msg;
@@ -2693,9 +2716,13 @@ function showCustomConfirm(msg, onConfirm) {
             showToast('يجب اختيار صيغة واحدة على الأقل', 'error');
             return;
         }
+
+        // Carousel platform language
+        const liRadio = document.getElementById('carousel-lang-li');
+        const carouselPlatforms = (liRadio && liRadio.checked) ? ['Li'] : ['IG', 'Li'];
         
         modal.style.display = 'none';
-        if (onConfirm) onConfirm(formats);
+        if (onConfirm) onConfirm(formats, carouselPlatforms);
     };
 }
 
