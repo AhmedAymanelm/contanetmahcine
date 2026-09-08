@@ -30,46 +30,57 @@ def _get_image_from_html(soup: BeautifulSoup, base_url: str) -> str:
             return f"{p.scheme}://{p.netloc}{src}"
         return src
 
-    def is_valid_img(src: str) -> bool:
+    def is_meta_img(src: str) -> bool:
+        """Minimal filter for og:image / JSON-LD — just needs to be a real http URL."""
+        if not src:
+            return False
+        return src.startswith('http') and not src.lower().endswith('.svg')
+
+    def is_body_img(src: str) -> bool:
+        """Stricter filter for images scanned from body HTML — skip nav/icon images."""
         if not src or not src.startswith('http'):
             return False
         low = src.lower()
-        # Skip logos, icons, ads, gifs, svgs
-        bad = ['.gif', '.svg', 'logo', 'icon', 'avatar', 'author', 'sponsor',
-               'ad_', '_ad', 'pixel', 'tracker', 'blank', 'spacer', '1x1']
+        # Skip only very clearly bad patterns (not 'logo' — article covers often have brand logos)
+        bad = ['.gif', 'pixel', 'tracker', 'blank', 'spacer', '1x1', 'ad_', '_ad',
+               'doubleclick', 'googletagmanager', 'analytics']
         return not any(b in low for b in bad)
 
-    # 1. JSON-LD structured data (most reliable)
+    # 1. JSON-LD structured data (most reliable — trust fully)
     for script in soup.find_all('script', type='application/ld+json'):
         try:
             import json as _json
             data = _json.loads(script.string or '{}')
-            # Handle list or dict
             items = data if isinstance(data, list) else [data]
             for item in items:
                 img = item.get('image')
-                if isinstance(img, str) and is_valid_img(make_absolute(img)):
-                    return make_absolute(img)
+                if isinstance(img, str):
+                    src = make_absolute(img)
+                    if is_meta_img(src):
+                        return src
                 if isinstance(img, dict):
                     url_ = img.get('url', img.get('contentUrl', ''))
-                    if url_ and is_valid_img(make_absolute(url_)):
-                        return make_absolute(url_)
+                    src = make_absolute(url_)
+                    if is_meta_img(src):
+                        return src
                 if isinstance(img, list) and img:
                     first = img[0]
                     url_ = first if isinstance(first, str) else first.get('url', '')
-                    if url_ and is_valid_img(make_absolute(url_)):
-                        return make_absolute(url_)
+                    src = make_absolute(url_)
+                    if is_meta_img(src):
+                        return src
         except Exception:
             pass
 
-    # 2. og:image / twitter:image
+    # 2. og:image / twitter:image — trust fully
     for prop in ['og:image', 'twitter:image', 'article:image']:
         tag = (soup.find('meta', property=prop) or
                soup.find('meta', attrs={'name': prop}))
         if tag and tag.get('content'):
             src = make_absolute(tag['content'].strip())
-            if is_valid_img(src):
+            if is_meta_img(src):
                 return src
+
 
     # 3. First large image inside article/main content area
     for container_sel in ['article', 'main', '[class*="article"]',
@@ -85,7 +96,7 @@ def _get_image_from_html(soup: BeautifulSoup, base_url: str) -> str:
                 raw = img.get(attr, '')
                 if raw:
                     src = make_absolute(raw)
-                    if not is_valid_img(src):
+                    if not is_body_img(src):
                         continue
                     # Skip tiny images
                     w = img.get('width', '') or img.get('data-width', '')
@@ -102,7 +113,7 @@ def _get_image_from_html(soup: BeautifulSoup, base_url: str) -> str:
                 parts = [p.strip() for p in srcset.split(',') if p.strip()]
                 if parts:
                     src = make_absolute(parts[-1].split()[0])
-                    if is_valid_img(src):
+                    if is_body_img(src):
                         return src
         if container_sel == 'body':
             break  # don't repeat
