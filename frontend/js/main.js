@@ -744,24 +744,61 @@ async function fetchRawArticles() {
 }
 
 async function deleteRawArticle(id, btn) {
-    if (!confirm('هل تريد حذف هذا الخبر نهائياً؟')) return;
     const card = btn.closest('.panel');
-    try {
-        const token = localStorage.getItem('cm_token');
-        const res = await fetch(`${API_BASE}/raw-articles/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            if (card) { card.style.opacity = '0'; card.style.transition = 'opacity 0.3s'; setTimeout(() => card.remove(), 300); }
-            showToast('✅ تم حذف الخبر', 'success');
-            fetchDashboardStats();
-        } else {
-            showToast('❌ فشل الحذف', 'error');
-        }
-    } catch(e) {
-        showToast('❌ خطأ في الاتصال', 'error');
+    
+    // Show custom delete confirmation modal
+    let modal = document.getElementById('delete-article-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'delete-article-modal';
+        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10001; align-items:center; justify-content:center; backdrop-filter:blur(6px);';
+        modal.innerHTML = `
+            <div style="background:linear-gradient(145deg,#1e1a1a,#1a1010); width:92%; max-width:360px; border-radius:20px; border:1px solid rgba(255,80,80,0.2); padding:0; overflow:hidden; box-shadow:0 30px 60px rgba(0,0,0,0.7); animation:genFadeUp 0.3s ease forwards;">
+                <div style="padding:28px 28px 20px; text-align:center; background:linear-gradient(135deg,rgba(255,80,80,0.08),transparent);">
+                    <div style="width:52px; height:52px; background:linear-gradient(135deg,#ff4444,#cc2222); border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 16px; box-shadow:0 8px 24px rgba(255,68,68,0.35);">🗑️</div>
+                    <h3 style="margin:0 0 8px; font-size:18px; color:#fff; font-weight:800;">حذف الخبر</h3>
+                    <p style="color:rgba(255,255,255,0.5); font-size:13.5px; margin:0; line-height:1.6;">هل أنت متأكد من حذف هذا الخبر نهائياً؟<br>لا يمكن التراجع عن هذا الإجراء.</p>
+                </div>
+                <div style="padding:0 20px 20px; display:flex; gap:10px;">
+                    <button id="delete-article-cancel" style="flex:1; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.6); border:1.5px solid rgba(255,255,255,0.08); padding:13px; font-size:14px; font-weight:600; border-radius:12px; cursor:pointer; transition:all 0.2s;"
+                        onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#fff'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='rgba(255,255,255,0.6)'">إلغاء</button>
+                    <button id="delete-article-confirm" style="flex:1.2; background:linear-gradient(135deg,#ff4444,#cc2222); color:#fff; border:none; padding:13px; font-size:14px; font-weight:800; border-radius:12px; cursor:pointer; transition:all 0.2s; box-shadow:0 6px 20px rgba(255,68,68,0.35);"
+                        onmouseover="this.style.transform='translateY(-2px)'"
+                        onmouseout="this.style.transform='translateY(0)'">🗑️ نعم، احذفه</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('delete-article-cancel').onclick = () => {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        };
     }
+    
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    document.getElementById('delete-article-confirm').onclick = async () => {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+        try {
+            const token = localStorage.getItem('cm_token');
+            const res = await fetch(`${API_BASE}/raw-articles/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                if (card) { card.style.opacity = '0'; card.style.transition = 'opacity 0.3s'; setTimeout(() => card.remove(), 300); }
+                showToast('✅ تم حذف الخبر', 'success');
+                fetchDashboardStats();
+            } else {
+                showToast('❌ فشل الحذف', 'error');
+            }
+        } catch(e) {
+            showToast('❌ خطأ في الاتصال', 'error');
+        }
+    };
 }
 
 async function approveArticle(id, btn) {
