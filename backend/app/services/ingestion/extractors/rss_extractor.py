@@ -152,12 +152,55 @@ def _fetch_article_content_and_image(article_url: str):
         print(f"Error fetching full article {article_url}: {e}")
         return '', ''
 
+def _rss_matches_source(rss_url: str, source_url: str, feed_titles: list) -> bool:
+    """
+    Verify the discovered RSS is relevant to the source URL.
+    If source has a specific path (e.g. /tag/ai/) but RSS is from root,
+    sample titles to check if they seem related.
+    """
+    from urllib.parse import urlparse
+    from app.services.ingestion.relevance_filter import is_tech_relevant
+
+    parsed_source = urlparse(source_url)
+    parsed_rss    = urlparse(rss_url)
+
+    # If RSS is on a different domain, reject
+    if parsed_rss.netloc and parsed_source.netloc:
+        source_domain = parsed_source.netloc.replace('www.', '')
+        rss_domain    = parsed_rss.netloc.replace('www.', '')
+        # Allow different subdomains (e.g. feeds.bbci.co.uk for bbc.com)
+        if not (rss_domain.endswith(source_domain.split('.')[-2] + '.' + source_domain.split('.')[-1]) or
+                source_domain.endswith(rss_domain.split('.')[-2] + '.' + rss_domain.split('.')[-1])):
+            print(f"RSS domain mismatch: {rss_domain} vs {source_domain}")
+            return False
+
+    # If source has a meaningful specific path, verify RSS articles are tech-relevant
+    path_segs = [p for p in parsed_source.path.split('/') if p and len(p) > 2]
+    if path_segs and feed_titles:
+        relevant = sum(1 for t in feed_titles[:5] if is_tech_relevant(t))
+        total = min(5, len(feed_titles))
+        if total > 0 and relevant == 0:
+            print(f"RSS sanity check failed: 0/{total} titles are tech-relevant for {source_url}")
+            return False
+
+    return True
+
+
 def extract(url: str) -> List[Dict]:
     rss_url = discover_rss(url)
     if not rss_url:
         return []
     try:
         parsed_feed = feedparser.parse(rss_url)
+        if not parsed_feed.entries:
+            return []
+
+        # Sanity check: is this RSS actually relevant to our source URL?
+        sample_titles = [e.get('title', '') for e in parsed_feed.entries[:5]]
+        if not _rss_matches_source(rss_url, url, sample_titles):
+            print(f"Skipping RSS {rss_url} — not relevant to source {url}")
+            return []
+
         articles = []
         for entry in parsed_feed.entries[:15]:
             title   = entry.get('title', '').strip()
