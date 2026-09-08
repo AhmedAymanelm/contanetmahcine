@@ -1633,6 +1633,34 @@ async function deleteCarouselSlides(id) {
 }
 
 // ---------------- TEMPLATE PICKER MODAL ----------------
+// ── Color swatch helpers for template picker ──
+function setTplColor(type, hex) {
+    if (type === 'text') {
+        const el = document.getElementById('modal-text-color');
+        const preview = document.getElementById('modal-text-color-preview');
+        if (el) el.value = hex;
+        if (preview) preview.style.background = hex;
+    } else {
+        const el = document.getElementById('modal-accent-color');
+        const preview = document.getElementById('modal-accent-color-preview');
+        if (el) el.value = hex;
+        if (preview) preview.style.background = hex;
+    }
+    // Highlight selected swatch
+    document.querySelectorAll('.clr-swatch').forEach(s => s.style.boxShadow = '');
+    event.target.style.boxShadow = '0 0 0 3px rgba(255,255,255,0.7)';
+}
+
+function resetTplColors() {
+    const textEl = document.getElementById('modal-text-color');
+    const accentEl = document.getElementById('modal-accent-color');
+    const textPrev = document.getElementById('modal-text-color-preview');
+    const accentPrev = document.getElementById('modal-accent-color-preview');
+    if (textEl) { textEl.value = '#ffffff'; if (textPrev) textPrev.style.background = '#ffffff'; }
+    if (accentEl) { accentEl.value = '#facc15'; if (accentPrev) accentPrev.style.background = '#facc15'; }
+    document.querySelectorAll('.clr-swatch').forEach(s => s.style.boxShadow = '');
+}
+
 function openTemplatePickerModal(contentId) {
     const modal = document.getElementById('template-picker-modal');
     const grid = document.getElementById('template-picker-grid');
