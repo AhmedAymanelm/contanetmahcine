@@ -2615,67 +2615,86 @@ function showCustomConfirm(msg, onConfirm) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'generation-confirm-modal';
-        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px);';
+        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(8px);';
         modal.innerHTML = `
-            <div style="background:var(--panel-2); width:90%; max-width:420px; border-radius:20px; border: 1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; padding:30px; box-shadow: 0 30px 60px rgba(0,0,0,0.6); text-align:center; transform:scale(0.95); transition:transform 0.2s; animation: fadeUp 0.3s forwards;">
-                <h3 style="margin:0 0 15px 0; font-size:20px; color:var(--text); font-weight:800;">تأكيد صناعة المحتوى</h3>
-                <p id="generation-confirm-msg" style="color:var(--muted); font-size:14.5px; margin-bottom:25px; line-height:1.7;"></p>
+            <div id="gen-modal-box" style="background:linear-gradient(145deg,#1a1f2e,#141820); width:92%; max-width:460px; border-radius:24px; border:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; padding:0; box-shadow:0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05); overflow:hidden; animation:genFadeUp 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;">
                 
-                <div style="text-align:right; margin-bottom:30px;">
-                    <div style="margin-bottom:12px; color:var(--text); font-weight:bold; font-size:14px; padding-right:5px;">اختر صيغ المحتوى المطلوبة:</div>
-                    
-                    <label class="format-card">
-                        <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" checked>
-                        <span class="f-icon">📱</span>
-                        <div class="f-text">
-                            <span class="f-title">كاروسيل</span>
-                            <span class="f-desc">محتوى متعدد الشرائح (إنستجرام، لينكدإن)</span>
-                        </div>
-                    </label>
-                    
-                    <label class="format-card">
-                        <input type="checkbox" id="chk-format-post" value="POST" checked>
-                        <span class="f-icon">📝</span>
-                        <div class="f-text">
-                            <span class="f-title">منشور (بوست)</span>
-                            <span class="f-desc">محتوى نصي جذاب (فيسبوك، تويتر، لينكدإن)</span>
-                        </div>
-                    </label>
-                    
-                    <label class="format-card" style="margin-bottom:0;">
-                        <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" checked>
-                        <span class="f-icon">🎬</span>
-                        <div class="f-text">
-                            <span class="f-title">سكريبت فيديو</span>
-                            <span class="f-desc">سيناريو جاهز للتصوير (تيك توك، ريلز، شورتس)</span>
-                        </div>
-                    </label>
+                <!-- Header -->
+                <div style="padding:28px 28px 20px; background:linear-gradient(135deg,rgba(0,200,150,0.08),rgba(100,80,255,0.08)); border-bottom:1px solid rgba(255,255,255,0.06); text-align:center; position:relative;">
+                    <div style="width:52px; height:52px; background:linear-gradient(135deg,#00c896,#6450ff); border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 14px; box-shadow:0 8px 24px rgba(0,200,150,0.3);">✨</div>
+                    <h3 style="margin:0 0 6px; font-size:20px; color:#fff; font-weight:800; letter-spacing:-0.3px;">صناعة المحتوى</h3>
+                    <p id="generation-confirm-msg" style="color:rgba(255,255,255,0.5); font-size:13.5px; margin:0; line-height:1.6;"></p>
+                </div>
 
-                    <!-- Carousel Language Picker - shows only when CAROUSEL is checked -->
-                    <div id="carousel-lang-picker" style="margin-top:16px; padding:14px; background:rgba(255,255,255,0.04); border-radius:12px; border:1px solid rgba(255,255,255,0.07);">
-                        <div style="font-size:13px; color:var(--muted); margin-bottom:10px; font-weight:600;">🌍 لغة الكاروسيل:</div>
-                        <div style="display:flex; gap:10px;">
-                            <label style="flex:1; display:flex; align-items:center; gap:8px; cursor:pointer; padding:10px 14px; border-radius:10px; border:2px solid transparent; transition:all 0.2s;" id="lang-ig-label">
-                                <input type="radio" name="carousel-lang" id="carousel-lang-ig" value="IG" checked style="accent-color:var(--red);">
-                                <span>🟣 إنستجرام<br><small style="color:var(--muted); font-size:11px;">عربي</small></span>
-                            </label>
-                            <label style="flex:1; display:flex; align-items:center; gap:8px; cursor:pointer; padding:10px 14px; border-radius:10px; border:2px solid transparent; transition:all 0.2s;" id="lang-li-label">
-                                <input type="radio" name="carousel-lang" id="carousel-lang-li" value="Li"  style="accent-color:#0077b5;">
-                                <span>🔷 لينكدإن<br><small style="color:var(--muted); font-size:11px;">إنجليزي</small></span>
-                            </label>
-                        </div>
+                <!-- Content Type Selectors -->
+                <div style="padding:22px 24px;">
+                    <div style="font-size:12px; color:rgba(255,255,255,0.35); font-weight:700; letter-spacing:1.2px; text-transform:uppercase; margin-bottom:14px; text-align:right;">اختر صيغ المحتوى</div>
+                    
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+
+                        <label id="card-carousel" style="display:flex; align-items:center; gap:14px; padding:14px 16px; background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08); border-radius:14px; cursor:pointer; transition:all 0.2s;" 
+                            onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                            <input type="checkbox" id="chk-format-carousel" value="CAROUSEL" checked style="display:none;">
+                            <div id="chk-carousel-dot" style="width:22px; height:22px; min-width:22px; border-radius:7px; background:linear-gradient(135deg,#e040fb,#9c27b0); display:flex; align-items:center; justify-content:center; font-size:13px; transition:all 0.2s; box-shadow:0 4px 12px rgba(224,64,251,0.4);">✓</div>
+                            <div style="flex:1; text-align:right;">
+                                <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-bottom:3px;">
+                                    <span style="font-size:14px; font-weight:700; color:#fff;">كاروسيل</span>
+                                    <span style="font-size:18px;">📱</span>
+                                </div>
+                                <div style="font-size:12px; color:rgba(255,255,255,0.4); line-height:1.4;">عربي لـ Instagram • إنجليزي لـ LinkedIn</div>
+                            </div>
+                        </label>
+
+                        <label id="card-post" style="display:flex; align-items:center; gap:14px; padding:14px 16px; background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08); border-radius:14px; cursor:pointer; transition:all 0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                            <input type="checkbox" id="chk-format-post" value="POST" checked style="display:none;">
+                            <div id="chk-post-dot" style="width:22px; height:22px; min-width:22px; border-radius:7px; background:linear-gradient(135deg,#00c896,#00b4d8); display:flex; align-items:center; justify-content:center; font-size:13px; transition:all 0.2s; box-shadow:0 4px 12px rgba(0,200,150,0.4);">✓</div>
+                            <div style="flex:1; text-align:right;">
+                                <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-bottom:3px;">
+                                    <span style="font-size:14px; font-weight:700; color:#fff;">منشور (بوست)</span>
+                                    <span style="font-size:18px;">📝</span>
+                                </div>
+                                <div style="font-size:12px; color:rgba(255,255,255,0.4); line-height:1.4;">Facebook • X • LinkedIn</div>
+                            </div>
+                        </label>
+
+                        <label id="card-video" style="display:flex; align-items:center; gap:14px; padding:14px 16px; background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08); border-radius:14px; cursor:pointer; transition:all 0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                            <input type="checkbox" id="chk-format-video" value="VIDEO_SCRIPT" checked style="display:none;">
+                            <div id="chk-video-dot" style="width:22px; height:22px; min-width:22px; border-radius:7px; background:linear-gradient(135deg,#ff6b35,#f7c59f); display:flex; align-items:center; justify-content:center; font-size:13px; transition:all 0.2s; box-shadow:0 4px 12px rgba(255,107,53,0.4);">✓</div>
+                            <div style="flex:1; text-align:right;">
+                                <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-bottom:3px;">
+                                    <span style="font-size:14px; font-weight:700; color:#fff;">سكريبت فيديو</span>
+                                    <span style="font-size:18px;">🎬</span>
+                                </div>
+                                <div style="font-size:12px; color:rgba(255,255,255,0.4); line-height:1.4;">TikTok • Reels • YouTube Shorts</div>
+                            </div>
+                        </label>
+
                     </div>
                 </div>
                 
-                <div style="display:flex; gap:12px;">
-                    <button id="generation-confirm-yes" class="btn" style="flex:1; background:var(--teal); color:#0a0a0a; border:none; padding:14px; font-size:15px; font-weight:bold; border-radius:12px; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">البدء في الصياغة</button>
-                    <button id="generation-confirm-no" class="btn ghost" style="flex:1; padding:14px; font-size:15px; border-radius:12px; background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">إلغاء الأمر</button>
+                <!-- Buttons -->
+                <div style="padding:0 24px 24px; display:flex; gap:10px;">
+                    <button id="generation-confirm-yes" style="flex:2; background:linear-gradient(135deg,#00c896,#00b4d8); color:#0a0f1e; border:none; padding:15px; font-size:15px; font-weight:800; border-radius:14px; cursor:pointer; transition:all 0.25s; letter-spacing:0.2px; box-shadow:0 8px 24px rgba(0,200,150,0.3);"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 32px rgba(0,200,150,0.45)'"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(0,200,150,0.3)'">
+                        ✨ ابدأ الصياغة
+                    </button>
+                    <button id="generation-confirm-no" style="flex:1; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.6); border:1.5px solid rgba(255,255,255,0.08); padding:15px; font-size:14px; font-weight:600; border-radius:14px; cursor:pointer; transition:all 0.2s;"
+                        onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#fff'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='rgba(255,255,255,0.6)'">
+                        إلغاء
+                    </button>
                 </div>
             </div>
             <style>
-                @keyframes fadeUp {
-                    from { opacity: 0; transform: translateY(10px) scale(0.95); }
-                    to { opacity: 1; transform: translateY(0) scale(1); }
+                @keyframes genFadeUp {
+                    from { opacity:0; transform:translateY(20px) scale(0.95); }
+                    to { opacity:1; transform:translateY(0) scale(1); }
                 }
             </style>
         `;
@@ -2684,14 +2703,26 @@ function showCustomConfirm(msg, onConfirm) {
         document.getElementById('generation-confirm-no').onclick = () => {
             modal.style.display = 'none';
         };
-    }
-    
-    // Wire up carousel checkbox to show/hide lang picker
-    const chkCarEl = document.getElementById('chk-format-carousel');
-    if (chkCarEl) {
-        chkCarEl.addEventListener('change', () => {
-            const picker = document.getElementById('carousel-lang-picker');
-            if (picker) picker.style.display = chkCarEl.checked ? '' : 'none';
+
+        // Toggle checkbox visual state
+        ['carousel','post','video'].forEach(key => {
+            const card = document.getElementById(`card-${key}`);
+            const chk = document.getElementById(`chk-format-${key === 'post' ? 'post' : key === 'video' ? 'video' : 'carousel'}`);
+            const dot = document.getElementById(`chk-${key}-dot`);
+            if (!card || !chk || !dot) return;
+            const uncheckedBg = { carousel:'rgba(255,255,255,0.06)', post:'rgba(255,255,255,0.06)', video:'rgba(255,255,255,0.06)' };
+            const checkedGradients = {
+                carousel: 'linear-gradient(135deg,#e040fb,#9c27b0)',
+                post: 'linear-gradient(135deg,#00c896,#00b4d8)',
+                video: 'linear-gradient(135deg,#ff6b35,#f7c59f)'
+            };
+            card.addEventListener('click', () => {
+                chk.checked = !chk.checked;
+                dot.style.background = chk.checked ? checkedGradients[key] : 'rgba(255,255,255,0.1)';
+                dot.style.boxShadow = chk.checked ? dot.style.boxShadow : 'none';
+                dot.innerText = chk.checked ? '✓' : '';
+                card.style.border = chk.checked ? `1.5px solid rgba(255,255,255,0.15)` : '1.5px solid rgba(255,255,255,0.06)';
+            });
         });
     }
     
@@ -2716,15 +2747,12 @@ function showCustomConfirm(msg, onConfirm) {
             showToast('يجب اختيار صيغة واحدة على الأقل', 'error');
             return;
         }
-
-        // Carousel platform language
-        const liRadio = document.getElementById('carousel-lang-li');
-        const carouselPlatforms = (liRadio && liRadio.checked) ? ['Li'] : ['IG', 'Li'];
         
         modal.style.display = 'none';
-        if (onConfirm) onConfirm(formats, carouselPlatforms);
+        if (onConfirm) onConfirm(formats, ['IG', 'Li']);
     };
 }
+
 
 async function generateTrendContent(title, snippet, btn) {
     showCustomConfirm(`هل أنت متأكد أنك تريد توليد محتوى أوتوماتيكي بناءً على ترند:\n"${title}"؟`, async (formats) => {
