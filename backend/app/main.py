@@ -79,12 +79,46 @@ app.include_router(settings_router_module.router, prefix="/api/settings", tags=[
 
 @app.get("/api/health")
 def health_check():
+    import os
+    model = os.environ.get("DEFAULT_MODEL", "claude-sonnet-4-5 (default fallback)")
+    key_preview = settings.ANTHROPIC_API_KEY[:12] + "..." if settings.ANTHROPIC_API_KEY else "NOT SET"
     return {
-        "status": "ok", 
+        "status": "ok",
         "environment": settings.ENVIRONMENT,
         "version": getattr(settings, "VERSION", "v1.0.0"),
-        "model": getattr(settings, "CLAUDE_MODEL", "Claude 3.5 Sonnet")
+        "model": model,
+        "api_key_preview": key_preview
     }
+
+@app.get("/api/test-ai")
+def test_ai():
+    """Test Anthropic API key and model configuration."""
+    import os
+    import anthropic
+    key = settings.ANTHROPIC_API_KEY
+    model = os.environ.get("DEFAULT_MODEL", "claude-sonnet-4-5")
+    if not key:
+        return {"status": "error", "error": "ANTHROPIC_API_KEY is not set"}
+    try:
+        client = anthropic.Anthropic(api_key=key)
+        response = client.messages.create(
+            model=model,
+            max_tokens=10,
+            messages=[{"role": "user", "content": "Say: OK"}]
+        )
+        return {
+            "status": "success",
+            "model_used": model,
+            "key_preview": key[:12] + "...",
+            "response": response.content[0].text
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "model_used": model,
+            "key_preview": key[:12] + "...",
+            "error": str(e)
+        }
 
 # ── TikTok URL-prefix ownership verification ──────────────────────────────────
 from fastapi.responses import PlainTextResponse, FileResponse

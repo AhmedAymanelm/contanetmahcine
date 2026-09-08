@@ -27,7 +27,7 @@ def generate_structured_content(api_key: str, system_prompt: str, user_prompt: s
 
     try:
         response = client.messages.create(
-            model=os.environ.get("DEFAULT_MODEL", ""),
+            model=os.environ.get("DEFAULT_MODEL", "claude-sonnet-4-5"),
             max_tokens=2048,
             system=system_prompt,
             tools=tools,
