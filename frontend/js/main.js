@@ -1,5 +1,14 @@
 const API_BASE = '/api';
 
+// Route external images through backend proxy to bypass hotlink protection
+function imgProxy(url) {
+    if (!url) return '';
+    // Static files served directly — no proxy needed
+    if (url.startsWith('/static/') || url.startsWith(window.location.origin)) return url;
+    return `${API_BASE}/img-proxy?url=${encodeURIComponent(url)}`;
+}
+
+
 // ════════════════════════════════════════════════
 // DARK / LIGHT THEME
 // ════════════════════════════════════════════════
@@ -716,7 +725,7 @@ async function fetchRawArticles() {
                 const _tmpDiv = document.createElement('div');
                 _tmpDiv.innerHTML = art.content || '';
                 const cleanSnippet = _tmpDiv.textContent || _tmpDiv.innerText || 'لا يوجد محتوى نصي...';
-                const thumbStyle = art.image_url ? `background-image:url('${art.image_url}'); background-size:cover; background-position:center;` : `background:${gradient};`;
+                const thumbStyle = art.image_url ? `background-image:url('${imgProxy(art.image_url)}'); background-size:cover; background-position:center;` : `background:${gradient};`;
                 const thumbContent = art.image_url ? '' : (art.source ? art.source.name : 'مجهول');
                 
                 rawList.innerHTML += `
@@ -846,7 +855,7 @@ async function approveArticle(id, btn) {
 function openArticleById(id) {
     const art = (window._rawArticlesMap || {})[id];
     if (!art) return;
-    openArticleModal(art.title || 'بدون عنوان', art.content || '', art.url || '#', art.image_url || '');
+    openArticleModal(art.title || 'بدون عنوان', art.content || '', art.url || '#', imgProxy(art.image_url || ''));
 }
 
 function openArticleModal(title, content, url, imageUrl) {
@@ -1219,7 +1228,7 @@ async function fetchReviewContent() {
                   <div style="border:1.5px dashed ${isLikelyStuck ? '#ef4444' : 'var(--teal)'}; border-radius:16px; background:var(--panel); padding:0; overflow:hidden; opacity:${isLikelyStuck ? '0.9' : '0.65'}; margin-bottom:0;">
                     <!-- Article header -->
                     <div style="display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line); background:linear-gradient(90deg,rgba(${isLikelyStuck ? '239,68,68' : '53,211,153'},0.06),transparent);">
-                      ${art.image_url ? `<img src="${art.image_url}" style="width:46px;height:46px;object-fit:cover;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
+                      ${art.image_url ? `<img src="${imgProxy(art.image_url)}" style="width:46px;height:46px;object-fit:cover;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
                       <div style="flex:1; min-width:0;">
                         <div style="font-size:13.5px;font-weight:600;color:var(--text);line-height:1.4;">${art.title || 'بدون عنوان'}</div>
                         <div style="font-size:11px;color:var(--muted);margin-top:2px;">📡 ${art.source_name || ''} ${isLikelyStuck ? `<span style="color:#ef4444;margin-right:6px;">⚠️ متوقف منذ ${minutesStuck} دقيقة</span>` : ''}</div>

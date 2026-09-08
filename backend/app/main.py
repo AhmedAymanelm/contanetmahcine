@@ -91,6 +91,36 @@ app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(recommendations_router, prefix="/api/recommendations", tags=["Recommendations"], dependencies=[Depends(get_current_user)])
 app.include_router(settings_router_module.router, prefix="/api/settings", tags=["Settings"], dependencies=[Depends(get_current_user)])
 
+# ── Image Proxy (no auth needed — used by img tags in browser) ─────────────
+from fastapi import Query
+from fastapi.responses import Response as FastAPIResponse
+import httpx as _httpx
+from urllib.parse import urlparse as _urlparse
+
+@app.get("/api/img-proxy")
+async def image_proxy(url: str = Query(..., description="Image URL to proxy")):
+    """Proxy external images to bypass hotlink protection."""
+    try:
+        parsed = _urlparse(url)
+        if not parsed.scheme.startswith('http'):
+            return FastAPIResponse(status_code=400, content=b"")
+        referer = f"{parsed.scheme}://{parsed.netloc}/"
+        async with _httpx.AsyncClient(follow_redirects=True, timeout=10) as client:
+            resp = await client.get(url, headers={
+                "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                               "AppleWebKit/537.36 (KHTML, like Gecko) "
+                               "Chrome/124.0.0.0 Safari/537.36"),
+                "Referer": referer,
+                "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+            })
+        if resp.status_code == 200:
+            ct = resp.headers.get("content-type", "image/jpeg")
+            return FastAPIResponse(content=resp.content, media_type=ct,
+                                   headers={"Cache-Control": "public, max-age=86400"})
+        return FastAPIResponse(status_code=resp.status_code, content=b"")
+    except Exception:
+        return FastAPIResponse(status_code=502, content=b"")
+
 @app.get("/api/health")
 def health_check():
     import os
