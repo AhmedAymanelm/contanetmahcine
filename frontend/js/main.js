@@ -2702,6 +2702,7 @@ function showCustomConfirm(msg, onConfirm) {
         
         document.getElementById('generation-confirm-no').onclick = () => {
             modal.style.display = 'none';
+            document.body.style.overflow = '';
         };
 
         // Toggle checkbox visual state
@@ -2728,6 +2729,7 @@ function showCustomConfirm(msg, onConfirm) {
     
     document.getElementById('generation-confirm-msg').innerText = msg;
     modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     
     document.getElementById('generation-confirm-yes').onclick = () => {
         const formats = [];
@@ -2749,6 +2751,7 @@ function showCustomConfirm(msg, onConfirm) {
         }
         
         modal.style.display = 'none';
+        document.body.style.overflow = '';
         if (onConfirm) onConfirm(formats, ['IG', 'Li']);
     };
 }
