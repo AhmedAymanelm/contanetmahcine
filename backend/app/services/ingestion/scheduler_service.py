@@ -185,7 +185,7 @@ def publish_scheduled_content():
                 fb_service = FacebookService()
                 if fb_service._is_configured():
                     gen = item.generated_content
-                    caption = gen.get("facebook_post", gen.get("title", ""))
+                    caption = gen.get("facebook_post") or gen.get("unified_post") or gen.get("instagram_caption") or gen.get("title", "")
                     
                     if item.content_type == "CAROUSEL" and "carousel_urls" in gen:
                         urls = gen["carousel_urls"]
@@ -212,7 +212,7 @@ def publish_scheduled_content():
                 status = th_service.get_status(db)
                 if status.get("connected"):
                     gen = item.generated_content
-                    caption = gen.get("x_tweet", gen.get("instagram_caption", gen.get("title", "")))
+                    caption = gen.get("x_tweet") or gen.get("unified_post") or gen.get("instagram_caption") or gen.get("title", "")
                     
                     if len(caption) > 500:
                         caption = caption[:497] + "..."
@@ -231,7 +231,7 @@ def publish_scheduled_content():
                 status = li_service.get_status(db)
                 if status.get("connected"):
                     gen = item.generated_content
-                    caption = gen.get("linkedin_post", gen.get("title", ""))
+                    caption = gen.get("linkedin_post") or gen.get("unified_post") or gen.get("title", "")
                     
                     access_token = token_entry.access_token if (token_entry := db.query(OAuthToken).filter(OAuthToken.platform == "linkedin").first()) else None
                     if access_token and status.get("account_id"):
