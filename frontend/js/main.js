@@ -729,6 +729,7 @@ async function fetchRawArticles() {
                         <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:10px; margin-top:10px;">
                             <div class="m" style="font-family:var(--mono); font-size:11px">${new Date(art.created_at).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'})}</div>
                             <div style="display:flex; gap:6px;">
+                                <button class="btn ghost" style="padding:4px 10px; font-size:11px; color:var(--red); border-color:rgba(255,80,80,0.2);" onclick="deleteRawArticle(${art.id}, this)" title="حذف الخبر">🗑️</button>
                                 <button class="btn ghost" style="padding:4px 10px; font-size:11px;" onclick="openArticleById(${art.id})">قراءة</button>
                                 <button class="btn" style="padding:4px 10px; font-size:11px; background:var(--teal); color:#0a0a0a; border:none;" onclick='approveArticle(${art.id}, this)'>موافقة ⚡</button>
                             </div>
@@ -739,6 +740,27 @@ async function fetchRawArticles() {
         }
     } catch(err) {
         console.error(err);
+    }
+}
+
+async function deleteRawArticle(id, btn) {
+    if (!confirm('هل تريد حذف هذا الخبر نهائياً؟')) return;
+    const card = btn.closest('.panel');
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/raw-articles/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            if (card) { card.style.opacity = '0'; card.style.transition = 'opacity 0.3s'; setTimeout(() => card.remove(), 300); }
+            showToast('✅ تم حذف الخبر', 'success');
+            fetchDashboardStats();
+        } else {
+            showToast('❌ فشل الحذف', 'error');
+        }
+    } catch(e) {
+        showToast('❌ خطأ في الاتصال', 'error');
     }
 }
 

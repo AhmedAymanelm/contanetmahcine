@@ -68,3 +68,14 @@ def generate_article_content(article_id: int, request: ArticleGenerateRequest, d
     _thread_pool.submit(process_article_generation, article_id, request.formats, request.carousel_platforms)
     logger.info(f"Generation task submitted for article {article_id} with formats {request.formats}, carousel_platforms {request.carousel_platforms}")
     return {"detail": "Generation started in the background"}
+
+@router.delete("/{article_id}")
+def delete_raw_article(article_id: int, db: Session = Depends(get_db)):
+    """Manually reject and delete a raw article."""
+    article = db.query(RawArticle).filter(RawArticle.id == article_id).first()
+    if not article:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Article not found")
+    db.delete(article)
+    db.commit()
+    return {"detail": "Article deleted"}
