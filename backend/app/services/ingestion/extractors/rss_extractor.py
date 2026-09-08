@@ -56,17 +56,11 @@ def _get_known_rss(url: str) -> Optional[str]:
     return None
 
 def discover_rss(url: str) -> Optional[str]:
-    # 1. Check hardcoded known sites first
-    known = _get_known_rss(url)
-    if known and _is_valid_rss(known):
-        print(f"Using known tech RSS for {url}: {known}")
-        return known
-
-    # 2. Direct URL is already RSS?
+    # 1. Direct URL is already RSS?
     if _is_valid_rss(url):
         return url
 
-    # 3. Auto-discover from page HTML
+    # 2. Auto-discover from page HTML (link tags + common suffixes)
     try:
         response = httpx.get(url, timeout=settings.REQUEST_TIMEOUT, headers=HEADERS, follow_redirects=True)
         soup = BeautifulSoup(response.text, "html.parser")
@@ -86,7 +80,15 @@ def discover_rss(url: str) -> Optional[str]:
                 return test_url
     except Exception as e:
         print(f"Error in RSS auto-discovery for {url}: {e}")
+
+    # 3. Last resort: try known hardcoded tech RSS for this domain
+    known = _get_known_rss(url)
+    if known and _is_valid_rss(known):
+        print(f"Using fallback known tech RSS for {url}: {known}")
+        return known
+
     return None
+
 
 
 def _extract_image_from_entry(entry) -> str:
