@@ -456,12 +456,14 @@ def start_scheduler():
         )
         
         # Run every hour to delete raw articles older than 24h
+        # next_run_time=datetime.now() → runs immediately on startup too
         scheduler.add_job(
             cleanup_old_raw_articles,
             trigger=IntervalTrigger(hours=1),
             id='cleanup_job',
             name='24h Rolling Cleanup Job',
-            replace_existing=True
+            replace_existing=True,
+            next_run_time=datetime.now()
         )
         
         # Run every 1 minute to check for scheduled posts
