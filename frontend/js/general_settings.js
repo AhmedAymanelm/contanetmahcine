@@ -97,19 +97,20 @@ function previewLogo(input) {
 }
 
 function applyLogoToSidebar(logoUrl, appName) {
-    // Update sidebar logo (.mark)
-    const sidebarMark = document.querySelector('.mark');
-    if (sidebarMark && logoUrl) {
-        sidebarMark.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;">`;
-        sidebarMark.style.padding = '0';
-        sidebarMark.style.background = 'transparent';
-        
-        // Also update the settings preview if it exists
-        const preview = document.getElementById('logo-preview');
-        if (preview) {
-            preview.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
-        }
+    // Update the sidebar logo img element
+    const brandImg = document.querySelector('.brand img');
+    if (brandImg && logoUrl) {
+        brandImg.src = logoUrl;
+        brandImg.style.objectFit = 'cover';
+        brandImg.style.borderRadius = '8px';
     }
+
+    // Also update the settings preview if it exists
+    const preview = document.getElementById('logo-preview');
+    if (preview && logoUrl) {
+        preview.innerHTML = `<img src="${logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+    }
+
     // Update sidebar app name (.name)
     if (appName) {
         const nameEl = document.querySelector('.name');
@@ -144,15 +145,8 @@ function saveAppIdentity() {
             showSettingsMsg('⚠️ الصورة كبيرة جداً، جرب صورة أصغر', 'error');
             return;
         }
-        const sidebarMark = document.querySelector('.mark');
-        if (sidebarMark) {
-            sidebarMark.innerHTML = `<img src="${logoInput.dataset.logoUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;">`;
-            sidebarMark.style.padding = '0';
-            sidebarMark.style.background = 'transparent';
-            // Also update logo-preview
-            const preview = document.getElementById('logo-preview');
-            if (preview) preview.innerHTML = sidebarMark.innerHTML;
-        }
+        // Apply to sidebar
+        applyLogoToSidebar(logoInput.dataset.logoUrl, null);
     }
 
     showSettingsMsg('✅ تم حفظ هوية التطبيق بنجاح', 'success');
@@ -298,11 +292,11 @@ function showSettingsMsg(text, type) {
             if (tagEl) tagEl.textContent = savedTagline;
         }
         if (savedLogo) {
-            const sidebarMark = document.querySelector('.mark');
-            if (sidebarMark) {
-                sidebarMark.innerHTML = `<img src="${savedLogo}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;">`;
-                sidebarMark.style.padding = '0';
-                sidebarMark.style.background = 'transparent';
+            const brandImg = document.querySelector('.brand img');
+            if (brandImg) {
+                brandImg.src = savedLogo;
+                brandImg.style.objectFit = 'cover';
+                brandImg.style.borderRadius = '8px';
             }
         }
     }
