@@ -1999,6 +1999,30 @@ async function rejectContentItem(id, btn) {
     }
 }
 
+async function manualCleanup() {
+    if (!confirm('هتُمسح كل الأخبار اللي أعمرها أكتر من 24 ساعة. متأكد؟')) return;
+    const btn = event.target;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ جاري المسح...';
+    btn.disabled = true;
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/sources/cleanup-now`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        showToast(data.detail || '✅ تم مسح الأخبار القديمة', 'success');
+        fetchRawArticles();
+        fetchDashboardStats();
+    } catch(e) {
+        showToast('❌ حدث خطأ أثناء المسح', 'error');
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }
+}
+
 async function runIngestion() {
     const btn = document.getElementById('btn-run-ingestion');
     const originalHTML = btn.innerHTML;
