@@ -27,17 +27,19 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
             logger.error(f"Article {raw_article_id} not found for generation.")
             return
 
-        # Call AI pipeline with chosen carousel platform language
+        # Call AI pipeline - POST + VIDEO only first (carousel handled separately below)
+        formats_no_carousel = [f for f in formats if f != "CAROUSEL"]
         text_to_process = article.content if article.content else article.title
         generated = generate_selected_content(
             api_key=settings.ANTHROPIC_API_KEY,
             title=article.title, 
             content=text_to_process, 
-            formats=formats,
+            formats=formats_no_carousel,
             platforms=carousel_platforms
-        )
+        ) if formats_no_carousel else {}
         
-        if not generated:
+        # Only fail if we expected non-carousel content but got nothing
+        if not generated and formats_no_carousel:
             logger.error("AI Generation failed or returned empty.")
             return
 
@@ -56,25 +58,61 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
                 )
             )
             
-        # 2. Carousel
-        if "carousel" in generated and generated["carousel"]:
-            carousel_item = ContentItem(
-                raw_article_id=article.id,
-                content_type="CAROUSEL",
-                status="pending_review",
-                platforms=["IG", "Li"],
-                generated_content=generated["carousel"]
-            )
-            items_to_add.append(carousel_item)
+        # 2. Carousels - Generate BOTH Arabic (IG) and English (LinkedIn)
+        if "CAROUSEL" in formats:
+            from ai_service.generation_pipeline import generate_carousel as _gen_carousel
             
-            # Flush to get the carousel_item ID, then render
-            db.add(carousel_item)
-            db.flush() 
-            if "slides" in generated["carousel"]:
-                try:
-                    render_carousel_sync(carousel_item.id, generated["carousel"])
-                except Exception as render_err:
-                    logger.warning(f"Carousel rendering failed (will save without images): {render_err}")
+            # Arabic carousel for Instagram
+            try:
+                ig_carousel = _gen_carousel(
+                    api_key=settings.ANTHROPIC_API_KEY,
+                    article_title=article.title,
+                    article_content=text_to_process,
+                    platforms=["IG"]
+                )
+                if ig_carousel and "slides" in ig_carousel:
+                    ig_item = ContentItem(
+                        raw_article_id=article.id,
+                        content_type="CAROUSEL",
+                        status="pending_review",
+                        platforms=["IG", "FB"],
+                        generated_content=ig_carousel
+                    )
+                    db.add(ig_item)
+                    db.flush()
+                    try:
+                        render_carousel_sync(ig_item.id, ig_carousel)
+                    except Exception as render_err:
+                        logger.warning(f"IG Carousel rendering failed: {render_err}")
+                    logger.info(f"Generated Arabic (IG) carousel for article {article.id}")
+            except Exception as ig_err:
+                logger.error(f"Arabic carousel generation failed: {ig_err}")
+            
+            # English carousel for LinkedIn
+            try:
+                li_carousel = _gen_carousel(
+                    api_key=settings.ANTHROPIC_API_KEY,
+                    article_title=article.title,
+                    article_content=text_to_process,
+                    platforms=["Li"]
+                )
+                if li_carousel and "slides" in li_carousel:
+                    li_item = ContentItem(
+                        raw_article_id=article.id,
+                        content_type="CAROUSEL",
+                        status="pending_review",
+                        platforms=["Li"],
+                        generated_content=li_carousel
+                    )
+                    db.add(li_item)
+                    db.flush()
+                    try:
+                        render_carousel_sync(li_item.id, li_carousel)
+                    except Exception as render_err:
+                        logger.warning(f"Li Carousel rendering failed: {render_err}")
+                    logger.info(f"Generated English (LinkedIn) carousel for article {article.id}")
+            except Exception as li_err:
+                logger.error(f"LinkedIn carousel generation failed: {li_err}")
             
         # 3. Video Script
         if "video_script" in generated and generated["video_script"]:
@@ -88,15 +126,21 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
                 )
             )
             
+        # Commit items_to_add (POST, VIDEO) and mark article as generated
+        # (Carousel items are already flushed/committed individually above)
+        any_carousel = "CAROUSEL" in formats
         if items_to_add:
             for item in items_to_add:
                 if item not in db.new:
                     db.add(item)
-                
-            # Update article status only if generation succeeded
             article.status = "GENERATED"
             db.commit()
             logger.info(f"Successfully generated content items for article {article.id}")
+        elif any_carousel:
+            # Only carousels were selected — mark as generated anyway
+            article.status = "GENERATED"
+            db.commit()
+            logger.info(f"Carousel-only generation done for article {article.id}")
         else:
             logger.error(f"Claude returned empty content for article {article.id}. Status not updated.")
             # Leave it as PENDING or change to a failed state so it can be retried
