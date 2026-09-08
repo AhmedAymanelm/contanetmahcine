@@ -15,45 +15,7 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 
-# ── Hardcoded tech/AI RSS feeds for known sites ────────────────────────────
-# These override auto-discovery to ensure we always get the tech section feed
-KNOWN_TECH_RSS = {
-    # BBC
-    "bbc.com":                    "https://feeds.bbci.co.uk/news/technology/rss.xml",
-    "feeds.bbci.co.uk":           None,  # already RSS, use as-is
-    # Sky News Arabia
-    "skynewsarabia.com":          "https://www.skynewsarabia.com/rss.xml",
-    # CNN Tech
-    "cnn.com":                    "https://rss.cnn.com/rss/edition_technology.rss",
-    "edition.cnn.com":            "https://rss.cnn.com/rss/edition_technology.rss",
-    # TechCrunch - usually already correct
-    "techcrunch.com":             None,
-    # The Verge
-    "theverge.com":               "https://www.theverge.com/rss/index.xml",
-    # Wired
-    "wired.com":                  "https://www.wired.com/feed/rss",
-    # Reuters Tech
-    "reuters.com":                "https://feeds.reuters.com/reuters/technologyNews",
-    # Bloomberg Tech
-    "bloomberg.com":              "https://feeds.bloomberg.com/technology/news.rss",
-    # MIT Technology Review
-    "technologyreview.com":       "https://www.technologyreview.com/feed/",
-    # Al Arabiya Tech
-    "alarabiya.net":              "https://www.alarabiya.net/tools/rss/technology",
-    # Arab News Tech
-    "arabnews.com":               "https://www.arabnews.com/rss.xml?date=1&cat=2",
-}
 
-def _get_known_rss(url: str) -> Optional[str]:
-    """Return hardcoded tech RSS URL if the domain is known."""
-    from urllib.parse import urlparse
-    domain = urlparse(url).netloc.lower().replace('www.', '')
-    for known_domain, rss_url in KNOWN_TECH_RSS.items():
-        if domain == known_domain or domain.endswith('.' + known_domain):
-            if rss_url is None:
-                return url  # Already an RSS URL, use as-is
-            return rss_url
-    return None
 
 def discover_rss(url: str) -> Optional[str]:
     # 1. Direct URL is already RSS?
@@ -80,12 +42,6 @@ def discover_rss(url: str) -> Optional[str]:
                 return test_url
     except Exception as e:
         print(f"Error in RSS auto-discovery for {url}: {e}")
-
-    # 3. Last resort: try known hardcoded tech RSS for this domain
-    known = _get_known_rss(url)
-    if known and _is_valid_rss(known):
-        print(f"Using fallback known tech RSS for {url}: {known}")
-        return known
 
     return None
 
