@@ -2344,7 +2344,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 let swiperInstance = null;
 
+let _currentSwiperSlides = [];
+
 function openSwiperModal(slidesUrls) {
+    _currentSwiperSlides = slidesUrls; // store for download
     const modal = document.getElementById('swiper-modal');
     const containerWrapper = document.getElementById('swiper-container-wrapper');
     
@@ -2413,6 +2416,73 @@ function openSwiperModal(slidesUrls) {
 function closeSwiperModal() {
     document.getElementById('swiper-modal').style.display = 'none';
     document.body.style.overflow = '';
+}
+
+// ── Carousel Download Functions ──
+async function downloadCarouselZip() {
+    if (!_currentSwiperSlides || !_currentSwiperSlides.length) { showToast('لا توجد صور للتحميل', 'error'); return; }
+    
+    // Get title from page
+    const titleEl = document.querySelector('#modal-title, .article-title, h2');
+    const zipName = (titleEl ? titleEl.innerText.substring(0, 40).trim().replace(/[^\w\u0600-\u06FF\s]/g, '') : 'carousel') || 'carousel';
+    
+    showToast('⏳ جاري تجهيز ملف ZIP...', 'success');
+    
+    try {
+        const zip = new JSZip();
+        const folder = zip.folder(zipName);
+        
+        for (let i = 0; i < _currentSwiperSlides.length; i++) {
+            const url = _currentSwiperSlides[i];
+            try {
+                const resp = await fetch(url);
+                const blob = await resp.blob();
+                folder.file(`slide_${String(i+1).padStart(2,'0')}.png`, blob);
+            } catch(e) {
+                console.warn('Failed to fetch slide', i, e);
+            }
+        }
+        
+        const content = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = `${zipName}.zip`;
+        a.click();
+        showToast(`✅ تم تحميل ${_currentSwiperSlides.length} صور في ملف ZIP`, 'success');
+    } catch(err) {
+        console.error(err);
+        showToast('❌ فشل إنشاء ZIP', 'error');
+    }
+}
+
+async function downloadCarouselPDF() {
+    if (!_currentSwiperSlides || !_currentSwiperSlides.length) { showToast('لا توجد صور للتحميل', 'error'); return; }
+    
+    const titleEl = document.querySelector('#modal-title, .article-title, h2');
+    const pdfName = (titleEl ? titleEl.innerText.substring(0, 40).trim().replace(/[^\w\u0600-\u06FF\s]/g, '') : 'carousel') || 'carousel';
+    
+    showToast('⏳ جاري إنشاء PDF...', 'success');
+    
+    // Build a printable HTML page with images
+    const imgs = _currentSwiperSlides.map((url, i) =>
+        `<div style="page-break-after:always; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:20px;">
+            <img src="${url}" style="max-width:100%; max-height:90vh; object-fit:contain;" crossorigin="anonymous">
+         </div>`
+    ).join('');
+    
+    const win = window.open('', '_blank');
+    win.document.write(`
+        <!DOCTYPE html><html><head>
+        <meta charset="utf-8">
+        <title>${pdfName}</title>
+        <style>body{margin:0;background:#fff;} @media print { img{max-width:100%;} }</style>
+        </head><body>
+        ${imgs}
+        <script>window.onload=function(){ window.print(); }<\/script>
+        </body></html>
+    `);
+    win.document.close();
+    showToast('✅ افتح نافذة الطباعة واختر "حفظ كـ PDF"', 'success');
 }
 
 // ---------------- TEMPLATES MANAGEMENT ----------------

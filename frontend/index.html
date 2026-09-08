@@ -447,9 +447,21 @@
           #swiper-modal .swiper-slide-active { opacity: 1; transform: scale(1); }
       </style>
       <div id="swiper-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); backdrop-filter:blur(10px); z-index:10000; align-items:center; justify-content:center; flex-direction:column;">
-          <div style="width:100%; padding:20px; display:flex; justify-content:space-between; align-items:center; position:absolute; top:0; z-index:10001;">
-              <h2 style="color:#fff; margin:0; font-size:24px;">معاينة الكاروسيل 📸</h2>
-              <button onclick="closeSwiperModal()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; font-size:30px; cursor:pointer; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:0.2s;">&times;</button>
+          <div style="width:100%; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; position:absolute; top:0; z-index:10001; background:linear-gradient(180deg,rgba(0,0,0,0.8),transparent);">
+              <h2 style="color:#fff; margin:0; font-size:20px;">معاينة الكاروسيل 📸</h2>
+              <div style="display:flex; gap:8px; align-items:center;">
+                  <button onclick="downloadCarouselZip()" style="background:rgba(0,200,150,0.15); border:1px solid rgba(0,200,150,0.3); color:#00c896; padding:8px 16px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:6px;"
+                      onmouseover="this.style.background='rgba(0,200,150,0.3)'"
+                      onmouseout="this.style.background='rgba(0,200,150,0.15)'">
+                      📦 تحميل ZIP
+                  </button>
+                  <button onclick="downloadCarouselPDF()" style="background:rgba(100,80,255,0.15); border:1px solid rgba(100,80,255,0.3); color:#a78bfa; padding:8px 16px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:6px;"
+                      onmouseover="this.style.background='rgba(100,80,255,0.3)'"
+                      onmouseout="this.style.background='rgba(100,80,255,0.15)'">
+                      📄 تحميل PDF
+                  </button>
+                  <button onclick="closeSwiperModal()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; font-size:26px; cursor:pointer; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:0.2s;">×</button>
+              </div>
           </div>
           
           <div id="swiper-container-wrapper" style="width: 100%;">
@@ -1114,6 +1126,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="js/main.js?v=9"></script>
