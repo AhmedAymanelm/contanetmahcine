@@ -28,30 +28,56 @@ def _is_valid_rss(url: str) -> bool:
         return False
 
 def discover_rss(url: str) -> Optional[str]:
+    from urllib.parse import urlparse
+
     # 1. Direct URL is already RSS?
     if _is_valid_rss(url):
         return url
 
-    # 2. Auto-discover from page HTML (link tags + common suffixes)
+    parsed = urlparse(url)
+    # Extract meaningful path segments to prefer section-specific RSS
+    path_segments = [p for p in parsed.path.split('/') if p and len(p) > 2]
+
+    # 2. Auto-discover from page HTML - collect ALL RSS links first
+    candidates = []
     try:
         response = httpx.get(url, timeout=settings.REQUEST_TIMEOUT, headers=HEADERS, follow_redirects=True)
         soup = BeautifulSoup(response.text, "html.parser")
+
         for link in soup.find_all('link', type=lambda t: t and ('rss' in t or 'atom' in t)):
             href = link.get('href', '')
             if not href:
                 continue
             if not href.startswith('http'):
-                base_url = "/".join(url.split("/")[:3])
-                href = f"{base_url}{href}"
-            if _is_valid_rss(href):
-                return href
-        base_url = url.rstrip("/")
-        for suffix in ["/feed", "/rss", "/rss.xml", "/atom.xml", "/feed/rss", "/?feed=rss2"]:
-            test_url = f"{base_url}{suffix}"
-            if _is_valid_rss(test_url):
-                return test_url
+                base = f"{parsed.scheme}://{parsed.netloc}"
+                href = f"{base}{href}"
+            candidates.append(href)
+
     except Exception as e:
         print(f"Error in RSS auto-discovery for {url}: {e}")
+
+    # 3. Try suffix-based discovery on the full path URL first (section-specific)
+    base_url = url.rstrip("/")
+    for suffix in ["/feed", "/rss", "/rss.xml", "/atom.xml", "/?feed=rss2"]:
+        candidates.append(f"{base_url}{suffix}")
+
+    # 4. Also try domain-root suffixes as a fallback
+    domain_root = f"{parsed.scheme}://{parsed.netloc}"
+    for suffix in ["/feed", "/rss", "/rss.xml", "/atom.xml"]:
+        candidates.append(f"{domain_root}{suffix}")
+
+    # 5. Score candidates: prefer those whose URL contains the source path segments
+    def path_score(rss_url: str) -> int:
+        rss_lower = rss_url.lower()
+        return sum(1 for seg in path_segments if seg.lower() in rss_lower)
+
+    # Sort by path relevance (highest score = most specific match)
+    candidates.sort(key=path_score, reverse=True)
+
+    for candidate in candidates:
+        if _is_valid_rss(candidate):
+            print(f"RSS discovered for {url}: {candidate} (path_score={path_score(candidate)})")
+            return candidate
 
     return None
 
