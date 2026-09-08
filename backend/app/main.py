@@ -38,6 +38,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Failed to load DB settings on startup: {e}")
 
+    # Auto-reset any articles stuck in APPROVED_FOR_GENERATION (killed by previous restart)
+    try:
+        from app.models.raw_article import RawArticle
+        db = SessionLocal()
+        stuck = db.query(RawArticle).filter(RawArticle.status == "APPROVED_FOR_GENERATION").all()
+        if stuck:
+            for art in stuck:
+                art.status = "PENDING"
+            db.commit()
+            print(f"[Startup] Reset {len(stuck)} stuck article(s) back to PENDING")
+        db.close()
+    except Exception as e:
+        print(f"[Startup] Failed to reset stuck articles: {e}")
+
     start_scheduler()
     yield
     stop_scheduler()

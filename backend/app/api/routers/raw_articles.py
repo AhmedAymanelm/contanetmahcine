@@ -79,3 +79,31 @@ def delete_raw_article(article_id: int, db: Session = Depends(get_db)):
     db.delete(article)
     db.commit()
     return {"detail": "Article deleted"}
+
+@router.post("/reset-stuck")
+def reset_stuck_articles(db: Session = Depends(get_db)):
+    """Reset articles stuck in APPROVED_FOR_GENERATION back to PENDING.
+    Useful after server restart kills running generation tasks."""
+    stuck = db.query(RawArticle).filter(
+        RawArticle.status == "APPROVED_FOR_GENERATION"
+    ).all()
+    count = len(stuck)
+    for art in stuck:
+        art.status = "PENDING"
+    db.commit()
+    logger.info(f"Reset {count} stuck articles back to PENDING")
+    return {"detail": f"Reset {count} stuck articles to PENDING"}
+
+@router.post("/{article_id}/retry")
+def retry_article_generation(article_id: int, request: ArticleGenerateRequest, db: Session = Depends(get_db)):
+    """Force retry generation for a stuck article."""
+    article = db.query(RawArticle).filter(RawArticle.id == article_id).first()
+    if not article:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Article not found")
+    article.status = "APPROVED_FOR_GENERATION"
+    db.commit()
+    db.close()
+    _thread_pool.submit(process_article_generation, article_id, request.formats, request.carousel_platforms)
+    logger.info(f"Retry generation submitted for article {article_id}")
+    return {"detail": "Retry started"}
