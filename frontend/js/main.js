@@ -2000,7 +2000,26 @@ async function rejectContentItem(id, btn) {
 }
 
 async function manualCleanup() {
-    if (!confirm('هتُمسح كل الأخبار اللي أعمرها أكتر من 24 ساعة. متأكد؟')) return;
+    // Custom styled confirm modal
+    const confirmed = await new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);`;
+        overlay.innerHTML = `
+            <div style="background:#1a1d2e;border:1px solid rgba(248,113,113,0.3);border-radius:16px;padding:32px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                <div style="font-size:48px;margin-bottom:16px;">🗑️</div>
+                <h3 style="color:#f1f5f9;font-size:18px;margin-bottom:10px;">مسح الأخبار القديمة</h3>
+                <p style="color:#94a3b8;font-size:14px;margin-bottom:24px;line-height:1.6;">سيتم حذف كل الأخبار التي مضى عليها أكثر من 24 ساعة نهائياً. هذا الإجراء لا يمكن التراجع عنه.</p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button id="cleanup-cancel" style="flex:1;padding:10px 20px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-size:14px;">إلغاء</button>
+                    <button id="cleanup-confirm" style="flex:1;padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;cursor:pointer;font-size:14px;font-weight:600;">نعم، امسح</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelector('#cleanup-cancel').onclick = () => { overlay.remove(); resolve(false); };
+        overlay.querySelector('#cleanup-confirm').onclick = () => { overlay.remove(); resolve(true); };
+    });
+    if (!confirmed) return;
+
     const btn = event.target;
     const orig = btn.innerHTML;
     btn.innerHTML = '⏳ جاري المسح...';

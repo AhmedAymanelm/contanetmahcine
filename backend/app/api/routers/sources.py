@@ -108,3 +108,11 @@ def run_ingestion(db: Session = Depends(get_db)):
             db.commit()
             
     return {"detail": f"Ingestion completed. Scraped {total_scraped} new articles."}
+
+@router.post("/cleanup-now")
+def manual_cleanup(hours: int = 24, db: Session = Depends(get_db)):
+    """Manually delete raw articles older than `hours` hours (default 24h)."""
+    from app.services.ingestion.scheduler_service import cleanup_old_raw_articles
+    cleanup_old_raw_articles()
+    return {"detail": f"Cleanup triggered. Articles older than {hours}h have been deleted."}
+
