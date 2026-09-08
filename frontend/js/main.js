@@ -1245,7 +1245,7 @@ async function fetchReviewContent() {
                         <div style="display:flex;gap:7px;padding-top:8px;border-top:1px solid var(--line);">
                             <button class="btn ghost" style="color:var(--red);padding:6px 10px;font-size:12.5px;" onclick="rejectContentItem(${item.id}, this)">رفض</button>
                             <button class="btn ghost" style="padding:6px 10px;font-size:12.5px;" onclick="openEditModal(${item.id})">تعديل</button>
-                            <button class="btn" style="background:var(--teal);color:#000;padding:6px 12px;flex-grow:1;font-size:12.5px;" onclick="openPreviewModal(${item.id}, this)">موافقة واعتماد</button>
+                            <button class="btn" style="background:var(--teal);color:#000;padding:6px 12px;flex-grow:1;font-size:12.5px;" onclick="openPreviewModal(${item.id}, this)">عرض</button>
                         </div>
                     </div>`;
                 });
