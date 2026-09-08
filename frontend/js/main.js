@@ -1284,7 +1284,7 @@ async function fetchReviewContent() {
                                 ✨ ${hasUrls ? 'إعادة توليد الكاروسيل' : 'توليد الكاروسيل بالصور'}
                             </button>
                             ${hasUrls ? `
-                            <button class="btn" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);padding:8px 12px;border-radius:9px;cursor:pointer;font-size:12.5px;" onclick="openSwiperModal(${JSON.stringify(generated.carousel_urls).replace(/"/g,'&quot;')})">👀</button>
+                            <button class="btn" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);padding:8px 12px;border-radius:9px;cursor:pointer;font-size:12.5px;" onclick="openSwiperModal(${JSON.stringify(generated.carousel_urls).replace(/"/g,'&quot;')}, ${JSON.stringify(articleTitle).replace(/"/g,'&quot;')})">👀</button>
                             <button class="btn" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.25);padding:8px 10px;border-radius:9px;cursor:pointer;font-size:12.5px;" onclick="deleteCarouselSlides(${item.id})">🗑️</button>` : ''}
                         </div>`;
                     }
@@ -1557,7 +1557,7 @@ async function renderCarouselImages(id, templateId, textColor = null, accentColo
                     // Pass slides directly as a JSON string to avoid global variable conflicts
                     const slidesJson = JSON.stringify(slides.slides).replace(/"/g, '&quot;');
                     container.innerHTML = `
-                        <button class="btn" style="flex:1; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:8px 12px; font-size:13px; border-radius:8px; cursor:pointer;" onclick="openSwiperModal(${slidesJson})">
+                        <button class="btn" style="flex:1; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:8px 12px; font-size:13px; border-radius:8px; cursor:pointer;" onclick="openSwiperModal(${slidesJson}, ${JSON.stringify(articleTitle || '').replace(/"/g,'&quot;')})">
                             👀 معاينة
                         </button>
                         <button class="btn" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:8px; border-radius:8px; cursor:pointer; width:45px; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'" onclick="deleteCarouselSlides(${id})" title="حذف الصور">
@@ -2352,9 +2352,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 let swiperInstance = null;
 
 let _currentSwiperSlides = [];
+let _currentSwiperTitle = 'carousel';
 
-function openSwiperModal(slidesUrls) {
-    _currentSwiperSlides = slidesUrls; // store for download
+function openSwiperModal(slidesUrls, title = '') {
+    _currentSwiperSlides = slidesUrls;
+    _currentSwiperTitle = (title || 'carousel').substring(0, 60).replace(/[^\w\u0600-\u06FF\s-]/g, '').trim() || 'carousel';
     const modal = document.getElementById('swiper-modal');
     const containerWrapper = document.getElementById('swiper-container-wrapper');
     
@@ -2429,10 +2431,7 @@ function closeSwiperModal() {
 async function downloadCarouselZip() {
     if (!_currentSwiperSlides || !_currentSwiperSlides.length) { showToast('لا توجد صور للتحميل', 'error'); return; }
     
-    // Get title from page
-    const titleEl = document.querySelector('#modal-title, .article-title, h2');
-    const zipName = (titleEl ? titleEl.innerText.substring(0, 40).trim().replace(/[^\w\u0600-\u06FF\s]/g, '') : 'carousel') || 'carousel';
-    
+    const zipName = _currentSwiperTitle || 'carousel';
     showToast('⏳ جاري تجهيز ملف ZIP...', 'success');
     
     try {
@@ -2465,8 +2464,7 @@ async function downloadCarouselZip() {
 async function downloadCarouselPDF() {
     if (!_currentSwiperSlides || !_currentSwiperSlides.length) { showToast('لا توجد صور للتحميل', 'error'); return; }
     
-    const titleEl = document.querySelector('#modal-title, .article-title, h2');
-    const pdfName = (titleEl ? titleEl.innerText.substring(0, 40).trim().replace(/[^\w\u0600-\u06FF\s]/g, '') : 'carousel') || 'carousel';
+    const pdfName = _currentSwiperTitle || 'carousel';
     
     showToast('⏳ جاري إنشاء PDF...', 'success');
     
