@@ -854,9 +854,10 @@ function openArticleModal(title, content, url, imageUrl) {
     
     const imgEl = document.getElementById('modal-image');
     if (imageUrl) {
-        imgEl.style.backgroundImage = `url('${imageUrl}')`;
+        imgEl.src = imageUrl;
         imgEl.style.display = 'block';
     } else {
+        imgEl.src = '';
         imgEl.style.display = 'none';
     }
     
