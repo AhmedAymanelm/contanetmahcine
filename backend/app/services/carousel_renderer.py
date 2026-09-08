@@ -478,7 +478,8 @@ async def render_carousel_images(
     slide_dir.mkdir(parents=True, exist_ok=True)
 
     async with async_playwright() as p:
-        chromium_path = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
+        import os as _os
+        chromium_path = _os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
         launch_kwargs = {
             "headless": True,
             "args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
