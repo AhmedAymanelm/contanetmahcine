@@ -814,9 +814,64 @@ function openArticleModal(title, content, url, imageUrl) {
 function closeArticleModal() {
     document.getElementById('article-modal').style.display = 'none';
     document.body.style.overflow = ''; // Restore background scrolling
+    // Reset translation state
+    window._articleOriginalContent = null;
+    const btn = document.getElementById('modal-translate-btn');
+    if (btn) { btn.innerText = '🌍 ترجمة للإنجليزية'; btn.disabled = false; }
 }
 
-// ---------------- CUSTOM CONFIRM MODAL ----------------
+// ---------------- ARTICLE TRANSLATION ----------------
+window._articleOriginalContent = null;
+
+async function translateModalContent() {
+    const contentEl = document.getElementById('modal-content');
+    const btn = document.getElementById('modal-translate-btn');
+    
+    // Toggle: if already translated, revert to original
+    if (window._articleOriginalContent) {
+        contentEl.innerText = window._articleOriginalContent;
+        window._articleOriginalContent = null;
+        btn.innerHTML = '🌍 ترجمة للإنجليزية';
+        btn.disabled = false;
+        contentEl.style.direction = 'rtl';
+        return;
+    }
+
+    const text = contentEl.innerText.trim();
+    if (!text || text.length < 5) return;
+    
+    btn.innerHTML = '⏳ جاري الترجمة...';
+    btn.disabled = true;
+
+    try {
+        // Split into chunks of 500 chars (MyMemory limit per call)
+        const chunks = [];
+        for (let i = 0; i < text.length; i += 450) {
+            chunks.push(text.slice(i, i + 450));
+        }
+        
+        const translated = [];
+        for (const chunk of chunks) {
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=ar|en`;
+            const res = await fetch(url);
+            const data = await res.json();
+            translated.push(data.responseData?.translatedText || chunk);
+        }
+        
+        window._articleOriginalContent = text;
+        contentEl.innerText = translated.join(' ');
+        contentEl.style.direction = 'ltr';
+        btn.innerHTML = '↩️ عرض النص الأصلي';
+        btn.disabled = false;
+    } catch (err) {
+        console.error('Translation error:', err);
+        showToast('❌ فشل الترجمة، حاول مرة أخرى', 'error');
+        btn.innerHTML = '🌍 ترجمة للإنجليزية';
+        btn.disabled = false;
+    }
+}
+
+
 function showConfirmModal(title, message, onConfirmCallback) {
     const modal = document.getElementById('confirm-modal');
     const box = document.getElementById('confirm-box');

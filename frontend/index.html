@@ -340,8 +340,13 @@
             <div id="modal-content" style="padding:20px; overflow-y:auto; font-size:15px; line-height:1.8; color:var(--text); white-space:pre-wrap;">
                 محتوى الخبر هنا...
             </div>
-            <div style="padding:15px 20px; border-top:1px solid var(--line); text-align:left; background:var(--bg);">
+            <div style="padding:15px 20px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; background:var(--bg);">
                 <a id="modal-url" href="#" target="_blank" class="btn" style="text-decoration:none;">فتح المصدر الأصلي</a>
+                <button id="modal-translate-btn" onclick="translateModalContent()" style="background:rgba(100,80,255,0.15); border:1px solid rgba(100,80,255,0.3); color:#a78bfa; padding:9px 18px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:6px;"
+                    onmouseover="this.style.background='rgba(100,80,255,0.25)'"
+                    onmouseout="this.style.background='rgba(100,80,255,0.15)'">
+                    🌍 ترجمة للإنجليزية
+                </button>
             </div>
         </div>
       </div>
