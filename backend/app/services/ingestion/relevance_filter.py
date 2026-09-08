@@ -79,16 +79,15 @@ HARD_EXCLUDE_EN = [
 
 def is_tech_relevant(title: str, content: str = "") -> bool:
     """
-    Balanced two-tier check:
-    1. Hard exclusions (only obvious non-tech) → reject
+    Title-first check:
+    1. Hard exclusions (phrases) → reject
     2. Strong tech keyword in TITLE → accept
     3. Tech company name in TITLE → accept
-    4. Reject anything else
+    4. Everything else → reject
     """
     title_lower = title.lower().strip()
-    content_lower = (content[:2000]).lower()
 
-    # ── 1. Hard exclusions (PHRASES only — not single words) ────────────────
+    # ── 1. Hard exclusions (PHRASES only) ───────────────────────────────────
     for kw in HARD_EXCLUDE_AR + HARD_EXCLUDE_EN:
         if kw.lower() in title_lower:
             return False
@@ -103,10 +102,5 @@ def is_tech_relevant(title: str, content: str = "") -> bool:
         if kw.lower() in title_lower:
             return True
 
-    # ── 4. Strong keyword anywhere in content (for short/vague titles) ──────
-    for kw in STRONG_TECH_TITLE_AR + STRONG_TECH_TITLE_EN:
-        if kw.lower() in content_lower:
-            return True
-
-    # ── 5. Reject anything else ─────────────────────────────────────────────
+    # ── 4. Reject anything without a tech keyword in the title ──────────────
     return False
