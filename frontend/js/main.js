@@ -1311,22 +1311,29 @@ async function fetchReviewContent() {
 
                 reviewList.innerHTML += `
                 <div style="grid-column: 1 / -1;">
-                  <div style="border:1px solid var(--line);border-radius:18px;background:var(--panel);overflow:hidden;margin-bottom:4px;">
-                    <!-- Article header row -->
-                    <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(53,211,153,0.04),transparent);">
-                        ${articleImage ? `<img src="${articleImage}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">` : `<div style="width:52px;height:52px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">📰</div>`}
+                  <div style="border:1px solid rgba(255,255,255,0.07); border-radius:20px; background:var(--panel); overflow:hidden; margin-bottom:6px; box-shadow:0 4px 24px rgba(0,0,0,0.3);">
+                    <!-- Article header row - Premium Design -->
+                    <div style="display:flex;align-items:center;gap:16px;padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.06);background:linear-gradient(135deg,rgba(53,211,153,0.06) 0%,rgba(100,80,255,0.04) 50%,transparent 100%); position:relative; overflow:hidden;">
+                        <!-- Decorative glow -->
+                        <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(53,211,153,0.12),transparent 70%);pointer-events:none;"></div>
+                        
+                        <!-- Image -->
+                        ${articleImage 
+                            ? `<img src="${articleImage}" style="width:64px;height:64px;object-fit:cover;border-radius:14px;flex-shrink:0;box-shadow:0 6px 20px rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.08);" onerror="this.style.display='none'">`
+                            : `<div style="width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,rgba(53,211,153,0.15),rgba(100,80,255,0.1));border:1px solid rgba(255,255,255,0.08);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 6px 20px rgba(0,0,0,0.3);">📰</div>`}
+                        
+                        <!-- Text content -->
                         <div style="flex:1;min-width:0;">
-                            <div style="font-size:14px;font-weight:600;color:var(--text);line-height:1.4;">${articleTitle}</div>
-                            <div style="font-size:11.5px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:8px;">
-                                <span>📡 ${articleSource}</span>
-                                ${articleDate ? `<span style="opacity:0.5;">•</span><span>🗓️ ${articleDate}</span>` : ''}
-                                <span style="opacity:0.5;">•</span>
-                                <span style="color:var(--teal);">${groupItems.length} ${groupItems.length === 1 ? 'صيغة' : 'صيغ'} مُولَّدة</span>
+                            <div style="font-size:16px;font-weight:800;color:#fff;line-height:1.4;margin-bottom:8px;letter-spacing:-0.2px;">${articleTitle}</div>
+                            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.07);">📡 ${articleSource}</span>
+                                ${articleDate ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.35);">🗓️ ${articleDate}</span>` : ''}
+                                <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;background:rgba(53,211,153,0.12);color:var(--teal);border:1px solid rgba(53,211,153,0.2);">✨ ${groupItems.length} ${groupItems.length === 1 ? 'صيغة' : 'صيغ'} مُولَّدة</span>
                             </div>
                         </div>
                     </div>
                     <!-- Sub-cards grid -->
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:14px 16px;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;padding:16px 18px;">
                         ${subCardsHtml}
                     </div>
                   </div>
