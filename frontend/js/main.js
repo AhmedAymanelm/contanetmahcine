@@ -2465,29 +2465,35 @@ async function downloadCarouselPDF() {
     if (!_currentSwiperSlides || !_currentSwiperSlides.length) { showToast('لا توجد صور للتحميل', 'error'); return; }
     
     const pdfName = _currentSwiperTitle || 'carousel';
-    
     showToast('⏳ جاري إنشاء PDF...', 'success');
     
-    // Build a printable HTML page with images
-    const imgs = _currentSwiperSlides.map((url, i) =>
-        `<div style="page-break-after:always; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:20px;">
-            <img src="${url}" style="max-width:100%; max-height:90vh; object-fit:contain;" crossorigin="anonymous">
-         </div>`
-    ).join('');
+    // Build printable HTML - page-break ONLY between slides (not after last)
+    const imgs = _currentSwiperSlides.map((url, i) => {
+        const breakStyle = i < _currentSwiperSlides.length - 1 ? 'page-break-after:always;' : '';
+        return `<div style="${breakStyle} display:flex; justify-content:center; align-items:center; height:100vh; width:100vw;">
+            <img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain;" crossorigin="anonymous">
+        </div>`;
+    }).join('');
     
     const win = window.open('', '_blank');
-    win.document.write(`
-        <!DOCTYPE html><html><head>
+    win.document.write(`<!DOCTYPE html><html><head>
         <meta charset="utf-8">
         <title>${pdfName}</title>
-        <style>body{margin:0;background:#fff;} @media print { img{max-width:100%;} }</style>
-        </head><body>
+        <style>
+            @page { margin: 0; size: auto; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { background: #fff; }
+            @media print {
+                html, body { width: 100%; height: 100%; }
+                img { display: block; max-width: 100%; max-height: 100%; }
+            }
+        </style>
+    </head><body>
         ${imgs}
-        <script>window.onload=function(){ window.print(); }<\/script>
-        </body></html>
-    `);
+        <script>window.onload = function(){ window.print(); }<\/script>
+    </body></html>`);
     win.document.close();
-    showToast('✅ افتح نافذة الطباعة واختر "حفظ كـ PDF"', 'success');
+    showToast('✅ اختر "حفظ كـ PDF" في نافذة الطباعة', 'success');
 }
 
 // ---------------- TEMPLATES MANAGEMENT ----------------
