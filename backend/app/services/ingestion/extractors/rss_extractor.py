@@ -16,6 +16,16 @@ HEADERS = {
 }
 
 
+def _is_valid_rss(url: str) -> bool:
+    """Check if a URL returns a valid RSS/Atom feed."""
+    try:
+        response = httpx.get(url, timeout=settings.REQUEST_TIMEOUT, headers=HEADERS, follow_redirects=True)
+        ct = response.headers.get("Content-Type", "")
+        body = response.text.lower()[:500]
+        return ("xml" in ct or "rss" in ct or "atom" in ct or
+                "rss" in body or "<feed" in body or "<channel" in body)
+    except Exception:
+        return False
 
 def discover_rss(url: str) -> Optional[str]:
     # 1. Direct URL is already RSS?
