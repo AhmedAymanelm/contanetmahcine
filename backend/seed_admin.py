@@ -10,16 +10,16 @@ from app.core.security import get_password_hash
 def seed_admin():
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.username == "admin").first()
+        user = db.query(User).filter(User.username == "Zayed.admin").first()
         if not user:
             print("Creating default admin user...")
             admin_user = User(
-                username="admin",
+                username="Zayed.admin",
                 hashed_password=get_password_hash("admin123")
             )
             db.add(admin_user)
             db.commit()
-            print("Admin user created successfully. Username: admin, Password: admin123")
+            print("Admin user created successfully. Username: Zayed.admin, Password: admin123")
         else:
             print("Admin user already exists.")
     except Exception as e:
