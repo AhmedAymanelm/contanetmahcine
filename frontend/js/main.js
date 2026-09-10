@@ -1688,77 +1688,74 @@ function resetTplColors() {
     document.querySelectorAll('.clr-swatch').forEach(s => s.style.boxShadow = '');
 }
 
-function openTemplatePickerModal(contentId) {
+async function openTemplatePickerModal(contentId) {
     const modal = document.getElementById('template-picker-modal');
     const grid = document.getElementById('template-picker-grid');
     const content = document.getElementById('template-picker-content');
-    
-    // Build Grid
+
+    // Show modal immediately with loading state
     grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+    grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
     grid.style.gap = '20px';
-    
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px; color:var(--muted);">⏳ جاري تحميل القوالب...</div>';
+    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; content.style.transform = 'scale(1)'; }, 10);
+
+    // Fetch templates fresh from API every time
+    let templates = [];
+    try {
+        const res = await fetch(`${API_BASE}/templates/`);
+        if (res.ok) templates = await res.json();
+        window._availableTemplates = templates; // keep global in sync
+    } catch(e) { console.error('Failed to load templates', e); }
+
+    // Default card
     let html = `
-        <div onclick="selectTemplateForContent(${contentId}, '')" style="cursor:pointer; background:var(--panel-2); border:1px solid rgba(255,255,255,0.05); border-radius:16px; overflow:hidden; transition:transform 0.2s; display:flex; flex-direction:column; justify-content:center; align-items:center; height:250px;" onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='var(--teal)'" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.05)'">
-            <span style="font-size:40px; margin-bottom:15px;">🌟</span>
-            <h4 style="margin:0; color:var(--text); font-size:16px;">القالب الافتراضي</h4>
+        <div onclick="selectTemplateForContent(${contentId}, '')"
+             style="cursor:pointer; background:var(--panel-2); border:2px solid rgba(255,255,255,0.05); border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.15); transition:transform 0.3s, box-shadow 0.3s, border-color 0.2s; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:280px;"
+             onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.4)'; this.style.borderColor='var(--teal)'"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'; this.style.borderColor='rgba(255,255,255,0.05)'">
+            <span style="font-size:48px; margin-bottom:15px;">🌟</span>
+            <h4 style="margin:0; color:var(--text); font-size:16px; font-weight:700;">القالب الافتراضي</h4>
         </div>
     `;
-    
-    const templates = window._availableTemplates || [];
-    templates.forEach(tpl => {
-        const bgUrl = tpl.cover_bg_path && tpl.cover_bg_path.startsWith('http')
-            ? tpl.cover_bg_path
-            : '/' + tpl.cover_bg_path;
-        const textClr  = tpl.text_color  || '#ffffff';
-        const accentClr = tpl.accent_color || '#facc15';
 
+    // Render each template — SAME design as templates page
+    templates.forEach(tpl => {
+        const bgPath = tpl.cover_bg_path || '';
         html += `
             <div onclick="selectTemplateForContent(${contentId}, ${tpl.id})"
-                 style="cursor:pointer; background:var(--panel-2); border:2px solid rgba(255,255,255,0.06); border-radius:16px; overflow:hidden; transition:all 0.2s; display:flex; flex-direction:column; position:relative;"
-                 onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor=accentClr||'var(--teal)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.4)'"
-                 onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.06)'; this.style.boxShadow='none'">
+                 style="cursor:pointer; background:var(--panel-2); border:2px solid rgba(255,255,255,0.05); border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.15); transition:transform 0.3s, box-shadow 0.3s, border-color 0.2s; position:relative;"
+                 onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.4)'; this.style.borderColor='var(--teal)'"
+                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'; this.style.borderColor='rgba(255,255,255,0.05)'">
 
-                <!-- Background + Text Preview -->
-                <div style="height:185px; position:relative; background-image:url('${bgUrl}'); background-size:cover; background-position:center; overflow:hidden;">
-
-                    <!-- Dark gradient overlay so text is readable -->
-                    <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 50%, transparent 100%);"></div>
-
-                    <!-- Accent top bar -->
-                    <div style="position:absolute; top:0; right:0; left:0; height:4px; background:${accentClr};"></div>
-
-                    <!-- Sample text overlay -->
-                    <div style="position:absolute; bottom:0; right:0; left:0; padding:14px 14px 12px; text-align:right; direction:rtl;">
-                        <div style="font-size:11px; font-weight:800; color:${accentClr}; letter-spacing:0.5px; margin-bottom:5px; text-transform:uppercase;">تقنية</div>
-                        <div style="font-size:13px; font-weight:700; color:${textClr}; line-height:1.4; text-shadow:0 1px 4px rgba(0,0,0,0.8);">الذكاء الاصطناعي يغير مستقبل التقنية</div>
-                    </div>
+                <div style="height:220px; background-image:url(${bgPath}); background-size:cover; background-position:center; position:relative;">
+                    <div style="position:absolute; bottom:0; left:0; width:100%; height:50%; background:linear-gradient(to top, var(--panel-2), transparent);"></div>
                 </div>
 
-                <!-- Name label -->
-                <div style="padding:10px 14px; text-align:center; background:var(--panel-2); border-top:1px solid rgba(255,255,255,0.05);">
-                    <h4 style="margin:0; color:var(--text); font-size:14px; font-weight:700;">${tpl.name}</h4>
+                <div style="padding:15px 20px; position:relative; z-index:5;">
+                    <h4 style="margin:0 0 12px; color:var(--text); font-size:16px; font-weight:700;">${tpl.name}</h4>
+                    <div style="display:flex; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); background:rgba(255,255,255,0.03); padding:5px 10px; border-radius:20px;">
+                            <div style="width:14px; height:14px; border-radius:50%; background:${tpl.text_color || '#fff'}; border:2px solid var(--panel); box-shadow:0 0 0 1px rgba(255,255,255,0.1);"></div> نص
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); background:rgba(255,255,255,0.03); padding:5px 10px; border-radius:20px;">
+                            <div style="width:14px; height:14px; border-radius:50%; background:${tpl.accent_color || '#facc15'}; border:2px solid var(--panel); box-shadow:0 0 0 1px rgba(255,255,255,0.1);"></div> تمييز
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
     });
-    
+
     grid.innerHTML = html;
-    
-    // Prevent background scrolling
-    document.body.style.overflow = 'hidden';
-    
-    modal.style.display = 'flex';
-    setTimeout(() => {
-        modal.style.opacity = '1';
-        content.style.transform = 'scale(1)';
-    }, 10);
 }
 
 function closeTemplatePickerModal() {
     const modal = document.getElementById('template-picker-modal');
     const content = document.getElementById('template-picker-content');
-    
+
     modal.style.opacity = '0';
     content.style.transform = 'scale(0.95)';
     
