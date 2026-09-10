@@ -215,6 +215,12 @@ def extract(url: str) -> List[Dict]:
             soup = BeautifulSoup(summary, 'html.parser')
             clean_summary = soup.get_text(separator=' ', strip=True)
 
+            # Strict individual article relevance filter
+            from app.services.ingestion.relevance_filter import is_tech_relevant
+            if not is_tech_relevant(title, clean_summary):
+                print(f"Skipping individual article (Not tech relevant): {title}")
+                continue
+
             image_url = _extract_image_from_entry(entry)
             full_content = clean_summary
 

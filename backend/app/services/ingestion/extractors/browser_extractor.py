@@ -113,6 +113,12 @@ def extract(url: str) -> List[Dict]:
                     
                     if any(a["url"] == href for a in articles):
                         continue
+
+                    # Strict individual link relevance filter
+                    from app.services.ingestion.relevance_filter import is_tech_relevant
+                    if not is_tech_relevant(link.get_text(strip=True), ""):
+                        print(f"Skipping link (Not tech relevant): {link.get_text(strip=True)}")
+                        continue
                         
                     try:
                         article_page = browser.new_page()

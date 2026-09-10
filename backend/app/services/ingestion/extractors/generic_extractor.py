@@ -229,6 +229,12 @@ def extract(url: str) -> List[Dict]:
                 continue
             seen_urls.add(href)
 
+            # Strict individual link relevance filter
+            from app.services.ingestion.relevance_filter import is_tech_relevant
+            if not is_tech_relevant(text, ""):
+                print(f"Skipping link (Not tech relevant): {text}")
+                continue
+
             article_data = extract_article_content(href)
             if article_data and len(article_data.get('content', '')) > 200:
                 articles.append(article_data)
