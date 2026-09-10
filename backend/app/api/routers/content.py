@@ -502,13 +502,46 @@ def render_carousel(
     item = db.query(ContentItem).filter(ContentItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Content not found")
-    if item.content_type != "CAROUSEL":
-        raise HTTPException(status_code=400, detail="Item is not a carousel")
+    if item.content_type not in ("CAROUSEL", "POST"):
+        raise HTTPException(status_code=400, detail="Item type not supported for carousel")
+
+    import json as _json
 
     carousel_data = item.generated_content
     if isinstance(carousel_data, str):
-        import json
-        carousel_data = json.loads(carousel_data)
+        carousel_data = _json.loads(carousel_data)
+
+    # ── Convert POST → CAROUSEL slide format ──────────────────────────
+    if item.content_type == "POST":
+        post_text = carousel_data.get("unified_post") or carousel_data.get("post_text") or ""
+        # Try to get title from raw article
+        raw_article = item.raw_article
+        title = (raw_article.title if raw_article else None) or "محتوى"
+
+        # Split into chunks: paragraphs or sentences (max 6 slides)
+        import re as _re
+        chunks = [p.strip() for p in _re.split(r'\n{1,}|(?<=[.!؟])\s+', post_text) if p.strip()]
+        # Merge very short chunks with next
+        merged, buf = [], ""
+        for c in chunks:
+            buf = (buf + " " + c).strip() if buf else c
+            if len(buf) >= 60:
+                merged.append(buf); buf = ""
+        if buf:
+            merged.append(buf)
+        slides = [{"heading": s[:120], "body": ""} for s in merged[:6]]
+        if not slides:
+            slides = [{"heading": post_text[:120], "body": ""}]
+
+        carousel_data = {"title": title, "slides": slides}
+
+        # Persist updated data and change type so preview works
+        carousel_data_with_urls = {**carousel_data, **{k: v for k, v in (item.generated_content or {}).items() if k in ("carousel_urls",)}}
+        item.generated_content = carousel_data_with_urls
+        item.content_type = "CAROUSEL"
+        db.commit()
+        db.refresh(item)
+    # ──────────────────────────────────────────────────────────────────
 
     import shutil
     slide_dir = CAROUSEL_OUTPUT / str(item_id)
