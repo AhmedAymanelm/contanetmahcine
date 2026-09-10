@@ -1707,11 +1707,37 @@ function openTemplatePickerModal(contentId) {
     
     const templates = window._availableTemplates || [];
     templates.forEach(tpl => {
+        const bgUrl = tpl.cover_bg_path && tpl.cover_bg_path.startsWith('http')
+            ? tpl.cover_bg_path
+            : '/' + tpl.cover_bg_path;
+        const textClr  = tpl.text_color  || '#ffffff';
+        const accentClr = tpl.accent_color || '#facc15';
+
         html += `
-            <div onclick="selectTemplateForContent(${contentId}, ${tpl.id})" style="cursor:pointer; background:var(--panel-2); border:1px solid rgba(255,255,255,0.05); border-radius:16px; overflow:hidden; transition:transform 0.2s; display:flex; flex-direction:column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='var(--teal)'" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.05)'">
-                <div style="height:170px; background-image:url('${tpl.cover_bg_path && tpl.cover_bg_path.startsWith('http') ? tpl.cover_bg_path : '/' + tpl.cover_bg_path}'); background-size:cover; background-position:center;"></div>
-                <div style="padding:15px; text-align:center; flex-grow:1; display:flex; align-items:center; justify-content:center;">
-                    <h4 style="margin:0; color:var(--text); font-size:16px; font-weight:700;">${tpl.name}</h4>
+            <div onclick="selectTemplateForContent(${contentId}, ${tpl.id})"
+                 style="cursor:pointer; background:var(--panel-2); border:2px solid rgba(255,255,255,0.06); border-radius:16px; overflow:hidden; transition:all 0.2s; display:flex; flex-direction:column; position:relative;"
+                 onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor=accentClr||'var(--teal)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.4)'"
+                 onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.06)'; this.style.boxShadow='none'">
+
+                <!-- Background + Text Preview -->
+                <div style="height:185px; position:relative; background-image:url('${bgUrl}'); background-size:cover; background-position:center; overflow:hidden;">
+
+                    <!-- Dark gradient overlay so text is readable -->
+                    <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 50%, transparent 100%);"></div>
+
+                    <!-- Accent top bar -->
+                    <div style="position:absolute; top:0; right:0; left:0; height:4px; background:${accentClr};"></div>
+
+                    <!-- Sample text overlay -->
+                    <div style="position:absolute; bottom:0; right:0; left:0; padding:14px 14px 12px; text-align:right; direction:rtl;">
+                        <div style="font-size:11px; font-weight:800; color:${accentClr}; letter-spacing:0.5px; margin-bottom:5px; text-transform:uppercase;">تقنية</div>
+                        <div style="font-size:13px; font-weight:700; color:${textClr}; line-height:1.4; text-shadow:0 1px 4px rgba(0,0,0,0.8);">الذكاء الاصطناعي يغير مستقبل التقنية</div>
+                    </div>
+                </div>
+
+                <!-- Name label -->
+                <div style="padding:10px 14px; text-align:center; background:var(--panel-2); border-top:1px solid rgba(255,255,255,0.05);">
+                    <h4 style="margin:0; color:var(--text); font-size:14px; font-weight:700;">${tpl.name}</h4>
                 </div>
             </div>
         `;
