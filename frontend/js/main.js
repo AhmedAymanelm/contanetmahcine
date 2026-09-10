@@ -54,7 +54,7 @@ window.showToast = function(message, type = 'success') {
 
 // ── Page map: which pages need auto-load on activation ──────────────────────
 const PAGE_LOADERS = {
-    'page-trends':    () => loadTrends(),
+    'page-trends':    () => {},
     'page-analytics': () => { loadAnalytics(); loadEngagement(); },
     'page-recs':      () => loadRecs(),
 };
@@ -2817,78 +2817,9 @@ function selectGeo(btn, geo) {
     // Sync hidden select
     const sel = document.getElementById('trend-geo-select');
     if (sel) sel.value = geo;
-    // Load trends
-    loadTrends();
 }
 
-// ---------------- Trends ----------------
-async function loadTrends() {
-    let geoSelect = document.getElementById('trend-geo-select');
-    const geo = geoSelect ? geoSelect.value : 'EG';
-    const grid = document.getElementById('trends-grid');
-    const loading = document.getElementById('trends-loading');
-    
-    grid.innerHTML = '';
-    loading.style.display = 'block';
-    
-    try {
-        const token = localStorage.getItem('cm_token');
-        const res = await fetch(`${API_BASE}/trends/?geo=${geo}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Failed to fetch trends');
-        const data = await res.json();
-        
-        loading.style.display = 'none';
-        
-        if (data.length === 0) {
-            grid.innerHTML = '<div style="text-align:center; color:var(--muted); padding:60px;">لم يتم العثور على ترندات حالياً</div>';
-            return;
-        }
 
-        // Rank color palette
-        const rankColors = [
-            { bg: 'linear-gradient(135deg,#f59e0b,#ef4444)', text: '#fbbf24' },  // 1 gold-red
-            { bg: 'linear-gradient(135deg,#6366f1,#8b5cf6)', text: '#818cf8' },  // 2 indigo
-            { bg: 'linear-gradient(135deg,#10b981,#06b6d4)', text: '#34d399' },  // 3 teal
-            { bg: 'linear-gradient(135deg,#3b82f6,#6366f1)', text: '#60a5fa' },  // 4+
-        ];
-        const getColor = (i) => rankColors[Math.min(i, 3)];
-
-        data.forEach((trend, index) => {
-            const safeTitle = trend.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            const safeSnippet = (trend.news_snippet || trend.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            const col = getColor(index);
-            // Heat bar width (top trends get fuller bar)
-            const heatPct = Math.max(20, Math.round(100 - (index / data.length) * 75));
-
-            const card = document.createElement('div');
-            card.className = 'trend-row-card';
-            card.innerHTML = `
-                <div class="trend-rank-col">
-                    <div class="trend-rank-num" style="background:${col.bg};">${index + 1}</div>
-                    <div class="trend-heat-bar-wrap">
-                        <div class="trend-heat-bar" style="width:${heatPct}%; background:${col.bg};"></div>
-                    </div>
-                </div>
-                <div class="trend-body-col">
-                    <div class="trend-source-tag">${trend.traffic || 'أخبار جوجل'}</div>
-                    <h3 class="trend-title">${trend.title}</h3>
-                </div>
-                <div class="trend-actions-col">
-                    <button class="trend-btn-read" onclick="openNewsModal('${trend.news_url}', '${safeTitle}', '${safeTitle}', '${safeSnippet}')">اقرأ</button>
-                    <button class="trend-btn-create" onclick="generateTrendContent('${safeTitle}', '${safeSnippet}', this)">اصنع محتوى</button>
-                </div>
-            `;
-            grid.appendChild(card);
-        });
-
-    } catch (err) {
-        console.error(err);
-        loading.style.display = 'none';
-        grid.innerHTML = '<div style="text-align:center; color:var(--red); padding:60px;">حدث خطأ أثناء الاتصال بالرادار</div>';
-    }
-}
 
 function showCustomConfirm(msg, onConfirm) {
     let modal = document.getElementById('generation-confirm-modal');

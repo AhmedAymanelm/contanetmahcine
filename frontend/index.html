@@ -38,7 +38,7 @@
         <a data-page="page-review" onclick="go(this)"><span class="ic">✓</span> المراجعة والموافقة <span class="count" id="sidebar-count-review">-</span></a>
         <a data-page="page-templates" onclick="go(this)"><span class="ic">🎨</span> القوالب</a>
         <a data-page="page-schedule" onclick="go(this)"><span class="ic">🗓</span> الجدولة</a>
-        <a data-page="page-trends" onclick="go(this)"><span class="ic">🔥</span> رادار الترند <span class="count new">جديد</span></a>
+
 
         <div class="navgroup-label">القياس</div>
         <a data-page="page-analytics" onclick="go(this)"><span class="ic">📈</span> التحليلات</a>
@@ -233,43 +233,7 @@
         <div class="tip"><span class="ic">💡</span><span>أفضل توقيت نشر بناءً على بياناتك: 5–7 مساءً لمنصات Instagram وTikTok، 12–2 ظهرًا لمنصة LinkedIn.</span></div>
       </section>
 
-      <!-- ================= TRENDS RADAR ================= -->
-      <section class="page" id="page-trends">
-        <div class="topline">
-          <div>
-            <h1>رادار الترند <span class="count new">مباشر</span></h1>
-            <p>مراقبة المواضيع الأكثر بحثاً وتداولاً الآن لتوليد محتوى سريع منها</p>
-          </div>
-          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <!-- Hidden native select for JS compatibility -->
-            <select id="trend-geo-select" style="display:none;" onchange="loadTrends()">
-              <option value="EG">مصر</option>
-              <option value="SA">السعودية</option>
-              <option value="AE">الإمارات</option>
-              <option value="GLOBAL">العالم</option>
-              <option value="US">أمريكا</option>
-            </select>
-            <!-- Custom pill buttons -->
-            <div id="geo-pills" style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="geo-pill active" data-geo="EG" onclick="selectGeo(this,'EG')">🇪🇬 مصر</button>
-              <button class="geo-pill" data-geo="SA" onclick="selectGeo(this,'SA')">🇸🇦 السعودية</button>
-              <button class="geo-pill" data-geo="AE" onclick="selectGeo(this,'AE')">🇦🇪 الإمارات</button>
-              <button class="geo-pill" data-geo="GLOBAL" onclick="selectGeo(this,'GLOBAL')">🌍 العالم</button>
-              <button class="geo-pill" data-geo="US" onclick="selectGeo(this,'US')">🇺🇸 أمريكا</button>
-            </div>
-            <button class="btn ghost" onclick="loadTrends()" style="white-space:nowrap;">تحديث ↺</button>
-          </div>
-        </div>
 
-        <div id="trends-loading" style="text-align:center; padding: 40px; color: var(--muted); display:none;">
-          <span style="font-size:24px; display:block; margin-bottom:10px;">⏳</span>
-          جاري مسح الرادار...
-        </div>
-
-        <div id="trends-grid" style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
-          <!-- Trends will be injected here -->
-        </div>
-      </section>
 
       <!-- ================= TEMPLATES ================= -->
       <section class="page" id="page-templates">
