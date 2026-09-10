@@ -1297,11 +1297,12 @@ async function fetchReviewContent() {
 
                     // Carousel image generation controls
                     let carouselControls = '';
-                    if (item.content_type === 'CAROUSEL') {
+                    if (item.content_type === 'CAROUSEL' || item.content_type === 'POST') {
                         const hasUrls = generated && generated.carousel_urls && generated.carousel_urls.length > 0;
+                        const isPost = item.content_type === 'POST';
                         carouselControls = `<div style="margin-bottom:10px;display:flex;gap:6px;">
-                            <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;padding:8px 14px;font-size:12.5px;border-radius:9px;cursor:pointer;flex:1;display:flex;justify-content:center;gap:6px;" onclick="openTemplatePickerModal(${item.id})">
-                                ✨ ${hasUrls ? 'إعادة توليد الكاروسيل' : 'توليد الكاروسيل بالصور'}
+                            <button class="btn" style="background:${isPost ? 'rgba(124,58,237,0.15)' : 'linear-gradient(135deg,#7c3aed,#a855f7)'};color:${isPost ? '#a78bfa' : '#fff'};border:${isPost ? '1px solid rgba(124,58,237,0.35)' : 'none'};padding:8px 14px;font-size:12.5px;border-radius:9px;cursor:pointer;flex:1;display:flex;justify-content:center;gap:6px;" onclick="openTemplatePickerModal(${item.id})">
+                                ✨ ${hasUrls ? 'إعادة توليد الكاروسيل' : (isPost ? 'تحويل لكاروسيل' : 'توليد الكاروسيل بالصور')}
                             </button>
                             ${hasUrls ? `
                             <button class="btn" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);padding:8px 12px;border-radius:9px;cursor:pointer;font-size:12.5px;" onclick="openSwiperModal(${JSON.stringify(generated.carousel_urls).replace(/"/g,'&quot;')}, ${JSON.stringify(articleTitle).replace(/"/g,'&quot;')})">👀</button>
