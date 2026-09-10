@@ -22,7 +22,38 @@ router = APIRouter()
 CAROUSEL_OUTPUT = Path(__file__).parent.parent.parent.parent / "static" / "carousel_output"
 
 
+
+@router.post("/fix-content-types")
+def fix_content_types(db: Session = Depends(get_db)):
+    """One-time fix: revert items incorrectly changed from POST to CAROUSEL."""
+    import json as _json
+    items = db.query(ContentItem).filter(ContentItem.content_type == "CAROUSEL").all()
+    fixed = []
+    for item in items:
+        plats = item.platforms or []
+        if isinstance(plats, str):
+            plats = [p.strip() for p in plats.replace('·', ',').split(',')]
+        plat_set = set(p.strip() for p in plats)
+        # Items with FB or X but without IG were likely converted from POST incorrectly
+        if ('FB' in plat_set or 'X' in plat_set) and 'IG' not in plat_set:
+            gen = item.generated_content or {}
+            if isinstance(gen, str):
+                try: gen = _json.loads(gen)
+                except: continue
+            # Confirm it was a converted POST (has slides but no original post fields)
+            if 'slides' in gen and 'unified_post' not in gen:
+                slide_texts = [s.get('heading', '') for s in gen.get('slides', [])]
+                gen['unified_post'] = ' '.join(slide_texts)
+                gen['post_text'] = gen['unified_post']
+                item.content_type = "POST"
+                item.generated_content = gen
+                flag_modified(item, "generated_content")
+                fixed.append(item.id)
+    db.commit()
+    return {"fixed": len(fixed), "item_ids": fixed}
+
 @router.get("/", response_model=List[ContentItemResponse])
+
 def get_all_content(db: Session = Depends(get_db)):
     cutoff = datetime.utcnow() - timedelta(hours=24)
     # Expire old pending content
