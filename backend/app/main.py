@@ -186,5 +186,40 @@ def terms_page():
 def privacy_page():
     return FileResponse(str(FRONTEND_DIR / "privacy.html"), media_type="text/html")
 
+# ── One-time DB migration (no auth needed) ────────────────────────────────────
+@app.post("/api/admin/fix-content-types", include_in_schema=False)
+def admin_fix_content_types():
+    """Fix items incorrectly changed from POST to CAROUSEL type."""
+    import json as _json
+    from sqlalchemy.orm.attributes import flag_modified as _flag_modified
+    from app.models.content_item import ContentItem as _CI
+    db = SessionLocal()
+    try:
+        items = db.query(_CI).filter(_CI.content_type == "CAROUSEL").all()
+        fixed = []
+        for item in items:
+            plats = item.platforms or []
+            if isinstance(plats, str):
+                plats = [p.strip() for p in plats.replace('·', ',').split(',')]
+            plat_set = set(p.strip() for p in plats)
+            if ('FB' in plat_set or 'X' in plat_set) and 'IG' not in plat_set:
+                gen = item.generated_content or {}
+                if isinstance(gen, str):
+                    try: gen = _json.loads(gen)
+                    except: continue
+                if 'slides' in gen and 'unified_post' not in gen:
+                    texts = [s.get('heading', '') for s in gen.get('slides', [])]
+                    gen['unified_post'] = ' '.join(texts)
+                    gen['post_text'] = gen['unified_post']
+                    item.content_type = "POST"
+                    item.generated_content = gen
+                    _flag_modified(item, "generated_content")
+                    fixed.append(item.id)
+        db.commit()
+        return {"fixed": len(fixed), "item_ids": fixed}
+    finally:
+        db.close()
+
 # Serve frontend HTML/JS/CSS (Must be after API routes)
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+
