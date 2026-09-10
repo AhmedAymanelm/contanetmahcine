@@ -1723,25 +1723,25 @@ async function openTemplatePickerModal(contentId) {
 
     // Render each template — SAME design as templates page
     templates.forEach(tpl => {
-        const bgPath = tpl.cover_bg_path || '';
+        const bgPath = tpl.cover_bg_path ? `url('${tpl.cover_bg_path}')` : 'linear-gradient(135deg,#1a1f2e,#0d1117)';
         html += `
             <div onclick="selectTemplateForContent(${contentId}, ${tpl.id})"
-                 style="cursor:pointer; background:var(--panel-2); border:2px solid rgba(255,255,255,0.05); border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.15); transition:transform 0.3s, box-shadow 0.3s, border-color 0.2s; position:relative;"
+                 style="cursor:pointer; background:var(--panel-2); border:2px solid rgba(255,255,255,0.05); border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.15); transition:transform 0.3s, box-shadow 0.3s, border-color 0.2s; position:relative; height:300px; display:flex; flex-direction:column;"
                  onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.4)'; this.style.borderColor='var(--teal)'"
                  onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'; this.style.borderColor='rgba(255,255,255,0.05)'">
 
-                <div style="height:220px; background-image:url(${bgPath}); background-size:cover; background-position:center; position:relative;">
-                    <div style="position:absolute; bottom:0; left:0; width:100%; height:50%; background:linear-gradient(to top, var(--panel-2), transparent);"></div>
+                <div style="flex:1; min-height:0; background:${bgPath}; background-size:cover; background-position:center; position:relative;">
+                    <div style="position:absolute; bottom:0; left:0; width:100%; height:60%; background:linear-gradient(to top, var(--panel-2), transparent);"></div>
                 </div>
 
-                <div style="padding:15px 20px; position:relative; z-index:5;">
-                    <h4 style="margin:0 0 12px; color:var(--text); font-size:16px; font-weight:700;">${tpl.name}</h4>
-                    <div style="display:flex; gap:12px;">
-                        <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); background:rgba(255,255,255,0.03); padding:5px 10px; border-radius:20px;">
-                            <div style="width:14px; height:14px; border-radius:50%; background:${tpl.text_color || '#fff'}; border:2px solid var(--panel); box-shadow:0 0 0 1px rgba(255,255,255,0.1);"></div> نص
+                <div style="padding:14px 18px; flex-shrink:0;">
+                    <h4 style="margin:0 0 10px; color:var(--text); font-size:15px; font-weight:700;">${tpl.name}</h4>
+                    <div style="display:flex; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); background:rgba(255,255,255,0.04); padding:4px 10px; border-radius:20px;">
+                            <div style="width:12px; height:12px; border-radius:50%; background:${tpl.text_color || '#fff'}; border:2px solid var(--panel);"></div> نص
                         </div>
-                        <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); background:rgba(255,255,255,0.03); padding:5px 10px; border-radius:20px;">
-                            <div style="width:14px; height:14px; border-radius:50%; background:${tpl.accent_color || '#facc15'}; border:2px solid var(--panel); box-shadow:0 0 0 1px rgba(255,255,255,0.1);"></div> تمييز
+                        <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); background:rgba(255,255,255,0.04); padding:4px 10px; border-radius:20px;">
+                            <div style="width:12px; height:12px; border-radius:50%; background:${tpl.accent_color || '#facc15'}; border:2px solid var(--panel);"></div> تمييز
                         </div>
                     </div>
                 </div>
