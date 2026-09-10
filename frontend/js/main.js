@@ -1878,9 +1878,10 @@ function renderPreview(platformId, gen, item) {
     const timeStr = now.toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' });
 
     // Resolve the image to show in the preview
-    const previewImg = (type === 'POST')
-        ? (gen.image_url || (item.raw_article && item.raw_article.image_url) || null)
-        : null;
+    const carouselUrls = (gen.carousel_urls && gen.carousel_urls.length > 0) ? gen.carousel_urls : [];
+    const previewImg = (type === 'CAROUSEL' && carouselUrls.length > 0)
+        ? carouselUrls[0]
+        : (gen.image_url || (item.raw_article && item.raw_article.image_url) || null);
 
     const imgBlock = (height = '220px') => previewImg
         ? `<img src="${previewImg}" style="width:100%;height:${height};object-fit:cover;display:block;" onerror="this.style.display='none'">`
@@ -1959,12 +1960,26 @@ function renderPreview(platformId, gen, item) {
 
     // Carousel extra info
     let extraHtml = '';
-    if (type === 'CAROUSEL' && gen.slides && gen.slides.length > 0) {
-        extraHtml = `<div style="margin-top:14px;padding:14px;background:var(--panel);border-radius:12px;border:1px solid var(--line);">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">🖼️ شرائح الكاروسيل (${gen.slides.length} شريحة)</div>
-            ${gen.slides.slice(0,3).map((s,i) => `<div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;"><div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px;">${i+1}. ${escHtml(s.heading||'')}</div><div style="font-size:12px;color:var(--muted);line-height:1.6;">${escHtml((s.body||'').substring(0,100))}${(s.body||'').length>100?'...':''}</div></div>`).join('')}
-            ${gen.slides.length > 3 ? `<div style="color:var(--muted);font-size:12px;text-align:center;">+ ${gen.slides.length - 3} شرائح أخرى</div>` : ''}
-        </div>`;
+    if (type === 'CAROUSEL') {
+        if (carouselUrls.length > 0) {
+            // Show actual rendered carousel images as horizontal scrollable strip
+            const imgStrip = carouselUrls.map((url, i) => `
+                <div style="flex-shrink:0;width:200px;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+                    <img src="${url}" style="width:200px;height:200px;object-fit:cover;display:block;" onerror="this.parentElement.style.display='none'">
+                    <div style="background:#111;color:#fff;font-size:10px;text-align:center;padding:4px;">${i+1}</div>
+                </div>`).join('');
+            extraHtml = `<div style="margin-top:14px;">
+                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">🖼️ الكاروسيل المُولَّد (${carouselUrls.length} صورة)</div>
+                <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin;">${imgStrip}</div>
+            </div>`;
+        } else if (gen.slides && gen.slides.length > 0) {
+            // No images yet - show text slides
+            extraHtml = `<div style="margin-top:14px;padding:14px;background:var(--panel);border-radius:12px;border:1px solid var(--line);">
+                <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">🖼️ شرائح الكاروسيل (${gen.slides.length} شريحة) — لم تُولَّد الصور بعد</div>
+                ${gen.slides.slice(0,4).map((s,i) => `<div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;"><div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px;">${i+1}. ${escHtml(s.heading||'')}</div></div>`).join('')}
+                ${gen.slides.length > 4 ? `<div style="color:var(--muted);font-size:12px;text-align:center;">+ ${gen.slides.length - 4} شرائح أخرى</div>` : ''}
+            </div>`;
+        }
     }
     if (type === 'VIDEO_SCRIPT' && gen.visual_cues) {
         extraHtml = `<div style="margin-top:14px;padding:12px;background:rgba(224,181,99,0.08);border-radius:12px;border:1px solid rgba(224,181,99,0.2);">
