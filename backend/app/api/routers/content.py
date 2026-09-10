@@ -511,7 +511,7 @@ def render_carousel(
     if isinstance(carousel_data, str):
         carousel_data = _json.loads(carousel_data)
 
-    # ── Convert POST → CAROUSEL slide format ──────────────────────────
+    # ── Convert POST → CAROUSEL slide format (without changing type) ──
     if item.content_type == "POST":
         post_text = carousel_data.get("unified_post") or carousel_data.get("post_text") or ""
         # Try to get title from raw article
@@ -535,10 +535,15 @@ def render_carousel(
 
         carousel_data = {"title": title, "slides": slides}
 
-        # Persist updated data and change type so preview works
-        carousel_data_with_urls = {**carousel_data, **{k: v for k, v in (item.generated_content or {}).items() if k in ("carousel_urls",)}}
-        item.generated_content = carousel_data_with_urls
-        item.content_type = "CAROUSEL"
+        # Save slides into generated_content WITHOUT changing content_type
+        existing = item.generated_content or {}
+        if isinstance(existing, str):
+            existing = _json.loads(existing)
+        existing["_carousel_slides"] = slides
+        existing["_carousel_title"] = title
+        # Remove stale carousel_urls so rendering starts fresh
+        existing.pop("carousel_urls", None)
+        item.generated_content = existing
         db.commit()
         db.refresh(item)
     # ──────────────────────────────────────────────────────────────────

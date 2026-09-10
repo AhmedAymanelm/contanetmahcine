@@ -1879,7 +1879,7 @@ function renderPreview(platformId, gen, item) {
 
     // Resolve the image to show in the preview
     const carouselUrls = (gen.carousel_urls && gen.carousel_urls.length > 0) ? gen.carousel_urls : [];
-    const previewImg = (type === 'CAROUSEL' && carouselUrls.length > 0)
+    const previewImg = (carouselUrls.length > 0)
         ? carouselUrls[0]
         : (gen.image_url || (item.raw_article && item.raw_article.image_url) || null);
 
@@ -1960,7 +1960,7 @@ function renderPreview(platformId, gen, item) {
 
     // Carousel extra info
     let extraHtml = '';
-    if (type === 'CAROUSEL') {
+    if (type === 'CAROUSEL' || (type === 'POST' && carouselUrls.length > 0)) {
         if (carouselUrls.length > 0) {
             // Show actual rendered carousel images as horizontal scrollable strip
             const imgStrip = carouselUrls.map((url, i) => `
