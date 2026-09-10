@@ -257,11 +257,15 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                     
                 access_token = await th_service.check_and_refresh_token(db)
                 if access_token and status.get("account_id"):
-                    img_url = gen.get("image_url") or (item.raw_article.image_url if item.raw_article and item.content_type == "POST" else None)
+                    # Carousel → use first slide as image for Threads
+                    if item.content_type == "CAROUSEL" and "carousel_urls" in gen and gen["carousel_urls"]:
+                        img_url = gen["carousel_urls"][0]
+                    else:
+                        img_url = gen.get("image_url") or (item.raw_article.image_url if item.raw_article and item.content_type == "POST" else None)
+
                     if img_url:
                         res = await th_service.publish_with_image(caption, img_url, access_token, status.get("account_id"))
                         if not res or not res.get("success"):
-                            # Fallback to text if image publish fails
                             res = await th_service.publish_text(caption, access_token, status.get("account_id"))
                     else:
                         res = await th_service.publish_text(caption, access_token, status.get("account_id"))
@@ -282,15 +286,18 @@ async def approve_content(item_id: int, req: ApproveRequest = None, db: Session 
                 # X limits to 280 chars
                 if len(caption) > 280:
                     caption = caption[:277] + "..."
-                    
-                # Twitter service is sync (tweepy), but we can call it here since it's fast
-                img_url = gen.get("image_url") or (item.raw_article.image_url if item.raw_article and item.content_type == "POST" else None)
-                if img_url:
-                    res = tw_service.publish_with_image(caption, img_url)
-                    if not res or not res.get("success"):
-                        res = tw_service.publish_text(caption)
+
+                # Carousel: publish up to 4 slides as multi-image tweet
+                if item.content_type == "CAROUSEL" and "carousel_urls" in gen and gen["carousel_urls"]:
+                    res = tw_service.publish_carousel(gen["carousel_urls"], caption)
                 else:
-                    res = tw_service.publish_text(caption)
+                    img_url = gen.get("image_url") or (item.raw_article.image_url if item.raw_article and item.content_type == "POST" else None)
+                    if img_url:
+                        res = tw_service.publish_with_image(caption, img_url)
+                        if not res or not res.get("success"):
+                            res = tw_service.publish_text(caption)
+                    else:
+                        res = tw_service.publish_text(caption)
                 if not res.get("success"):
                     raise HTTPException(status_code=400, detail=f"X/Twitter: {res}")
                 tw_published = True

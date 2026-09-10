@@ -105,3 +105,62 @@ class TwitterService:
             if tmp_path and os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
+    def publish_carousel(self, image_urls: list, text: str) -> dict:
+        """
+        Publishes up to 4 carousel images as a single tweet with multiple media attachments.
+        Twitter API v2 supports max 4 images per tweet.
+        Falls back to first image only if bulk upload fails.
+        """
+        if not self._is_configured():
+            return {"success": False, "message": "Twitter API keys missing"}
+
+        if not image_urls:
+            return self.publish_text(text)
+
+        auth = tweepy.OAuth1UserHandler(
+            self.api_key, self.api_secret,
+            self.access_token, self.access_secret
+        )
+        api_v1 = tweepy.API(auth)
+        client = tweepy.Client(
+            consumer_key=self.api_key,
+            consumer_secret=self.api_secret,
+            access_token=self.access_token,
+            access_token_secret=self.access_secret
+        )
+
+        media_ids = []
+        tmp_paths = []
+        try:
+            # Upload up to 4 images (Twitter limit)
+            for img_url in image_urls[:4]:
+                try:
+                    resp = httpx.get(img_url, timeout=30.0, follow_redirects=True)
+                    if resp.status_code != 200:
+                        continue
+                    suffix = ".png" if "png" in resp.headers.get("content-type", "") else ".jpg"
+                    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+                        f.write(resp.content)
+                        tmp_paths.append(f.name)
+                    media = api_v1.media_upload(filename=tmp_paths[-1])
+                    media_ids.append(media.media_id)
+                except Exception as e:
+                    logger.warning(f"Failed to upload carousel image {img_url}: {e}")
+
+            if not media_ids:
+                return self.publish_text(text)
+
+            response = client.create_tweet(text=text, media_ids=media_ids)
+            logger.info(f"Posted carousel to X ({len(media_ids)} images). Tweet ID: {response.data['id']}")
+            return {"success": True, "data": response.data}
+
+        except Exception as e:
+            logger.error(f"Failed to post carousel to X: {e} — trying first image only")
+            if image_urls:
+                return self.publish_with_image(text, image_urls[0])
+            return self.publish_text(text)
+        finally:
+            for p in tmp_paths:
+                if os.path.exists(p):
+                    os.remove(p)
+
