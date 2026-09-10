@@ -189,36 +189,61 @@ def privacy_page():
 # ── One-time DB migration (no auth needed) ────────────────────────────────────
 @app.post("/api/admin/fix-content-types", include_in_schema=False)
 def admin_fix_content_types():
-    """Fix items incorrectly changed from POST to CAROUSEL type."""
+    """Fix items incorrectly changed from POST to CAROUSEL type and clean up platforms."""
     import json as _json
     from sqlalchemy.orm.attributes import flag_modified as _flag_modified
     from app.models.content_item import ContentItem as _CI
     db = SessionLocal()
     try:
-        items = db.query(_CI).filter(_CI.content_type == "CAROUSEL").all()
-        fixed = []
+        items = db.query(_CI).all()
+        fixed = 0
         for item in items:
             plats = item.platforms or []
             if isinstance(plats, str):
                 plats = [p.strip() for p in plats.replace('·', ',').split(',')]
-            plat_set = set(p.strip() for p in plats)
-            if ('FB' in plat_set or 'X' in plat_set) and 'IG' not in plat_set:
+            elif isinstance(plats, list):
+                plats = [str(p).strip() for p in plats]
+            
+            plat_set = set(plats)
+            changed = False
+            
+            # Fix 1: Incorrect POST -> CAROUSEL conversion
+            if item.content_type == "CAROUSEL" and ('FB' in plat_set or 'X' in plat_set) and 'IG' not in plat_set:
                 gen = item.generated_content or {}
                 if isinstance(gen, str):
                     try: gen = _json.loads(gen)
-                    except: continue
-                if 'slides' in gen and 'unified_post' not in gen:
+                    except: pass
+                if isinstance(gen, dict) and 'slides' in gen and 'unified_post' not in gen:
                     texts = [s.get('heading', '') for s in gen.get('slides', [])]
                     gen['unified_post'] = ' '.join(texts)
                     gen['post_text'] = gen['unified_post']
                     item.content_type = "POST"
                     item.generated_content = gen
                     _flag_modified(item, "generated_content")
-                    fixed.append(item.id)
+                    changed = True
+
+            # Fix 2: Remove LinkedIn from POST
+            if item.content_type == "POST" and "Li" in plat_set:
+                plats = [p for p in plats if p != "Li"]
+                item.platforms = plats
+                _flag_modified(item, "platforms")
+                changed = True
+                
+            # Fix 3: Remove Facebook from CAROUSEL
+            if item.content_type == "CAROUSEL" and "FB" in plat_set:
+                plats = [p for p in plats if p != "FB"]
+                item.platforms = plats
+                _flag_modified(item, "platforms")
+                changed = True
+
+            if changed:
+                fixed += 1
+                
         db.commit()
-        return {"fixed": len(fixed), "item_ids": fixed}
+        return {"fixed": fixed}
     finally:
         db.close()
+
 
 # Serve frontend HTML/JS/CSS (Must be after API routes)
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
