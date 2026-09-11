@@ -486,8 +486,8 @@ def reject_content(item_id: int, db: Session = Depends(get_db)):
 
 from typing import Optional
 
-def _do_render(item_id: int, carousel_data: dict, template_id: Optional[int] = None, custom_text_color: Optional[str] = None, custom_accent_color: Optional[str] = None):
-    from app.services.carousel_renderer import render_carousel_sync
+async def _do_render(item_id: int, carousel_data: dict, template_id: Optional[int] = None, custom_text_color: Optional[str] = None, custom_accent_color: Optional[str] = None):
+    from app.services.carousel_renderer import render_carousel_images
     from app.db.session import SessionLocal
     from app.models.content_item import ContentItem
     import copy
@@ -504,7 +504,7 @@ def _do_render(item_id: int, carousel_data: dict, template_id: Optional[int] = N
         new_content = json.loads(new_content)
 
     try:
-        output_urls = render_carousel_sync(item_id, carousel_data, template_id, "zayedtech", custom_text_color, custom_accent_color)
+        output_urls = await render_carousel_images(item_id, carousel_data, "zayedtech", template_id, custom_text_color, custom_accent_color)
         new_content["carousel_urls"] = output_urls
         new_content.pop("carousel_error", None) # Clear any previous error
     except Exception as e:
