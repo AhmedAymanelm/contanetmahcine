@@ -548,9 +548,15 @@ def render_carousel(
         # Try to get title from raw article
         raw_article = item.raw_article
         title = (raw_article.title if raw_article else None) or "محتوى"
-
         # For POST, we generate a single attractive image (Cover/Thumbnail style) instead of a carousel
-        slides = [{"heading": title, "body": ""}]
+        # We also extract a short snippet from the post text to act as the body
+        import re as _re
+        chunks = [p.strip() for p in _re.split(r'\n{1,}|(?<=[.!؟])\s+', post_text) if p.strip()]
+        body_text = chunks[0] if chunks else ""
+        if len(body_text) > 300:
+            body_text = body_text[:297] + "..."
+            
+        slides = [{"heading": title, "body": body_text}]
 
         carousel_data = {"title": title, "slides": slides}
 

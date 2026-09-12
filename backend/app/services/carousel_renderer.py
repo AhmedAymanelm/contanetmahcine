@@ -492,7 +492,7 @@ async def render_carousel_images(
         for i, slide in enumerate(slides):
             if custom_template:
                 html = render_custom_pdf_slide(custom_template, slide, i, total, brand_name, custom_text_color, custom_accent_color)
-            elif i == total - 1:
+            elif i == total - 1 and total > 1:
                 html = render_cta_slide(theme, slide, i, total, brand_name)
             elif style == "light_card":
                 html = render_light_card_slide(theme, slide, i, total, brand_name)

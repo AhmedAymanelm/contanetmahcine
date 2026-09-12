@@ -53,7 +53,7 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
                     raw_article_id=article.id,
                     content_type="POST",
                     status="pending_review",
-                    platforms=["FB", "Li", "X"],
+                    platforms=["FB", "X"],
                     generated_content=generated["posts"]
                 )
             )
@@ -75,7 +75,7 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
                         raw_article_id=article.id,
                         content_type="CAROUSEL",
                         status="pending_review",
-                        platforms=["IG", "FB"],
+                        platforms=["IG"],
                         generated_content=ig_carousel
                     )
                     db.add(ig_item)
@@ -174,7 +174,7 @@ def process_trend_generation(trend_title: str, trend_snippet: str, formats: list
         
         draft_items = {}
         if "POST" in formats:
-            item = ContentItem(content_type="POST", status="DRAFT", platforms=["FB", "Li", "X"], generated_content={"trend_title": trend_title})
+            item = ContentItem(content_type="POST", status="DRAFT", platforms=["FB", "X"], generated_content={"trend_title": trend_title})
             db.add(item)
             draft_items["POST"] = item
         if "CAROUSEL" in formats:
