@@ -549,20 +549,8 @@ def render_carousel(
         raw_article = item.raw_article
         title = (raw_article.title if raw_article else None) or "محتوى"
 
-        # Split into chunks: paragraphs or sentences (max 6 slides)
-        import re as _re
-        chunks = [p.strip() for p in _re.split(r'\n{1,}|(?<=[.!؟])\s+', post_text) if p.strip()]
-        # Merge very short chunks with next
-        merged, buf = [], ""
-        for c in chunks:
-            buf = (buf + " " + c).strip() if buf else c
-            if len(buf) >= 60:
-                merged.append(buf); buf = ""
-        if buf:
-            merged.append(buf)
-        slides = [{"heading": s[:120], "body": ""} for s in merged[:6]]
-        if not slides:
-            slides = [{"heading": post_text[:120], "body": ""}]
+        # For POST, we generate a single attractive image (Cover/Thumbnail style) instead of a carousel
+        slides = [{"heading": title, "body": ""}]
 
         carousel_data = {"title": title, "slides": slides}
 
