@@ -74,10 +74,10 @@ def check_and_run_ingestion():
         db.close()
 
 def cleanup_old_raw_articles():
-    """Runs every hour. Deletes raw articles older than 24h that have no SCHEDULED/PUBLISHED content linked."""
+    """Runs every hour. Deletes raw articles older than 48h that have no SCHEDULED/PUBLISHED content linked."""
     db = SessionLocal()
     try:
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
         
         # Find raw article IDs older than 24h
         old_raw_ids = [
