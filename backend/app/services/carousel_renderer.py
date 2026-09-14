@@ -77,7 +77,6 @@ def render_quote_slide_dark(t: dict, slide: dict, idx: int, total: int, brand: s
         <div style="background:{t['accent']}; border-radius: 24px; padding: 100px 50px 50px; position:relative; text-align:center;">
             <div style="position:absolute; top: -10px; right: 40px; font-size: 180px; color: rgba(255,255,255,0.2); font-family: sans-serif; line-height:1; font-weight:900;">"</div>
             <h2 style="color:#fff; font-size: 55px; font-weight: 900; line-height: 1.4; margin-bottom: 60px; position:relative; z-index:2;">{text}</h2>
-            <div style="color: rgba(255,255,255,0.7); font-size: 30px; font-weight: 700;">ملاحظة</div>
         </div>
     </div>
     """
