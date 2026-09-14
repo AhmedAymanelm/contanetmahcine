@@ -45,7 +45,7 @@ def get_generating_articles(db: Session = Depends(get_db)):
 @router.post("/ingest")
 def trigger_ingestion(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Trigger ingestion in the background to avoid blocking the API response
-    background_tasks.add_task(ingest_all_active_sources, db)
+    _thread_pool.submit(ingest_all_active_sources, None)
     return {"detail": "Ingestion started in the background"}
 
 from pydantic import BaseModel

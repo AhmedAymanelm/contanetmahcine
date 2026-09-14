@@ -150,10 +150,13 @@ def read_news_article(req: ReadRequest):
         print(f"Error reading news: {e}")
         return {"title": "خطأ", "content": "تعذر فتح الرابط الأصلي للخبر.", "image": ""}
 
+from concurrent.futures import ThreadPoolExecutor
+_trend_pool = ThreadPoolExecutor(max_workers=2)
+
 @router.post("/generate")
 def generate_trend_content(request: TrendGenerateRequest, background_tasks: BackgroundTasks):
     """
     Triggers background generation of content based on a Trend.
     """
-    background_tasks.add_task(process_trend_generation, request.title, request.snippet, request.formats)
+    _trend_pool.submit(process_trend_generation, request.title, request.snippet, request.formats)
     return {"message": "Generation started in background"}
