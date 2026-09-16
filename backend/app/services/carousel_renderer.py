@@ -62,9 +62,8 @@ def _slide_wrapper_dark(t: dict, progress_html: str, header_html: str, main_html
   {progress_html}
   {header_html}
   {main_html}
-  <div style="padding: 30px 40px; margin-top: auto; display:flex; align-items:center; gap:12px; border-top:1px solid rgba(255,255,255,0.08);">
-    <div style="width:8px; height:8px; border-radius:50%; background:{t['accent']};"></div>
-    <span style="font-size:22px;color:rgba(255,255,255,0.55);font-weight:700; letter-spacing:1px;">@{brand}</span>
+  <div style="padding: 30px 40px; margin-top: auto; display:flex; justify-content:center; align-items:center; border-top:1px solid rgba(255,255,255,0.08);">
+    <span dir="ltr" style="font-size:24px;color:rgba(255,255,255,0.55);font-weight:700; letter-spacing:2px;">@{brand}</span>
   </div>
 </body>
 </html>"""
@@ -186,10 +185,8 @@ def render_light_card_slide(t: dict, slide: dict, idx: int, total: int, brand: s
         <div style="flex:1; display:flex; flex-direction:column; justify-content:center; text-align:center;">{content_html}</div>
         <div style="text-align:center; position:relative; z-index:1;">
             <div style="width:100%; height:1.5px; background:rgba(0,0,0,0.08); margin: 24px 0;"></div>
-            <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
-                <div style="width:6px; height:6px; border-radius:50%; background:{accent_color};"></div>
-                <div style="color:{accent_color}; font-size:22px; font-weight:800; letter-spacing:1px;">@{brand}</div>
-                <div style="width:6px; height:6px; border-radius:50%; background:{accent_color};"></div>
+            <div style="display:flex; align-items:center; justify-content:center;">
+                <div dir="ltr" style="color:{accent_color}; font-size:24px; font-weight:800; letter-spacing:2px;">@{brand}</div>
             </div>
         </div>
     </div>
@@ -436,10 +433,9 @@ def render_custom_pdf_slide(template, slide: dict, i: int, total: int, brand: st
         <p>{body}</p>
     </div>
 
-    <!-- Brand footer bottom-left -->
-    <div style="position:absolute; bottom:50px; left:60px; z-index:30; display:flex; align-items:center; gap:10px;">
-        <div style="width:7px; height:7px; border-radius:50%; background:{accent_color};"></div>
-        <span style="color:{text_color}; font-size:22px; font-weight:800; letter-spacing:1px; opacity:0.75;">@{brand}</span>
+    <!-- Brand footer bottom-center -->
+    <div style="position:absolute; bottom:50px; left:0; width:100%; z-index:30; display:flex; justify-content:center; align-items:center;">
+        <span dir="ltr" style="color:{text_color}; font-size:24px; font-weight:800; letter-spacing:2px; opacity:0.75;">@{brand}</span>
     </div>
 </body>
 </html>"""
