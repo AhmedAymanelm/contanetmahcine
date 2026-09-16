@@ -332,7 +332,7 @@ def render_custom_pdf_slide(template, slide: dict, i: int, total: int, brand: st
         else:
             container_class = "side-accent-card"
     
-    if i == total - 1:
+    if i == 0 or i == total - 1:
         import os
         import base64
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
