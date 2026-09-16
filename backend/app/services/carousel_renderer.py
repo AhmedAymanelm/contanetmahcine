@@ -459,7 +459,7 @@ async def render_carousel_images(
         return []
 
     theme = random.choice(THEMES)
-    style = random.choice(["dark_flat", "light_card"])
+    style = random.choice(["dark_flat", "light_card", "modern_light"])
     if theme["id"] == "brown":
         style = "light_card"
 
@@ -491,6 +491,8 @@ async def render_carousel_images(
         for i, slide in enumerate(slides):
             if custom_template:
                 html = render_custom_pdf_slide(custom_template, slide, i, total, brand_name, custom_text_color, custom_accent_color)
+            elif style == "modern_light":
+                html = render_modern_light_slide(theme, slide, i, total, brand_name)
             elif i == total - 1 and total > 1:
                 html = render_cta_slide(theme, slide, i, total, brand_name)
             elif style == "light_card":
@@ -533,3 +535,112 @@ async def render_carousel_images(
 
 def render_carousel_sync(content_id: int, carousel_data: Dict[str, Any], template_id: int = None, brand_name: str = "zayedtech", custom_text_color: str = None, custom_accent_color: str = None) -> List[str]:
     return asyncio.run(render_carousel_images(content_id, carousel_data, brand_name, template_id, custom_text_color, custom_accent_color))
+def render_modern_light_slide(t: dict, slide: dict, idx: int, total: int, brand: str) -> str:
+    heading = slide.get("heading", "")
+    body = slide.get("body", "")
+    tips = slide.get("tips_list") or []
+    is_two_col = slide.get("left_column_title") is not None
+    
+    bg_color = "#fcf9f5"
+    text_color = "#111827"
+    accent = t.get('accent', '#ec4899')
+    
+    import os
+    import base64
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    image_path = os.path.join(base_dir, "static", "assets", "author_mic.jpg")
+    img_src = ""
+    try:
+        if os.path.exists(image_path):
+            with open(image_path, "rb") as img_file:
+                img_b64 = base64.b64encode(img_file.read()).decode('utf-8')
+                img_src = f"data:image/jpeg;base64,{img_b64}"
+    except Exception:
+        pass
+
+    avatar_html = ""
+    if (idx == 0 or idx == total - 1) and img_src:
+        avatar_html = f"""
+        <div style="width:280px; height:280px; border-radius:50%; margin: 0 auto 40px; position:relative; background: linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6); padding: 8px;">
+            <div style="width:100%; height:100%; border-radius:50%; border: 6px solid {bg_color}; overflow:hidden;">
+                <img src="{img_src}" style="width:100%; height:100%; object-fit:cover;"/>
+            </div>
+        </div>
+        """
+
+    content_html = ""
+    if is_two_col:
+        lt, li = slide.get("left_column_title", ""), slide.get("left_column_items") or []
+        rt, ri = slide.get("right_column_title", ""), slide.get("right_column_items") or []
+        col_items = lambda items: "".join(f'<div style="margin-bottom:20px;">{item}</div>' for item in items)
+        content_html = f'<h2 style="color:{text_color}; font-size:55px; font-weight:900; line-height:1.4; margin-bottom:50px; text-align:center;">{heading}</h2>'
+        content_html += f"""
+        <div style="display:flex; gap:30px; width:100%; padding: 0 40px;">
+            <div style="flex:1; background:#ffffff; padding: 40px; border-radius:30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align:center;">
+                <h3 style="color:{accent}; font-size:40px; font-weight:900; margin-bottom:30px;">{lt}</h3>
+                <div style="color:{text_color}; font-size:32px; font-weight:700; line-height:1.5;">{col_items(li)}</div>
+            </div>
+            <div style="flex:1; background:#ffffff; padding: 40px; border-radius:30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align:center;">
+                <h3 style="color:{text_color}; font-size:40px; font-weight:900; margin-bottom:30px;">{rt}</h3>
+                <div style="color:{text_color}; font-size:32px; font-weight:700; line-height:1.5;">{col_items(ri)}</div>
+            </div>
+        </div>
+        """
+    elif idx == 0:
+        # First slide: Avatar + Big text + Gradient subtext
+        content_html = avatar_html
+        content_html += f'<h2 style="color:{text_color}; font-size:65px; font-weight:900; line-height:1.3; text-align:center; margin-bottom:20px;">{heading}</h2>'
+        if body:
+            content_html += f'<div style="background: linear-gradient(to left, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 60px; font-weight:900; text-align:center; margin-bottom: 40px;">{body}</div>'
+    elif idx == total - 1:
+        # CTA
+        content_html = avatar_html
+        content_html += f'<div style="background: linear-gradient(to left, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 65px; font-weight:900; text-align:center; margin-bottom:20px;">{heading}</div>'
+        if body:
+             content_html += f'<div style="color:rgba(17,24,39,0.6); font-size:40px; font-weight:700; text-align:center;">{body}</div>'
+    else:
+        # Tips or normal slide
+        content_html = f'<div style="background:#111827; color:#fff; padding:15px 40px; border-radius:15px; font-size:35px; font-weight:800; margin-bottom:40px; text-align:center;">{heading}</div>'
+        if body:
+            content_html += f'<div style="background: linear-gradient(to left, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 55px; font-weight:900; text-align:center; margin-bottom:40px;">{body}</div>'
+        if tips:
+            tips_html = "".join(f'<div style="font-size:35px; color:{text_color}; font-weight:700; text-align:center; margin-bottom:25px; line-height:1.5;">{tip}</div>' for tip in tips)
+            content_html += f'<div style="width:85%; display:flex; flex-direction:column; gap:10px;">{tips_html}</div>'
+
+    # Progress Dots
+    dots = []
+    for i in range(total):
+        if i == idx:
+            dots.append('<div style="width:30px; height:8px; border-radius:4px; background:#ec4899;"></div>')
+        else:
+            dots.append('<div style="width:8px; height:8px; border-radius:50%; background:rgba(17,24,39,0.15);"></div>')
+    dots_html = f'<div style="display:flex; gap:10px; justify-content:center; align-items:center; position:absolute; bottom:60px;">{"".join(dots)}</div>'
+
+    return f"""<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * {{ margin:0;padding:0;box-sizing:border-box; font-family:'Cairo',sans-serif; }}
+  html, body {{ width:1080px; height:1350px; overflow:hidden; background:{bg_color}; }}
+  .slide-container {{
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative;
+  }}
+</style>
+</head>
+<body>
+    <div class="slide-container">
+        <!-- Top Badge -->
+        <div style="position:absolute; top:60px; background:#111827; color:#fff; padding:8px 25px; border-radius:30px; font-size:24px; font-weight:900; letter-spacing:2px;">
+            <span dir="ltr">{idx+1} <span style="opacity:0.5;font-weight:600;">/</span> {total}</span>
+        </div>
+        
+        {content_html}
+        {dots_html}
+    </div>
+</body>
+</html>"""
