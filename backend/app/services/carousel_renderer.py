@@ -538,16 +538,23 @@ def render_carousel_sync(content_id: int, carousel_data: Dict[str, Any], templat
 def apply_gradient_highlight(text: str) -> str:
     if not text: return ""
     import re
-    span_start = '<span style="background: linear-gradient(to left, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">'
+    span_start = '<span style="background: linear-gradient(to left, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display:inline-block;">'
     span_end = '</span>'
+    
+    text = text.strip()
+    # If the entire text is wrapped in **, remove them to avoid highlighting everything
+    if text.startswith("**") and text.endswith("**") and text.count("**") == 2:
+        text = text[2:-2].strip()
+        
     if "**" in text:
         return re.sub(r'\*\*(.*?)\*\*', f'{span_start}\\1{span_end}', text)
+        
     words = text.split()
-    if len(words) >= 4:
+    if len(words) >= 6:
         return " ".join(words[:-2]) + f' {span_start}' + " ".join(words[-2:]) + f'{span_end}'
-    elif len(words) >= 2:
+    elif len(words) >= 3:
         return " ".join(words[:-1]) + f' {span_start}' + " ".join(words[-1:]) + f'{span_end}'
-    return f'{span_start}{text}{span_end}'
+    return text # if 1 or 2 words, leave normal if not bolded
 
 def render_modern_light_slide(t: dict, slide: dict, idx: int, total: int, brand: str) -> str:
     heading = slide.get("heading", "")
@@ -575,7 +582,7 @@ def render_modern_light_slide(t: dict, slide: dict, idx: int, total: int, brand:
     avatar_html = ""
     if (idx == 0 or idx == total - 1) and img_src:
         avatar_html = f"""
-        <div style="width:280px; height:280px; border-radius:50%; margin: 0 auto 40px; position:relative; background: linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6); padding: 8px;">
+        <div style="width:260px; height:260px; border-radius:50%; margin: 0 auto 30px; position:relative; background: linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6); padding: 8px;">
             <div style="width:100%; height:100%; border-radius:50%; border: 6px solid {bg_color}; overflow:hidden;">
                 <img src="{img_src}" style="width:100%; height:100%; object-fit:cover;"/>
             </div>
@@ -586,42 +593,38 @@ def render_modern_light_slide(t: dict, slide: dict, idx: int, total: int, brand:
     if is_two_col:
         lt, li = slide.get("left_column_title", ""), slide.get("left_column_items") or []
         rt, ri = slide.get("right_column_title", ""), slide.get("right_column_items") or []
-        col_items = lambda items: "".join(f'<div style="margin-bottom:20px;">{apply_gradient_highlight(item)}</div>' for item in items)
-        content_html = f'<h2 style="color:{text_color}; font-size:55px; font-weight:900; line-height:1.4; margin-bottom:50px; text-align:center;">{apply_gradient_highlight(heading)}</h2>'
+        col_items = lambda items: "".join(f'<div dir="auto" style="margin-bottom:15px;">{apply_gradient_highlight(item)}</div>' for item in items)
+        content_html = f'<h2 dir="auto" style="color:{text_color}; font-size:50px; font-weight:900; line-height:1.4; margin-bottom:40px; text-align:center; padding: 0 40px;">{apply_gradient_highlight(heading)}</h2>'
         content_html += f"""
         <div style="display:flex; gap:30px; width:100%; padding: 0 40px;">
-            <div style="flex:1; background:#ffffff; padding: 40px; border-radius:30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align:center;">
-                <h3 style="color:{accent}; font-size:40px; font-weight:900; margin-bottom:30px;">{lt}</h3>
-                <div style="color:{text_color}; font-size:32px; font-weight:700; line-height:1.5;">{col_items(li)}</div>
+            <div style="flex:1; background:#ffffff; padding: 30px; border-radius:30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align:center;">
+                <h3 dir="auto" style="color:{accent}; font-size:36px; font-weight:900; margin-bottom:20px;">{lt}</h3>
+                <div style="color:{text_color}; font-size:28px; font-weight:700; line-height:1.5;">{col_items(li)}</div>
             </div>
-            <div style="flex:1; background:#ffffff; padding: 40px; border-radius:30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align:center;">
-                <h3 style="color:{text_color}; font-size:40px; font-weight:900; margin-bottom:30px;">{rt}</h3>
-                <div style="color:{text_color}; font-size:32px; font-weight:700; line-height:1.5;">{col_items(ri)}</div>
+            <div style="flex:1; background:#ffffff; padding: 30px; border-radius:30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align:center;">
+                <h3 dir="auto" style="color:{text_color}; font-size:36px; font-weight:900; margin-bottom:20px;">{rt}</h3>
+                <div style="color:{text_color}; font-size:28px; font-weight:700; line-height:1.5;">{col_items(ri)}</div>
             </div>
         </div>
         """
     elif idx == 0:
-        # First slide: Avatar + Big text + Gradient subtext
         content_html = avatar_html
-        content_html += f'<h2 style="color:{text_color}; font-size:65px; font-weight:900; line-height:1.3; text-align:center; margin-bottom:20px;">{heading}</h2>'
+        content_html += f'<h2 dir="auto" style="color:{text_color}; font-size:60px; font-weight:900; line-height:1.4; text-align:center; margin-bottom:20px; padding: 0 60px;">{heading}</h2>'
         if body:
-            content_html += f'<div style="font-size: 60px; font-weight:900; text-align:center; margin-bottom: 40px; color:{text_color}">{apply_gradient_highlight(body)}</div>'
+            content_html += f'<div dir="auto" style="font-size:45px; font-weight:900; text-align:center; margin-bottom:40px; color:{text_color}; padding: 0 60px; line-height:1.5;">{apply_gradient_highlight(body)}</div>'
     elif idx == total - 1:
-        # CTA
         content_html = avatar_html
-        content_html += f'<div style="font-size: 65px; font-weight:900; text-align:center; margin-bottom:20px; color:{text_color}">{apply_gradient_highlight(heading)}</div>'
+        content_html += f'<div dir="auto" style="font-size: 60px; font-weight:900; text-align:center; margin-bottom:20px; color:{text_color}; padding: 0 60px; line-height:1.4;">{apply_gradient_highlight(heading)}</div>'
         if body:
-             content_html += f'<div style="color:rgba(17,24,39,0.6); font-size:40px; font-weight:700; text-align:center;">{body}</div>'
+             content_html += f'<div dir="auto" style="color:rgba(17,24,39,0.6); font-size:36px; font-weight:700; text-align:center; padding: 0 60px;">{body}</div>'
     else:
-        # Tips or normal slide
-        content_html = f'<div style="background:#111827; color:#fff; padding:15px 40px; border-radius:15px; font-size:35px; font-weight:800; margin-bottom:40px; text-align:center;">{heading}</div>'
+        content_html = f'<div dir="auto" style="background:#111827; color:#fff; padding:15px 40px; border-radius:20px; font-size:32px; font-weight:800; margin-bottom:40px; text-align:center; max-width:85%; line-height:1.4;">{heading}</div>'
         if body:
-            content_html += f'<div style="font-size: 55px; font-weight:900; text-align:center; margin-bottom:40px; color:{text_color}">{apply_gradient_highlight(body)}</div>'
+            content_html += f'<div dir="auto" style="font-size:45px; font-weight:900; text-align:center; margin-bottom:40px; color:{text_color}; padding: 0 60px; line-height:1.5;">{apply_gradient_highlight(body)}</div>'
         if tips:
-            tips_html = "".join(f'<div style="font-size:35px; color:{text_color}; font-weight:700; text-align:center; margin-bottom:25px; line-height:1.5;">{apply_gradient_highlight(tip)}</div>' for tip in tips)
+            tips_html = "".join(f'<div dir="auto" style="font-size:32px; color:{text_color}; font-weight:700; text-align:center; margin-bottom:25px; line-height:1.5;">{apply_gradient_highlight(tip)}</div>' for tip in tips)
             content_html += f'<div style="width:85%; display:flex; flex-direction:column; gap:10px;">{tips_html}</div>'
 
-    # Progress Dots
     dots = []
     for i in range(total):
         if i == idx:
@@ -648,11 +651,9 @@ def render_modern_light_slide(t: dict, slide: dict, idx: int, total: int, brand:
 </head>
 <body>
     <div class="slide-container">
-        <!-- Top Badge -->
         <div style="position:absolute; top:60px; background:#111827; color:#fff; padding:8px 25px; border-radius:30px; font-size:24px; font-weight:900; letter-spacing:2px;">
             <span dir="ltr">{idx+1} <span style="opacity:0.5;font-weight:600;">/</span> {total}</span>
         </div>
-        
         {content_html}
         {dots_html}
     </div>
