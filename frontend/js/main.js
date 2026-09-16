@@ -282,7 +282,7 @@ async function fetchSources() {
                         <td>${src.interval_mins} د</td>
                         <td class="m" style="font-family:var(--mono)">${src.health_status || 'ok'}</td>
                         <td><div class="toggle ${activeClass}" onclick="toggleSource(${src.id}, this)"></div></td>
-                        <td><button class="reject" onclick="deleteSource(${src.id})" style="padding:5px 10px; border:1px solid var(--line); background:var(--panel-2); border-radius:6px; cursor:pointer">حذف</button></td>
+                        <td><button class="reject" onclick="deleteSource(${src.id})" style="padding:5px 10px; border:1px solid rgba(239, 68, 68, 0.3); background:rgba(239, 68, 68, 0.15); color:#ef4444; border-radius:6px; cursor:pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">حذف</button></td>
                     </tr>
                 `;
             });
