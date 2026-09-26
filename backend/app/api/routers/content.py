@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import os
 import copy
 import re
+import asyncio
 from sqlalchemy.orm.attributes import flag_modified
 from ai_service.agents.base_agent import AgentClient, AgentConfig
 import logging
@@ -24,7 +25,7 @@ CAROUSEL_OUTPUT = Path(__file__).parent.parent.parent.parent / "static" / "carou
 
 
 @router.post("/fix-content-types")
-def fix_content_types(db: Session = Depends(get_db)):
+async def fix_content_types(db: Session = Depends(get_db)):
     """One-time fix: revert items incorrectly changed from POST to CAROUSEL."""
     import json as _json
     items = db.query(ContentItem).filter(ContentItem.content_type == "CAROUSEL").all()
@@ -55,7 +56,7 @@ def fix_content_types(db: Session = Depends(get_db)):
 @router.get("/", response_model=List[ContentItemResponse])
 
 def get_all_content(db: Session = Depends(get_db)):
-    cutoff = datetime.utcnow() - timedelta(hours=24)
+    cutoff = datetime.utcnow() - timedelta(hours=48)
     # Expire old pending content
     db.query(ContentItem).filter(
         ContentItem.status == "pending_review",
@@ -67,8 +68,8 @@ def get_all_content(db: Session = Depends(get_db)):
     return items
 
 @router.get("/review", response_model=List[ContentItemResponse])
-def get_content_for_review(db: Session = Depends(get_db)):
-    cutoff = datetime.utcnow() - timedelta(hours=24)
+async def get_content_for_review(db: Session = Depends(get_db)):
+    cutoff = datetime.utcnow() - timedelta(hours=48)
     # Expire old pending content
     db.query(ContentItem).filter(
         ContentItem.status == "pending_review",
@@ -80,14 +81,14 @@ def get_content_for_review(db: Session = Depends(get_db)):
     return items
 
 @router.get("/scheduled", response_model=List[ContentItemResponse])
-def get_scheduled_content(db: Session = Depends(get_db)):
+async def get_scheduled_content(db: Session = Depends(get_db)):
     items = db.query(ContentItem).filter(ContentItem.status == "SCHEDULED").all()
     return items
 
 from app.schemas.content_item import ContentItemUpdate
 
 @router.put("/{item_id}", response_model=ContentItemResponse)
-def update_content(item_id: int, content_update: ContentItemUpdate, db: Session = Depends(get_db)):
+async def update_content(item_id: int, content_update: ContentItemUpdate, db: Session = Depends(get_db)):
     item = db.query(ContentItem).filter(ContentItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Content not found")
@@ -452,7 +453,7 @@ class ScheduleRequest(BaseModel):
     platforms: Optional[List[str]] = None
 
 @router.post("/{item_id}/schedule", response_model=ContentItemResponse)
-def schedule_content(item_id: int, req: ScheduleRequest, db: Session = Depends(get_db)):
+async def schedule_content(item_id: int, req: ScheduleRequest, db: Session = Depends(get_db)):
     item = db.query(ContentItem).filter(ContentItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Content not found")
@@ -473,7 +474,7 @@ def schedule_content(item_id: int, req: ScheduleRequest, db: Session = Depends(g
     return item
 
 @router.post("/{item_id}/reject", response_model=ContentItemResponse)
-def reject_content(item_id: int, db: Session = Depends(get_db)):
+async def reject_content(item_id: int, db: Session = Depends(get_db)):
     item = db.query(ContentItem).filter(ContentItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Content not found")
@@ -503,16 +504,28 @@ async def _do_render(item_id: int, carousel_data: dict, template_id: Optional[in
         import json
         new_content = json.loads(new_content)
 
-    try:
-        output_urls = await render_carousel_images(item_id, carousel_data, "zayedtech", template_id, custom_text_color, custom_accent_color)
-        new_content["carousel_urls"] = output_urls
-        new_content.pop("carousel_error", None) # Clear any previous error
-    except Exception as e:
-        import traceback
-        error_msg = str(e)
-        print(f"Carousel Render Error for item {item_id}: {error_msg}")
-        traceback.print_exc()
-        new_content["carousel_error"] = error_msg
+    max_retries = 3
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            output_urls = await render_carousel_images(item_id, carousel_data, "zayedtech", template_id, custom_text_color, custom_accent_color)
+            new_content["carousel_urls"] = output_urls
+            new_content.pop("carousel_error", None) # Clear any previous error
+            last_error = None
+            break
+        except Exception as e:
+            import traceback
+            last_error = str(e)
+            print(f"Carousel Render Error (attempt {attempt+1}/{max_retries}) for item {item_id}: {last_error}")
+            traceback.print_exc()
+            if attempt < max_retries - 1:
+                # Resource temporarily unavailable - wait and retry
+                wait_secs = 5 * (attempt + 1)  # 5s, 10s, 15s
+                print(f"Retrying carousel render in {wait_secs}s...")
+                await asyncio.sleep(wait_secs)
+    
+    if last_error:
+        new_content["carousel_error"] = last_error
         
     item.generated_content = new_content
     from sqlalchemy.orm.attributes import flag_modified
@@ -522,7 +535,7 @@ async def _do_render(item_id: int, carousel_data: dict, template_id: Optional[in
     db.close()
 
 @router.post("/{item_id}/render-carousel")
-def render_carousel(
+async def render_carousel(
     item_id: int, 
     background_tasks: BackgroundTasks, 
     template_id: Optional[int] = None, 
@@ -582,7 +595,7 @@ def render_carousel(
     return {"detail": "Rendering started", "item_id": item_id}
 
 @router.get("/{item_id}/carousel-slides")
-def get_carousel_slides(item_id: int, db: Session = Depends(get_db)):
+async def get_carousel_slides(item_id: int, db: Session = Depends(get_db)):
     item = db.query(ContentItem).filter(ContentItem.id == item_id).first()
     if not item:
         return {"slides": [], "ready": False}
@@ -607,7 +620,7 @@ def get_carousel_slides(item_id: int, db: Session = Depends(get_db)):
     return {"slides": carousel_urls, "ready": is_ready, "count": len(carousel_urls)}
 
 @router.delete("/{item_id}/carousel-slides")
-def delete_carousel_slides(item_id: int, db: Session = Depends(get_db)):
+async def delete_carousel_slides(item_id: int, db: Session = Depends(get_db)):
     item = db.query(ContentItem).filter(ContentItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Content not found")

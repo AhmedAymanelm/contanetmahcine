@@ -13,7 +13,7 @@ import httpx
 from app.core.config import settings
 
 @router.get("/debug/facebook")
-def debug_facebook_api():
+async def debug_facebook_api():
     if not settings.FACEBOOK_ACCESS_TOKEN or not settings.FACEBOOK_PAGE_ID:
         return {"error": "Missing Facebook credentials in environment"}
     
@@ -29,10 +29,10 @@ def debug_facebook_api():
         return {"error": str(e)}
 
 @router.get("/")
-def get_dashboard_stats(db: Session = Depends(get_db)):
+async def get_dashboard_stats(db: Session = Depends(get_db)):
     today = datetime.utcnow().date()
     
-    cutoff = datetime.utcnow() - timedelta(hours=24)
+    cutoff = datetime.utcnow() - timedelta(hours=48)
     
     # Expire old pending content globally
     db.query(ContentItem).filter(
@@ -43,7 +43,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
     total_articles = db.query(RawArticle).filter(
         func.lower(RawArticle.status) == 'pending',
-        RawArticle.created_at >= datetime.utcnow() - timedelta(hours=24)
+        RawArticle.created_at >= datetime.utcnow() - timedelta(hours=48)
     ).count()
     
     # 2. Pending Reviews
