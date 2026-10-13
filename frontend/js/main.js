@@ -834,6 +834,7 @@ async function approveArticle(id, btn) {
                 const pollInterval = setInterval(() => {
                     polls++;
                     fetchDashboardStats();
+                    fetchReviewContent(); // refresh review page to show new content
                     if (polls >= 12) clearInterval(pollInterval);
                 }, 5000);
             } else {
@@ -2436,14 +2437,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchScheduledContent();
     fetchPlatformStatus();
 
-    // Refresh data every 30 seconds
+    // Refresh data every 60 seconds (reduced from 30s to prevent thread exhaustion on server)
     setInterval(() => {
         fetchDashboardStats();
         fetchRawArticles();
         fetchReviewContent();
         fetchScheduledContent();
         fetchPlatformStatus();
-    }, 30000);
+    }, 60000);
 });
 
 let swiperInstance = null;
