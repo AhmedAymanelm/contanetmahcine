@@ -74,21 +74,33 @@ def check_and_run_ingestion():
         db.close()
 
 def cleanup_old_raw_articles():
-    """Runs every hour. Deletes raw articles older than 48h that have no SCHEDULED/PUBLISHED content linked."""
+    """Runs every hour.
+    1. Deletes raw articles older than 24h that have no SCHEDULED/PUBLISHED content.
+    2. Deletes EXPIRED and REJECTED content items older than 7 days to prevent DB bloat.
+    """
     db = SessionLocal()
     try:
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
-        
-        # Find raw article IDs older than 24h
+        raw_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        stale_content_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+
+        # ── Step 1: Clean EXPIRED + REJECTED content items older than 7 days ────
+        stale_deleted = db.query(ContentItem).filter(
+            ContentItem.status.in_(["EXPIRED", "REJECTED"]),
+            ContentItem.created_at < stale_content_cutoff
+        ).delete(synchronize_session=False)
+        db.commit()
+        if stale_deleted:
+            logger.info(f"Hourly Cleanup: Deleted {stale_deleted} stale EXPIRED/REJECTED content items.")
+
+        # ── Step 2: Clean raw articles older than 24h ────────────────────────────
         old_raw_ids = [
             r.id for r in db.query(RawArticle.id)
-            .filter(RawArticle.created_at < cutoff).all()
+            .filter(RawArticle.created_at < raw_cutoff).all()
         ]
-        
+
         if not old_raw_ids:
-            db.close()
             return
-        
+
         # Exclude raw articles that have SCHEDULED or PUBLISHED content linked
         protected_ids = [
             r.raw_article_id for r in db.query(ContentItem.raw_article_id)
@@ -98,20 +110,19 @@ def cleanup_old_raw_articles():
             ).all()
             if r.raw_article_id is not None
         ]
-        
+
         ids_to_delete = [i for i in old_raw_ids if i not in protected_ids]
-        
+
         if not ids_to_delete:
-            db.close()
             return
-        
-        # Delete old ContentItems linked to these raw articles (non-protected)
+
+        # Delete non-protected ContentItems linked to these raw articles
         db.query(ContentItem).filter(
             ContentItem.raw_article_id.in_(ids_to_delete),
             ContentItem.status.notin_(["SCHEDULED", "PUBLISHED"])
         ).delete(synchronize_session=False)
         db.commit()
-        
+
         # Break FK on any remaining content items
         from sqlalchemy import update
         db.execute(
@@ -120,16 +131,34 @@ def cleanup_old_raw_articles():
             .values(raw_article_id=None)
         )
         db.commit()
-        
+
         # Delete old raw articles
         deleted = db.query(RawArticle).filter(RawArticle.id.in_(ids_to_delete)).delete(synchronize_session=False)
         db.commit()
-        
+
         logger.info(f"Hourly Cleanup: Deleted {deleted} raw articles older than 24h.")
-        
+
     except Exception as e:
         db.rollback()
         logger.error(f"Cleanup Error: {e}")
+    finally:
+        db.close()
+
+def expire_old_pending_content():
+    """Runs every hour. Marks pending_review content older than 48h as EXPIRED."""
+    db = SessionLocal()
+    try:
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+        expired = db.query(ContentItem).filter(
+            ContentItem.status == "pending_review",
+            ContentItem.created_at < cutoff
+        ).update({"status": "EXPIRED"}, synchronize_session=False)
+        db.commit()
+        if expired:
+            logger.info(f"Hourly Expire: Marked {expired} old pending_review items as EXPIRED.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Expire Error: {e}")
     finally:
         db.close()
 
@@ -338,7 +367,16 @@ def start_scheduler():
             name='Publish Scheduled Job',
             replace_existing=True
         )
-        
+
+        # Run every hour to expire pending_review content older than 48h
+        scheduler.add_job(
+            expire_old_pending_content,
+            trigger=IntervalTrigger(hours=1),
+            id='expire_content_job',
+            name='Expire Old Pending Content Job',
+            replace_existing=True,
+            next_run_time=datetime.now()
+        )
 
         scheduler.start()
         logger.info("Background Auto-Ingestion Scheduler started.")

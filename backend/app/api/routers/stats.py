@@ -31,15 +31,6 @@ async def debug_facebook_api():
 @router.get("/")
 async def get_dashboard_stats(db: Session = Depends(get_db)):
     today = datetime.utcnow().date()
-    
-    cutoff = datetime.utcnow() - timedelta(hours=48)
-    
-    # Expire old pending content globally
-    db.query(ContentItem).filter(
-        func.lower(ContentItem.status) == 'pending_review',
-        ContentItem.created_at < cutoff
-    ).update({"status": "EXPIRED"}, synchronize_session=False)
-    db.commit()
 
     total_articles = db.query(RawArticle).filter(
         func.lower(RawArticle.status) == 'pending',

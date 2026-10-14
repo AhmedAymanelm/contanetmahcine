@@ -54,29 +54,12 @@ async def fix_content_types(db: Session = Depends(get_db)):
     return {"fixed": len(fixed), "item_ids": fixed}
 
 @router.get("/", response_model=List[ContentItemResponse])
-
 def get_all_content(db: Session = Depends(get_db)):
-    cutoff = datetime.utcnow() - timedelta(hours=48)
-    # Expire old pending content
-    db.query(ContentItem).filter(
-        ContentItem.status == "pending_review",
-        ContentItem.created_at < cutoff
-    ).update({"status": "EXPIRED"}, synchronize_session=False)
-    db.commit()
-    
     items = db.query(ContentItem).order_by(ContentItem.created_at.desc()).all()
     return items
 
 @router.get("/review", response_model=List[ContentItemResponse])
 async def get_content_for_review(db: Session = Depends(get_db)):
-    cutoff = datetime.utcnow() - timedelta(hours=48)
-    # Expire old pending content
-    db.query(ContentItem).filter(
-        ContentItem.status == "pending_review",
-        ContentItem.created_at < cutoff
-    ).update({"status": "EXPIRED"}, synchronize_session=False)
-    db.commit()
-
     items = db.query(ContentItem).filter(ContentItem.status == "pending_review").all()
     return items
 
