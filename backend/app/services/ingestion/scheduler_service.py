@@ -20,6 +20,17 @@ logger = logging.getLogger(__name__)
 
 scheduler = BackgroundScheduler()
 
+def keep_neon_alive():
+    """Ping the DB every 4 minutes to prevent Neon free-tier compute from
+    auto-suspending (which causes 2-5 second cold starts on the next request)."""
+    try:
+        from sqlalchemy import text as _text
+        db = SessionLocal()
+        db.execute(_text("SELECT 1"))
+        db.close()
+    except Exception as e:
+        logger.warning(f"DB keep-alive ping failed: {e}")
+
 def check_and_run_ingestion():
     db = SessionLocal()
     try:
@@ -374,6 +385,17 @@ def start_scheduler():
             trigger=IntervalTrigger(hours=1),
             id='expire_content_job',
             name='Expire Old Pending Content Job',
+            replace_existing=True,
+            next_run_time=datetime.now()
+        )
+
+        # Keep Neon DB awake every 4 minutes (Neon free tier suspends after 5min idle)
+        # Without this, cold starts add 2-5 seconds to every request after idle periods
+        scheduler.add_job(
+            keep_neon_alive,
+            trigger=IntervalTrigger(minutes=4),
+            id='neon_keepalive_job',
+            name='Neon DB Keep-Alive Ping',
             replace_existing=True,
             next_run_time=datetime.now()
         )

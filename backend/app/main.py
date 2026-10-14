@@ -22,6 +22,18 @@ from app.models.app_setting import AppSetting
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # ── Warm up DB connection so first user request isn't slow ──────────────
+    # Neon free tier has cold-start latency of 2-5s if DB was idle.
+    # Running a query at startup wakes it up before any user hits the API.
+    try:
+        from sqlalchemy import text as _text
+        db = SessionLocal()
+        db.execute(_text("SELECT 1"))
+        db.close()
+        print("[Startup] DB connection warmed up.")
+    except Exception as e:
+        print(f"[Startup] DB warmup failed (non-fatal): {e}")
+
     # Load dynamic settings from database
     try:
         db = SessionLocal()
