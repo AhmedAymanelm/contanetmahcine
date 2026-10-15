@@ -478,7 +478,6 @@ async def render_carousel_images(
         import os as _os
         # Prevent Chromium from crashing trying to connect to missing dbus socket on Railway
         _os.environ["DBUS_SESSION_BUS_ADDRESS"] = "/dev/null"
-        chromium_path = _os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
         launch_kwargs = {
             "headless": True,
             "args": [
@@ -487,12 +486,10 @@ async def render_carousel_images(
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
                 "--no-first-run",
-                "--no-zygote",      # Required for Railway containers to start Chromium correctly
-                "--single-process", # Keep single-process for memory efficiency (512MB container)
+                "--no-zygote",
+                "--single-process",
             ]
         }
-        if chromium_path:
-            launch_kwargs["executable_path"] = chromium_path
         browser = await p.chromium.launch(**launch_kwargs)
         page = await browser.new_page(viewport={"width": 1080, "height": 1350})
 

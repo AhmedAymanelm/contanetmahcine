@@ -2,14 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies: ffmpeg + chromium from apt (avoids playwright install-deps issues)
+# Install system dependencies required by Playwright's Chromium
 RUN apt-get update && apt-get install -y \
     ffmpeg \
-    chromium \
-    chromium-driver \
-    fonts-liberation \
-    fonts-noto-color-emoji \
+    # Playwright Chromium dependencies
     libnss3 \
+    libnspr4 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
     libcups2 \
@@ -21,15 +19,20 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libgbm1 \
     libasound2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Tell Playwright to skip downloading its own browser and use the system chromium
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
-
-# Install python dependencies
+# Install python dependencies first
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Playwright's own Chromium (compatible with headless containers)
+# This replaces system Chromium which crashes on Railway's container kernel
+RUN python -m playwright install chromium
 
 # Copy application code
 COPY . .
