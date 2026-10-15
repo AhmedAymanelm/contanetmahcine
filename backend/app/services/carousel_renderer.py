@@ -487,7 +487,8 @@ async def render_carousel_images(
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
                 "--no-first-run",
-                "--single-process",
+                "--no-zygote",      # Required for Railway containers to start Chromium correctly
+                "--single-process", # Keep single-process for memory efficiency (512MB container)
             ]
         }
         if chromium_path:
