@@ -477,7 +477,29 @@ async def render_carousel_images(
         chromium_path = _os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
         launch_kwargs = {
             "headless": True,
-            "args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--no-zygote", "--single-process"]
+            "args": [
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-gpu-sandbox",
+                "--no-zygote",
+                # NOTE: --single-process REMOVED — causes TargetClosedError crash on Railway
+                # containers due to missing dbus socket and restricted kernel features.
+                "--disable-features=VizDisplayCompositor",
+                "--run-all-compositor-stages-before-draw",
+                "--disable-background-networking",
+                "--disable-default-apps",
+                "--disable-extensions",
+                "--disable-sync",
+                "--disable-translate",
+                "--metrics-recording-only",
+                "--mute-audio",
+                "--no-first-run",
+                "--safebrowsing-disable-auto-update",
+                "--memory-pressure-off",
+                "--shared-memory-size=67108864",   # 64MB shared memory
+            ]
         }
         if chromium_path:
             launch_kwargs["executable_path"] = chromium_path
