@@ -482,23 +482,11 @@ async def render_carousel_images(
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
-                "--disable-gpu-sandbox",
-                "--no-zygote",
-                # NOTE: --single-process REMOVED — causes TargetClosedError crash on Railway
-                # containers due to missing dbus socket and restricted kernel features.
-                "--disable-features=VizDisplayCompositor",
-                "--run-all-compositor-stages-before-draw",
-                "--disable-background-networking",
-                "--disable-default-apps",
-                "--disable-extensions",
-                "--disable-sync",
-                "--disable-translate",
-                "--metrics-recording-only",
-                "--mute-audio",
                 "--no-first-run",
-                "--safebrowsing-disable-auto-update",
-                "--memory-pressure-off",
-                "--shared-memory-size=67108864",   # 64MB shared memory
+                "--single-process",
+                # NOTE: --no-zygote removed — conflicts with --single-process on Railway
+                # causing TargetClosedError. These two flags together crash Chromium
+                # in seccomp-restricted containers.
             ]
         }
         if chromium_path:
