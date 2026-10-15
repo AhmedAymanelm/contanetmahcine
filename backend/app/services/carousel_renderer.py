@@ -14,11 +14,13 @@ from typing import List, Dict, Any
 import os
 os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
 from playwright.async_api import async_playwright
+from app.services.cairo_font_embedded import CAIRO_FONT_CSS
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "static" / "carousel_output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-FONT_URL = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap"
+# Inline font CSS — no Google Fonts network request needed during rendering
+FONT_URL = None  # Replaced by CAIRO_FONT_CSS embedded data URIs
 
 THEMES = [
     {"id": "violet",   "bg": "#121629", "accent": "#a855f7", "accent_light": "#f472b6"},
@@ -51,8 +53,8 @@ def _slide_wrapper_dark(t: dict, progress_html: str, header_html: str, main_html
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<link href="{FONT_URL}" rel="stylesheet">
 <style>
+{CAIRO_FONT_CSS}
   * {{ margin:0;padding:0;box-sizing:border-box; font-family:'Cairo',sans-serif; }}
   html, body {{ width:1080px;height:1350px; overflow:hidden; }}
   body {{ background:{t['bg']}; color:#fff; display:flex;flex-direction:column; }}
@@ -166,8 +168,8 @@ def render_light_card_slide(t: dict, slide: dict, idx: int, total: int, brand: s
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<link href="{FONT_URL}" rel="stylesheet">
 <style>
+{CAIRO_FONT_CSS}
   * {{ margin:0;padding:0;box-sizing:border-box; font-family:'Cairo',sans-serif; }}
   html, body {{ width:1080px; height:1350px; overflow:hidden; }}
   body {{ background:#f3f4f6; display:flex; align-items:center; justify-content:center; position:relative; }}
@@ -222,8 +224,8 @@ def render_cta_slide(t: dict, slide: dict, idx: int, total: int, brand: str) -> 
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<link href="{FONT_URL}" rel="stylesheet">
 <style>
+{CAIRO_FONT_CSS}
   * {{ margin:0;padding:0;box-sizing:border-box; font-family:'Cairo',sans-serif; }}
   html, body {{ width:1080px; height:1350px; overflow:hidden; }}
   body {{ background:{blob_color}; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; }}
@@ -361,8 +363,8 @@ def render_custom_pdf_slide(template, slide: dict, i: int, total: int, brand: st
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<link href="{FONT_URL}" rel="stylesheet">
 <style>
+{CAIRO_FONT_CSS}
   * {{ margin:0;padding:0;box-sizing:border-box; font-family:'Cairo',sans-serif; }}
   html, body {{ width:1080px; height:1350px; overflow:hidden; }}
   body {{ 
@@ -474,6 +476,8 @@ async def render_carousel_images(
 
     async with async_playwright() as p:
         import os as _os
+        # Prevent Chromium from crashing trying to connect to missing dbus socket on Railway
+        _os.environ["DBUS_SESSION_BUS_ADDRESS"] = "/dev/null"
         chromium_path = _os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
         launch_kwargs = {
             "headless": True,
@@ -484,9 +488,6 @@ async def render_carousel_images(
                 "--disable-gpu",
                 "--no-first-run",
                 "--single-process",
-                # NOTE: --no-zygote removed — conflicts with --single-process on Railway
-                # causing TargetClosedError. These two flags together crash Chromium
-                # in seccomp-restricted containers.
             ]
         }
         if chromium_path:
@@ -512,8 +513,10 @@ async def render_carousel_images(
                 else:
                     html = render_tips_slide_dark(theme, slide, i, total, brand_name)
 
-            await page.set_content(html, wait_until="networkidle")
-            await asyncio.sleep(0.8)
+            # Use domcontentloaded (not networkidle) — fonts are now embedded,
+            # no external network requests needed
+            await page.set_content(html, wait_until="domcontentloaded")
+            await asyncio.sleep(0.3)
 
             out_path = slide_dir / f"slide_{i+1:02d}.png"
             await page.screenshot(path=str(out_path), full_page=False)
@@ -643,8 +646,8 @@ def render_modern_light_slide(t: dict, slide: dict, idx: int, total: int, brand:
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
+{CAIRO_FONT_CSS}
   * {{ margin:0;padding:0;box-sizing:border-box; font-family:'Cairo',sans-serif; }}
   html, body {{ width:1080px; height:1350px; overflow:hidden; background:{bg_color}; }}
   .slide-container {{
