@@ -1184,7 +1184,7 @@ async function fetchReviewContent() {
         if(reviewList) {
             const currentHash = JSON.stringify({data, generatingData});
             if (window.lastReviewDataHash === currentHash) {
-                if (generatingData.length > 0) setTimeout(fetchReviewContent, 3000);
+if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000); // Poll every 15s (not 3s) during generation
                 return;
             }
             window.lastReviewDataHash = currentHash;
@@ -1362,7 +1362,7 @@ async function fetchReviewContent() {
                 </div>`;
             });
 
-            if (generatingData.length > 0) setTimeout(fetchReviewContent, 3000);
+if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000);
         }
     } catch(err) {
         console.error(err);
@@ -1590,8 +1590,8 @@ async function renderCarouselImages(id, templateId, textColor = null, accentColo
                 btn.innerHTML = `✅ تم توليد ${slides.count} صورة`;
                 btn.style.background = '#166534';
                 showToast(`تم توليد ${slides.count} صور بنجاح! اضغط على "معاينة الكاروسيل"`, 'success');
-            } else if (attempts < 90) {
-                setTimeout(poll, 2000);
+            } else if (attempts < 36) { // 36 attempts × 5s = 3 min max
+                setTimeout(poll, 5000); // Poll every 5s (not 2s) - carousel render takes 20-60s
             } else {
                 btn.innerHTML = orig;
                 btn.disabled = false;
@@ -2428,23 +2428,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    loadTemplates(); // Load async without blocking
+    loadTemplates();
     fetchDashboardStats();
     fetchSources();
-    fetchRawArticles();
-    fetchAllContent();
-    fetchReviewContent();
-    fetchScheduledContent();
-    fetchPlatformStatus();
+    // Stagger startup API calls to avoid slamming the server simultaneously
+    setTimeout(fetchRawArticles, 300);
+    setTimeout(fetchAllContent, 600);
+    setTimeout(fetchReviewContent, 900);
+    setTimeout(fetchScheduledContent, 1200);
+    setTimeout(fetchPlatformStatus, 5000); // Platform status last (external API calls - not critical)
 
-    // Refresh data every 60 seconds (reduced from 30s to prevent thread exhaustion on server)
+    // Refresh data every 60 seconds
     setInterval(() => {
         fetchDashboardStats();
         fetchRawArticles();
         fetchReviewContent();
         fetchScheduledContent();
-        fetchPlatformStatus();
     }, 60000);
+
+    // Platform status is slow (external API calls) - check every 5 minutes
+    setInterval(fetchPlatformStatus, 300000);
 });
 
 let swiperInstance = null;
