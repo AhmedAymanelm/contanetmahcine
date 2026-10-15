@@ -12,7 +12,6 @@ import random
 from pathlib import Path
 from typing import List, Dict, Any
 import os
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
 from playwright.async_api import async_playwright
 from app.services.cairo_font_embedded import CAIRO_FONT_CSS
 

@@ -31,9 +31,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright's own Chromium (compatible with headless containers)
-# PLAYWRIGHT_BROWSERS_PATH=0 installs relative to the playwright package,
-# matching what carousel_renderer.py sets at runtime
-ENV PLAYWRIGHT_BROWSERS_PATH=0
+# Installs to default cache: ~/.cache/ms-playwright/
 RUN python -m playwright install chromium
 
 # Copy application code
