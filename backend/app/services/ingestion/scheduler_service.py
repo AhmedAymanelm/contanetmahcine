@@ -353,10 +353,12 @@ def start_scheduler():
         # Run every 5 minutes to check schedules
         scheduler.add_job(
             check_and_run_ingestion, 
-            trigger=IntervalTrigger(minutes=5),
+            trigger=IntervalTrigger(minutes=10),  # 10min gives enough time to finish
             id='auto_ingestion_job',
             name='Auto Ingestion Job',
-            replace_existing=True
+            replace_existing=True,
+            max_instances=1,          # Never run 2 at same time
+            misfire_grace_time=120,   # If missed, run within 2min grace period
         )
         
         # Run every hour to delete raw articles older than 24h
@@ -389,16 +391,7 @@ def start_scheduler():
             next_run_time=datetime.now()
         )
 
-        # Keep Neon DB awake every 4 minutes (Neon free tier suspends after 5min idle)
-        # Without this, cold starts add 2-5 seconds to every request after idle periods
-        scheduler.add_job(
-            keep_neon_alive,
-            trigger=IntervalTrigger(minutes=4),
-            id='neon_keepalive_job',
-            name='Neon DB Keep-Alive Ping',
-            replace_existing=True,
-            next_run_time=datetime.now()
-        )
+        # NOTE: Neon DB Keep-Alive removed — switched to SQLite (no cold-start issue)
 
         scheduler.start()
         logger.info("Background Auto-Ingestion Scheduler started.")
