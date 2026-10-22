@@ -22,9 +22,18 @@ from app.models.app_setting import AppSetting
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Warm up DB connection so first user request isn't slow ──────────────
-    # Neon free tier has cold-start latency of 2-5s if DB was idle.
-    # Running a query at startup wakes it up before any user hits the API.
+    # ── Auto-create tables for SQLite (no Alembic needed) ──────────────────
+    from app.db.session import engine, _is_sqlite
+    if _is_sqlite:
+        from app.models.base import Base
+        import app.models.source, app.models.raw_article
+        import app.models.content_item, app.models.carousel_template
+        import app.models.app_setting, app.models.user
+        import app.models.oauth_token, app.models.banned_word
+        Base.metadata.create_all(bind=engine)
+        print("[Startup] SQLite tables created/verified.")
+
+    # ── Warm up DB connection ────────────────────────────────────────────────
     try:
         from sqlalchemy import text as _text
         db = SessionLocal()

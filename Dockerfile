@@ -34,6 +34,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Installs to default cache: ~/.cache/ms-playwright/
 RUN python -m playwright install chromium
 
+# Create persistent data directory for SQLite database
+# Railway Volume should be mounted at /app/data/
+RUN mkdir -p /app/data
+
+# Set default DATABASE_URL to SQLite (can be overridden by Railway env vars)
+ENV DATABASE_URL="sqlite:////app/data/db.sqlite3"
+
 # Copy application code
 COPY . .
 
