@@ -33,6 +33,54 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         print("[Startup] SQLite tables created/verified.")
 
+        # ── One-time migration from Neon if MIGRATE_FROM_URL is set ────────
+        migrate_url = os.environ.get("MIGRATE_FROM_URL", "").strip()
+        if migrate_url:
+            try:
+                print("[Migration] MIGRATE_FROM_URL detected — migrating from Neon...")
+                from sqlalchemy import create_engine as _ce, text as _t, inspect as _ins
+                import json as _json
+
+                src = _ce(migrate_url.replace("&channel_binding=require",""))
+                insp = _ins(src)
+                tables = insp.get_table_names()
+                ORDER = ["users","sources","raw_articles","carousel_templates",
+                         "content_items","app_settings","oauth_tokens","banned_words"]
+                for t in tables:
+                    if t not in ORDER and t != "alembic_version":
+                        ORDER.append(t)
+
+                total = 0
+                with src.connect() as sc, engine.connect() as dc:
+                    for table in ORDER:
+                        if table not in tables: continue
+                        res = sc.execute(_t(f'SELECT * FROM "{table}"'))
+                        rows = res.fetchall()
+                        cols = list(res.keys())
+                        if not rows:
+                            continue
+                        dc.execute(_t(f'DELETE FROM "{table}"'))
+                        col_str = ", ".join(f'"{c}"' for c in cols)
+                        ph = ", ".join(f":{c}" for c in cols)
+                        ins = _t(f'INSERT OR REPLACE INTO "{table}" ({col_str}) VALUES ({ph})')
+                        ok = 0
+                        for row in rows:
+                            d = dict(zip(cols, row))
+                            for k,v in d.items():
+                                if isinstance(v, (dict, list)):
+                                    d[k] = _json.dumps(v, ensure_ascii=False)
+                            try:
+                                dc.execute(ins, d); ok += 1
+                            except Exception as e:
+                                print(f"[Migration] Row error in {table}: {e}")
+                        dc.commit()
+                        total += ok
+                        print(f"[Migration] {table}: {ok} rows")
+                print(f"[Migration] ✅ Done! {total} total rows migrated.")
+                print("[Migration] ⚠️  Remove MIGRATE_FROM_URL from Railway Variables now!")
+            except Exception as e:
+                print(f"[Migration] ❌ Failed: {e}")
+
     # ── Warm up DB connection ────────────────────────────────────────────────
     try:
         from sqlalchemy import text as _text
