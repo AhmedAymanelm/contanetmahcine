@@ -1,62 +1,68 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   AI Usage — Token & Cost Tracking Dashboard
+   AI Usage — Token & Cost Tracking Dashboard  v2 (Premium Design)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 (function () {
   "use strict";
 
-  /* ── Chart.js instances (destroyed & re-created on each load) ─────────── */
   let dailyChart = null;
   let opChart    = null;
 
-  /* ── Colour palette ───────────────────────────────────────────────────── */
   const PALETTE = [
-    "#6366f1", "#8b5cf6", "#ec4899", "#f59e0b",
-    "#10b981", "#3b82f6", "#ef4444", "#14b8a6",
-    "#f97316", "#a855f7",
+    "#6366f1","#8b5cf6","#ec4899","#f59e0b",
+    "#10b981","#3b82f6","#ef4444","#14b8a6",
+    "#f97316","#a855f7",
   ];
 
-  /* ── Arabic operation labels ──────────────────────────────────────────── */
   const OP_LABELS = {
     "generate_post":          "توليد بوست",
     "generate_carousel":      "توليد كاروسيل",
-    "generate_video_script":  "توليد سكريبت فيديو",
-    "ai_extractor":           "استخراج AI للمقالات",
-    "ai_insights":            "تحليل Claude الذكي",
-    "content_ideas":          "أفكار المحتوى",
-    "claude_call":            "استدعاء Claude عام",
+    "generate_video_script":  "سكريبت فيديو",
+    "ai_extractor":           "استخراج مقالات AI",
+    "ai_insights":            "تحليل Claude",
+    "content_ideas":          "أفكار محتوى",
+    "claude_call":            "استدعاء عام",
   };
 
-  function opLabel(op) {
-    return OP_LABELS[op] || op;
-  }
+  const OP_ICONS = {
+    "generate_post":         "✍️",
+    "generate_carousel":     "🎠",
+    "generate_video_script": "🎬",
+    "ai_extractor":          "🕷️",
+    "ai_insights":           "🧠",
+    "content_ideas":         "💡",
+    "claude_call":           "⚡",
+  };
 
-  /* ── Number helpers ───────────────────────────────────────────────────── */
+  function opLabel(op)  { return OP_LABELS[op]  || op; }
+  function opIcon(op)   { return OP_ICONS[op]   || "🔧"; }
+
   function fmtNum(n) {
     if (!n) return "0";
-    return n.toLocaleString("ar-SA");
+    if (n >= 1_000_000) return (n/1_000_000).toFixed(1) + "M";
+    if (n >= 1_000)     return (n/1_000).toFixed(1)     + "K";
+    return String(n);
   }
 
   function fmtCost(c) {
-    if (!c) return "$0.000000";
-    if (c < 0.001) return "$" + c.toFixed(6);
-    if (c < 1)    return "$" + c.toFixed(4);
+    if (!c) return "$0.00";
+    if (c < 0.0001) return "$" + c.toFixed(7);
+    if (c < 0.01)   return "$" + c.toFixed(5);
+    if (c < 1)      return "$" + c.toFixed(4);
     return "$" + c.toFixed(2);
   }
 
-  function deltaBadge(curr, prev, higher_is_bad = false) {
-    if (!prev) return "";
-    const pct = ((curr - prev) / Math.max(prev, 0.000001) * 100).toFixed(0);
-    const up  = curr >= prev;
-    const bad = higher_is_bad ? up : !up;
-    return `<span style="font-size:0.72rem;padding:2px 6px;border-radius:6px;
-      background:${bad ? "rgba(239,68,68,.12)" : "rgba(16,185,129,.12)"};
-      color:${bad ? "#f87171" : "#34d399"};">
-      ${up ? "▲" : "▼"} ${Math.abs(pct)}%
+  function deltaBadge(curr, prev, higherIsBad = false) {
+    if (!prev || prev === 0) return "";
+    const diff = ((curr - prev) / prev * 100);
+    const up   = curr >= prev;
+    const bad  = higherIsBad ? up : !up;
+    return `<span class="usage-delta ${bad ? "usage-delta--bad" : "usage-delta--good"}">
+      ${up ? "▲" : "▼"} ${Math.abs(diff).toFixed(0)}%
     </span>`;
   }
 
-  /* ── KPI Cards ────────────────────────────────────────────────────────── */
+  /* ── KPI Cards ──────────────────────────────────────────────────────────── */
   function renderKPI(s) {
     const row = document.getElementById("usage-kpi-row");
     if (!row) return;
@@ -65,47 +71,64 @@
       {
         icon: "📞", label: "إجمالي الطلبات",
         value: fmtNum(s.total_calls),
-        sub: `مقارنة بـ ${fmtNum(s.prev_calls)} ${deltaBadge(s.total_calls, s.prev_calls)}`,
+        sub: `${fmtNum(s.prev_calls)} في الفترة السابقة`,
+        delta: deltaBadge(s.total_calls, s.prev_calls),
         accent: "#6366f1",
+        glow: "rgba(99,102,241,0.18)",
       },
       {
         icon: "🔤", label: "إجمالي التوكن",
         value: fmtNum(s.total_tokens),
-        sub: `إدخال: ${fmtNum(s.input_tokens)} · إخراج: ${fmtNum(s.output_tokens)}`,
+        sub: `📥 ${fmtNum(s.input_tokens)}  ·  📤 ${fmtNum(s.output_tokens)}`,
+        delta: "",
         accent: "#8b5cf6",
+        glow: "rgba(139,92,246,0.18)",
       },
       {
         icon: "💵", label: "التكلفة الإجمالية",
         value: fmtCost(s.cost_usd),
-        sub: `الفترة السابقة: ${fmtCost(s.prev_cost_usd)} ${deltaBadge(s.cost_usd, s.prev_cost_usd, true)}`,
+        sub: `سابقاً: ${fmtCost(s.prev_cost_usd)}`,
+        delta: deltaBadge(s.cost_usd, s.prev_cost_usd, true),
         accent: "#f59e0b",
+        glow: "rgba(245,158,11,0.18)",
       },
       {
-        icon: "📊", label: "متوسط التكلفة / طلب",
+        icon: "📊", label: "متوسط / طلب",
         value: fmtCost(s.total_calls ? s.cost_usd / s.total_calls : 0),
         sub: "متوسط تكلفة كل استدعاء Claude",
+        delta: "",
         accent: "#10b981",
+        glow: "rgba(16,185,129,0.18)",
       },
     ];
 
     row.innerHTML = cards.map(c => `
-      <div class="an-kpi" style="border-top:3px solid ${c.accent};">
-        <div style="font-size:1.6rem;margin-bottom:6px;">${c.icon}</div>
-        <div class="an-kpi-val">${c.value}</div>
-        <div class="an-kpi-label">${c.label}</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">${c.sub}</div>
+      <div class="usage-kpi-card" style="
+        --kpi-accent:${c.accent};
+        --kpi-glow:${c.glow};
+      ">
+        <div class="usage-kpi-top">
+          <span class="usage-kpi-icon">${c.icon}</span>
+          <span class="usage-kpi-val">${c.value}</span>
+        </div>
+        <div class="usage-kpi-label">${c.label}</div>
+        <div class="usage-kpi-sub">${c.sub} ${c.delta}</div>
+        <div class="usage-kpi-bar"></div>
       </div>
     `).join("");
   }
 
-  /* ── Daily Cost Line Chart ────────────────────────────────────────────── */
+  /* ── Daily Line Chart ───────────────────────────────────────────────────── */
   function renderDailyChart(trend) {
     const ctx = document.getElementById("usage-daily-chart");
     if (!ctx) return;
     if (dailyChart) { dailyChart.destroy(); dailyChart = null; }
 
-    const labels = trend.map(d => d.date.slice(5)); // MM-DD
-    const data   = trend.map(d => d.cost_usd);
+    const labels = trend.map(d => {
+      const [, m, day] = d.date.split("-");
+      return `${day}/${m}`;
+    });
+    const data = trend.map(d => d.cost_usd);
 
     dailyChart = new Chart(ctx, {
       type: "line",
@@ -115,45 +138,62 @@
           label: "التكلفة USD",
           data,
           borderColor: "#6366f1",
-          backgroundColor: "rgba(99,102,241,0.08)",
+          backgroundColor: (ctx2) => {
+            const g = ctx2.chart.ctx.createLinearGradient(0, 0, 0, 200);
+            g.addColorStop(0,   "rgba(99,102,241,0.25)");
+            g.addColorStop(1,   "rgba(99,102,241,0)");
+            return g;
+          },
           fill: true,
-          tension: 0.4,
-          pointRadius: 4,
+          tension: 0.45,
+          pointRadius: data.some(v=>v>0) ? 4 : 0,
           pointBackgroundColor: "#6366f1",
-          pointHoverRadius: 6,
+          pointBorderColor: "#1e1b4b",
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          borderWidth: 2.5,
         }],
       },
       options: {
         responsive: true,
+        maintainAspectRatio: true,
         plugins: {
           legend: { display: false },
           tooltip: {
-            callbacks: {
-              label: ctx => " $" + ctx.parsed.y.toFixed(6),
-            },
+            backgroundColor: "#1e1b4b",
+            borderColor: "rgba(99,102,241,0.4)",
+            borderWidth: 1,
+            callbacks: { label: ctx => "  $" + ctx.parsed.y.toFixed(6) },
           },
         },
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { color: "#94a3b8", callback: v => "$" + v.toFixed(4) },
-            grid: { color: "rgba(148,163,184,.1)" },
+            ticks: { color: "#64748b", callback: v => "$" + v.toFixed(4), font: { size: 11 } },
+            grid:  { color: "rgba(148,163,184,.06)" },
+            border: { display: false },
           },
           x: {
-            ticks: { color: "#94a3b8" },
-            grid: { display: false },
+            ticks: { color: "#64748b", font: { size: 11 } },
+            grid:  { display: false },
+            border: { display: false },
           },
         },
       },
     });
   }
 
-  /* ── Operation Donut Chart ────────────────────────────────────────────── */
+  /* ── Operation Donut Chart ──────────────────────────────────────────────── */
   function renderOpChart(byOp) {
-    const ctx = document.getElementById("usage-op-chart");
+    const ctx    = document.getElementById("usage-op-chart");
     const legend = document.getElementById("usage-op-legend");
     if (!ctx || !legend) return;
     if (opChart) { opChart.destroy(); opChart = null; }
+
+    if (!byOp.length) {
+      ctx.parentElement.innerHTML = `<p style="color:var(--muted);text-align:center;padding:40px 0;">لا يوجد بيانات بعد</p>`;
+      return;
+    }
 
     const labels = byOp.map(o => opLabel(o.operation));
     const data   = byOp.map(o => o.cost_usd);
@@ -163,89 +203,134 @@
       type: "doughnut",
       data: {
         labels,
-        datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: "var(--bg)" }],
+        datasets: [{
+          data, backgroundColor: colors,
+          borderWidth: 3, borderColor: "#0f0f23",
+          hoverOffset: 8,
+        }],
       },
       options: {
-        cutout: "62%",
+        cutout: "68%",
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: ctx => " $" + ctx.parsed.toFixed(6) } },
+          tooltip: {
+            backgroundColor: "#1e1b4b",
+            borderColor: "rgba(255,255,255,0.1)",
+            borderWidth: 1,
+            callbacks: { label: c => "  $" + c.parsed.toFixed(6) },
+          },
         },
       },
     });
 
-    // Custom legend
     legend.innerHTML = byOp.slice(0, 8).map((o, i) => `
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0;"></span>
-        <span style="color:var(--muted);flex:1;">${opLabel(o.operation)}</span>
-        <span style="font-weight:600;color:var(--text);">${fmtCost(o.cost_usd)}</span>
+      <div class="usage-legend-item">
+        <span class="usage-legend-dot" style="background:${colors[i]}"></span>
+        <span class="usage-legend-name">${opIcon(o.operation)} ${opLabel(o.operation)}</span>
+        <span class="usage-legend-val" style="color:${colors[i]}">${fmtCost(o.cost_usd)}</span>
       </div>
     `).join("");
   }
 
-  /* ── Operation Table ──────────────────────────────────────────────────── */
+  /* ── Operation Breakdown Table ──────────────────────────────────────────── */
   function renderOpTable(byOp) {
     const tbody = document.getElementById("usage-op-table");
     if (!tbody) return;
-    const maxCost = byOp.length ? Math.max(...byOp.map(o => o.cost_usd)) : 1;
+    const maxCost = byOp.length ? Math.max(...byOp.map(o => o.cost_usd), 0.000001) : 1;
 
     tbody.innerHTML = byOp.map((o, i) => {
-      const pct = maxCost > 0 ? (o.cost_usd / maxCost * 100).toFixed(1) : 0;
+      const pct   = (o.cost_usd / maxCost * 100).toFixed(1);
       const color = PALETTE[i % PALETTE.length];
-      return `<tr style="border-bottom:1px solid var(--line);">
-        <td style="padding:12px 16px;font-weight:600;color:var(--text);">${opLabel(o.operation)}</td>
-        <td style="padding:12px 16px;text-align:center;color:var(--muted);">${fmtNum(o.calls)}</td>
-        <td style="padding:12px 16px;text-align:center;color:var(--muted);">${fmtNum(o.input_tokens)}</td>
-        <td style="padding:12px 16px;text-align:center;color:var(--muted);">${fmtNum(o.output_tokens)}</td>
-        <td style="padding:12px 16px;text-align:center;font-weight:700;color:${color};">${fmtCost(o.cost_usd)}</td>
-        <td style="padding:12px 16px;">
-          <div style="background:rgba(255,255,255,.06);border-radius:99px;height:8px;overflow:hidden;">
-            <div style="width:${pct}%;height:100%;background:${color};border-radius:99px;transition:.4s;"></div>
-          </div>
-        </td>
-      </tr>`;
-    }).join("") || `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--muted);">لا توجد بيانات بعد</td></tr>`;
+      const totalTok = (o.input_tokens || 0) + (o.output_tokens || 0);
+      return `
+        <tr class="usage-trow">
+          <td style="padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.2rem;">${opIcon(o.operation)}</span>
+              <span style="font-weight:600;color:var(--text);">${opLabel(o.operation)}</span>
+            </div>
+          </td>
+          <td style="padding:14px 16px;text-align:center;">
+            <span class="usage-badge" style="background:rgba(99,102,241,.12);color:#818cf8;">${o.calls}</span>
+          </td>
+          <td style="padding:14px 16px;text-align:center;color:var(--muted);">${fmtNum(o.input_tokens)}</td>
+          <td style="padding:14px 16px;text-align:center;color:var(--muted);">${fmtNum(o.output_tokens)}</td>
+          <td style="padding:14px 16px;text-align:center;">
+            <span style="font-weight:700;color:${color};">${fmtCost(o.cost_usd)}</span>
+          </td>
+          <td style="padding:14px 16px;min-width:120px;">
+            <div class="usage-bar-track">
+              <div class="usage-bar-fill" style="width:${pct}%;background:${color};"></div>
+            </div>
+          </td>
+        </tr>`;
+    }).join("") || `<tr><td colspan="6" class="usage-empty">لا توجد بيانات بعد — ولّد محتوى وستظهر هنا 🚀</td></tr>`;
   }
 
-  /* ── Model Cards ──────────────────────────────────────────────────────── */
+  /* ── Model Cards ────────────────────────────────────────────────────────── */
   function renderModelCards(byModel) {
     const wrap = document.getElementById("usage-model-cards");
     if (!wrap) return;
 
-    wrap.innerHTML = byModel.map((m, i) => {
-      const color = PALETTE[(i + 2) % PALETTE.length];
+    wrap.innerHTML = byModel.length ? byModel.map((m, i) => {
+      const color = PALETTE[(i + 3) % PALETTE.length];
+      const avg   = m.calls ? m.cost_usd / m.calls : 0;
       return `
-        <div class="an-card" style="flex:1;min-width:220px;padding:20px;border-top:3px solid ${color};">
-          <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;">🤖 ${m.model}</div>
-          <div style="font-size:1.4rem;font-weight:800;color:${color};margin-bottom:4px;">${fmtCost(m.cost_usd)}</div>
-          <div style="font-size:0.82rem;color:var(--muted);">${fmtNum(m.calls)} طلب · ${fmtNum(m.total_tokens)} توكن</div>
+        <div class="usage-model-card" style="--mc:${color};">
+          <div class="usage-model-icon">🤖</div>
+          <div class="usage-model-name">${m.model.replace("claude-", "")}</div>
+          <div class="usage-model-cost">${fmtCost(m.cost_usd)}</div>
+          <div class="usage-model-meta">
+            <span>${fmtNum(m.calls)} طلب</span>
+            <span>·</span>
+            <span>${fmtNum(m.total_tokens)} توكن</span>
+          </div>
+          <div class="usage-model-avg">متوسط: ${fmtCost(avg)} / طلب</div>
         </div>`;
-    }).join("") || `<p style="color:var(--muted);">لا توجد بيانات بعد</p>`;
+    }).join("") : `<p style="color:var(--muted);padding:20px 0;">لا يوجد بيانات بعد</p>`;
   }
 
-  /* ── Recent Logs Table ────────────────────────────────────────────────── */
+  /* ── Recent Logs Table ──────────────────────────────────────────────────── */
   function renderLogTable(logs) {
     const tbody = document.getElementById("usage-log-table");
     if (!tbody) return;
 
-    tbody.innerHTML = logs.map(r => {
-      const dt = new Date(r.created_at);
-      const timeStr = dt.toLocaleString("ar-SA", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" });
-      const costColor = r.cost_usd > 0.01 ? "#f59e0b" : r.cost_usd > 0.001 ? "#818cf8" : "#94a3b8";
-      return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
-        <td style="padding:9px 14px;color:var(--muted);font-size:0.78rem;">${r.id}</td>
-        <td style="padding:9px 14px;font-weight:600;">${opLabel(r.operation)}</td>
-        <td style="padding:9px 14px;color:var(--muted);font-size:0.78rem;">${r.model.replace("claude-","")}</td>
-        <td style="padding:9px 14px;text-align:center;color:var(--muted);">${fmtNum(r.input_tokens)}</td>
-        <td style="padding:9px 14px;text-align:center;color:var(--muted);">${fmtNum(r.output_tokens)}</td>
-        <td style="padding:9px 14px;text-align:center;font-weight:700;color:${costColor};">${fmtCost(r.cost_usd)}</td>
-        <td style="padding:9px 14px;color:var(--muted);font-size:0.78rem;">${timeStr}</td>
-      </tr>`;
-    }).join("") || `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--muted);">لا يوجد سجلات بعد</td></tr>`;
+    tbody.innerHTML = logs.map((r, idx) => {
+      const dt  = new Date(r.created_at);
+      const ts  = dt.toLocaleString("ar-SA", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" });
+      const costBg = r.cost_usd > 0.01
+        ? "rgba(245,158,11,.12)" : r.cost_usd > 0.001
+        ? "rgba(99,102,241,.1)"  : "rgba(100,116,139,.1)";
+      const costCl = r.cost_usd > 0.01
+        ? "#f59e0b" : r.cost_usd > 0.001
+        ? "#818cf8" : "#94a3b8";
+      return `
+        <tr class="usage-trow">
+          <td style="padding:10px 14px;color:#475569;font-size:0.78rem;">${r.id}</td>
+          <td style="padding:10px 14px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span>${opIcon(r.operation)}</span>
+              <span style="font-weight:500;">${opLabel(r.operation)}</span>
+            </div>
+          </td>
+          <td style="padding:10px 14px;">
+            <span class="usage-badge" style="background:rgba(139,92,246,.1);color:#a78bfa;font-size:0.75rem;">
+              ${r.model.replace("claude-","").replace("-2024","").replace("-20240","'")}
+            </span>
+          </td>
+          <td style="padding:10px 14px;text-align:center;color:#64748b;">${fmtNum(r.input_tokens)}</td>
+          <td style="padding:10px 14px;text-align:center;color:#64748b;">${fmtNum(r.output_tokens)}</td>
+          <td style="padding:10px 14px;text-align:center;">
+            <span class="usage-badge" style="background:${costBg};color:${costCl};font-weight:700;">
+              ${fmtCost(r.cost_usd)}
+            </span>
+          </td>
+          <td style="padding:10px 14px;color:#64748b;font-size:0.78rem;">${ts}</td>
+        </tr>`;
+    }).join("") || `<tr><td colspan="7" class="usage-empty">لا يوجد سجلات بعد</td></tr>`;
   }
 
-  /* ── Main Load Function ───────────────────────────────────────────────── */
+  /* ── Main Load Function ─────────────────────────────────────────────────── */
   window.loadAiUsage = async function () {
     const loading = document.getElementById("usage-loading");
     const content = document.getElementById("usage-content");
@@ -262,29 +347,27 @@
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      const s    = data.summary;
 
-      renderKPI(s);
-      renderDailyChart(data.daily_trend   || []);
-      renderOpChart   (data.by_operation  || []);
-      renderOpTable   (data.by_operation  || []);
-      renderModelCards(data.by_model      || []);
-      renderLogTable  (data.recent_logs   || []);
+      renderKPI        (data.summary      || {});
+      renderDailyChart (data.daily_trend  || []);
+      renderOpChart    (data.by_operation || []);
+      renderOpTable    (data.by_operation || []);
+      renderModelCards (data.by_model     || []);
+      renderLogTable   (data.recent_logs  || []);
 
       loading.style.display = "none";
       content.style.display = "block";
     } catch (err) {
-      loading.innerHTML = `<span style="color:#f87171;">❌ فشل تحميل البيانات: ${err.message}</span>`;
-      console.error("[AI Usage]", err);
+      loading.innerHTML = `<span style="color:#f87171;font-size:0.9rem;">❌ فشل تحميل البيانات: ${err.message}</span>`;
     }
   };
 
-  /* ── Auto-load when page becomes visible ─────────────────────────────── */
+  /* ── Auto-load on page switch ───────────────────────────────────────────── */
   document.addEventListener("DOMContentLoaded", () => {
     const origGo = window.go;
     window.go = function (el) {
       origGo && origGo(el);
-      const page = (el && el.dataset && el.dataset.page) || el;
+      const page = el?.dataset?.page || el;
       if (page === "page-ai-usage") loadAiUsage();
     };
   });
