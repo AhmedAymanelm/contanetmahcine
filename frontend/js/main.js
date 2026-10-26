@@ -57,6 +57,7 @@ const PAGE_LOADERS = {
     'page-trends':    () => {},
     'page-analytics': () => { loadAnalytics(); loadEngagement(); },
     'page-recs':      () => loadRecs(),
+    'page-ai-usage':  () => { if (typeof loadAiUsage === 'function') loadAiUsage(); },
 };
 
 // ── Navigate to a page ────────────────────────────────────────────────────

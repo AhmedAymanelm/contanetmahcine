@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   AI Usage — Token & Cost Tracking Dashboard  v2 (Premium Design)
+   AI Usage — Token & Cost Tracking Dashboard  v3
    ═══════════════════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -45,7 +45,7 @@
   }
 
   function fmtCost(c) {
-    if (!c) return "$0.00";
+    if (!c || c === 0) return "$0.00";
     if (c < 0.0001) return "$" + c.toFixed(7);
     if (c < 0.01)   return "$" + c.toFixed(5);
     if (c < 1)      return "$" + c.toFixed(4);
@@ -62,6 +62,22 @@
     </span>`;
   }
 
+  function showError(msg) {
+    const loading = document.getElementById("usage-loading");
+    if (loading) {
+      loading.style.display = "flex";
+      loading.innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:2rem;margin-bottom:12px;">⚠️</div>
+          <div style="color:#f87171;font-size:0.9rem;margin-bottom:8px;">${msg}</div>
+          <button onclick="loadAiUsage()" style="
+            background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);
+            color:#818cf8;padding:8px 20px;border-radius:10px;cursor:pointer;
+            font-family:inherit;font-size:0.85rem;">🔄 إعادة المحاولة</button>
+        </div>`;
+    }
+  }
+
   /* ── KPI Cards ──────────────────────────────────────────────────────────── */
   function renderKPI(s) {
     const row = document.getElementById("usage-kpi-row");
@@ -70,43 +86,36 @@
     const cards = [
       {
         icon: "📞", label: "إجمالي الطلبات",
-        value: fmtNum(s.total_calls),
-        sub: `${fmtNum(s.prev_calls)} في الفترة السابقة`,
+        value: fmtNum(s.total_calls || 0),
+        sub: `${fmtNum(s.prev_calls || 0)} في الفترة السابقة`,
         delta: deltaBadge(s.total_calls, s.prev_calls),
-        accent: "#6366f1",
-        glow: "rgba(99,102,241,0.18)",
+        accent: "#6366f1", glow: "rgba(99,102,241,0.18)",
       },
       {
         icon: "🔤", label: "إجمالي التوكن",
-        value: fmtNum(s.total_tokens),
-        sub: `📥 ${fmtNum(s.input_tokens)}  ·  📤 ${fmtNum(s.output_tokens)}`,
+        value: fmtNum(s.total_tokens || 0),
+        sub: `📥 ${fmtNum(s.input_tokens || 0)}  ·  📤 ${fmtNum(s.output_tokens || 0)}`,
         delta: "",
-        accent: "#8b5cf6",
-        glow: "rgba(139,92,246,0.18)",
+        accent: "#8b5cf6", glow: "rgba(139,92,246,0.18)",
       },
       {
         icon: "💵", label: "التكلفة الإجمالية",
-        value: fmtCost(s.cost_usd),
-        sub: `سابقاً: ${fmtCost(s.prev_cost_usd)}`,
+        value: fmtCost(s.cost_usd || 0),
+        sub: `سابقاً: ${fmtCost(s.prev_cost_usd || 0)}`,
         delta: deltaBadge(s.cost_usd, s.prev_cost_usd, true),
-        accent: "#f59e0b",
-        glow: "rgba(245,158,11,0.18)",
+        accent: "#f59e0b", glow: "rgba(245,158,11,0.18)",
       },
       {
         icon: "📊", label: "متوسط / طلب",
-        value: fmtCost(s.total_calls ? s.cost_usd / s.total_calls : 0),
+        value: fmtCost(s.total_calls ? (s.cost_usd / s.total_calls) : 0),
         sub: "متوسط تكلفة كل استدعاء Claude",
         delta: "",
-        accent: "#10b981",
-        glow: "rgba(16,185,129,0.18)",
+        accent: "#10b981", glow: "rgba(16,185,129,0.18)",
       },
     ];
 
     row.innerHTML = cards.map(c => `
-      <div class="usage-kpi-card" style="
-        --kpi-accent:${c.accent};
-        --kpi-glow:${c.glow};
-      ">
+      <div class="usage-kpi-card" style="--kpi-accent:${c.accent};--kpi-glow:${c.glow};">
         <div class="usage-kpi-top">
           <span class="usage-kpi-icon">${c.icon}</span>
           <span class="usage-kpi-val">${c.value}</span>
@@ -121,12 +130,23 @@
   /* ── Daily Line Chart ───────────────────────────────────────────────────── */
   function renderDailyChart(trend) {
     const ctx = document.getElementById("usage-daily-chart");
+    const emptyEl = document.getElementById("usage-daily-empty");
     if (!ctx) return;
     if (dailyChart) { dailyChart.destroy(); dailyChart = null; }
 
+    if (!trend || !trend.length) {
+      ctx.style.display = "none";
+      if (emptyEl) emptyEl.style.display = "block";
+      return;
+    }
+    ctx.style.display = "block";
+    if (emptyEl) emptyEl.style.display = "none";
+
+    if (typeof Chart === "undefined") return;
+
     const labels = trend.map(d => {
-      const [, m, day] = d.date.split("-");
-      return `${day}/${m}`;
+      const parts = d.date.split("-");
+      return `${parts[2]}/${parts[1]}`;
     });
     const data = trend.map(d => d.cost_usd);
 
@@ -140,15 +160,15 @@
           borderColor: "#6366f1",
           backgroundColor: (ctx2) => {
             const g = ctx2.chart.ctx.createLinearGradient(0, 0, 0, 200);
-            g.addColorStop(0,   "rgba(99,102,241,0.25)");
-            g.addColorStop(1,   "rgba(99,102,241,0)");
+            g.addColorStop(0, "rgba(99,102,241,0.25)");
+            g.addColorStop(1, "rgba(99,102,241,0)");
             return g;
           },
           fill: true,
           tension: 0.45,
-          pointRadius: data.some(v=>v>0) ? 4 : 0,
+          pointRadius: 4,
           pointBackgroundColor: "#6366f1",
-          pointBorderColor: "#1e1b4b",
+          pointBorderColor: "#0f0f23",
           pointBorderWidth: 2,
           pointHoverRadius: 7,
           borderWidth: 2.5,
@@ -156,7 +176,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -185,15 +205,22 @@
 
   /* ── Operation Donut Chart ──────────────────────────────────────────────── */
   function renderOpChart(byOp) {
-    const ctx    = document.getElementById("usage-op-chart");
-    const legend = document.getElementById("usage-op-legend");
+    const ctx     = document.getElementById("usage-op-chart");
+    const legend  = document.getElementById("usage-op-legend");
+    const wrap    = document.getElementById("usage-op-wrap");
+    const emptyEl = document.getElementById("usage-op-empty");
     if (!ctx || !legend) return;
     if (opChart) { opChart.destroy(); opChart = null; }
 
-    if (!byOp.length) {
-      ctx.parentElement.innerHTML = `<p style="color:var(--muted);text-align:center;padding:40px 0;">لا يوجد بيانات بعد</p>`;
+    if (!byOp || !byOp.length) {
+      if (wrap) wrap.style.display = "none";
+      if (emptyEl) emptyEl.style.display = "block";
       return;
     }
+    if (wrap) wrap.style.display = "flex";
+    if (emptyEl) emptyEl.style.display = "none";
+
+    if (typeof Chart === "undefined") return;
 
     const labels = byOp.map(o => opLabel(o.operation));
     const data   = byOp.map(o => o.cost_usd);
@@ -236,12 +263,11 @@
   function renderOpTable(byOp) {
     const tbody = document.getElementById("usage-op-table");
     if (!tbody) return;
-    const maxCost = byOp.length ? Math.max(...byOp.map(o => o.cost_usd), 0.000001) : 1;
+    const maxCost = (byOp && byOp.length) ? Math.max(...byOp.map(o => o.cost_usd), 0.000001) : 1;
 
-    tbody.innerHTML = byOp.map((o, i) => {
+    tbody.innerHTML = byOp && byOp.length ? byOp.map((o, i) => {
       const pct   = (o.cost_usd / maxCost * 100).toFixed(1);
       const color = PALETTE[i % PALETTE.length];
-      const totalTok = (o.input_tokens || 0) + (o.output_tokens || 0);
       return `
         <tr class="usage-trow">
           <td style="padding:14px 16px;">
@@ -264,7 +290,7 @@
             </div>
           </td>
         </tr>`;
-    }).join("") || `<tr><td colspan="6" class="usage-empty">لا توجد بيانات بعد — ولّد محتوى وستظهر هنا 🚀</td></tr>`;
+    }).join("") : `<tr><td colspan="6" class="usage-empty">لا توجد بيانات بعد — ولّد محتوى وستظهر هنا 🚀</td></tr>`;
   }
 
   /* ── Model Cards ────────────────────────────────────────────────────────── */
@@ -272,7 +298,7 @@
     const wrap = document.getElementById("usage-model-cards");
     if (!wrap) return;
 
-    wrap.innerHTML = byModel.length ? byModel.map((m, i) => {
+    wrap.innerHTML = (byModel && byModel.length) ? byModel.map((m, i) => {
       const color = PALETTE[(i + 3) % PALETTE.length];
       const avg   = m.calls ? m.cost_usd / m.calls : 0;
       return `
@@ -287,7 +313,7 @@
           </div>
           <div class="usage-model-avg">متوسط: ${fmtCost(avg)} / طلب</div>
         </div>`;
-    }).join("") : `<p style="color:var(--muted);padding:20px 0;">لا يوجد بيانات بعد</p>`;
+    }).join("") : `<p style="color:var(--muted);padding:20px 0;font-size:0.85rem;">لا يوجد بيانات بعد</p>`;
   }
 
   /* ── Recent Logs Table ──────────────────────────────────────────────────── */
@@ -295,15 +321,11 @@
     const tbody = document.getElementById("usage-log-table");
     if (!tbody) return;
 
-    tbody.innerHTML = logs.map((r, idx) => {
+    tbody.innerHTML = (logs && logs.length) ? logs.map((r) => {
       const dt  = new Date(r.created_at);
-      const ts  = dt.toLocaleString("ar-SA", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" });
-      const costBg = r.cost_usd > 0.01
-        ? "rgba(245,158,11,.12)" : r.cost_usd > 0.001
-        ? "rgba(99,102,241,.1)"  : "rgba(100,116,139,.1)";
-      const costCl = r.cost_usd > 0.01
-        ? "#f59e0b" : r.cost_usd > 0.001
-        ? "#818cf8" : "#94a3b8";
+      const ts  = dt.toLocaleString("ar-EG", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" });
+      const costBg = r.cost_usd > 0.01 ? "rgba(245,158,11,.12)" : r.cost_usd > 0.001 ? "rgba(99,102,241,.1)" : "rgba(100,116,139,.1)";
+      const costCl = r.cost_usd > 0.01 ? "#f59e0b" : r.cost_usd > 0.001 ? "#818cf8" : "#94a3b8";
       return `
         <tr class="usage-trow">
           <td style="padding:10px 14px;color:#475569;font-size:0.78rem;">${r.id}</td>
@@ -315,7 +337,7 @@
           </td>
           <td style="padding:10px 14px;">
             <span class="usage-badge" style="background:rgba(139,92,246,.1);color:#a78bfa;font-size:0.75rem;">
-              ${r.model.replace("claude-","").replace("-2024","").replace("-20240","'")}
+              ${r.model.replace("claude-", "")}
             </span>
           </td>
           <td style="padding:10px 14px;text-align:center;color:#64748b;">${fmtNum(r.input_tokens)}</td>
@@ -327,25 +349,45 @@
           </td>
           <td style="padding:10px 14px;color:#64748b;font-size:0.78rem;">${ts}</td>
         </tr>`;
-    }).join("") || `<tr><td colspan="7" class="usage-empty">لا يوجد سجلات بعد</td></tr>`;
+    }).join("") : `<tr><td colspan="7" class="usage-empty">لا يوجد سجلات بعد</td></tr>`;
   }
 
   /* ── Main Load Function ─────────────────────────────────────────────────── */
   window.loadAiUsage = async function () {
     const loading = document.getElementById("usage-loading");
     const content = document.getElementById("usage-content");
-    const period  = document.getElementById("usage-period-select")?.value ?? 30;
     if (!loading || !content) return;
 
+    const period = document.getElementById("usage-period-select")?.value ?? 30;
+
+    // Reset state
     loading.style.display = "flex";
+    loading.innerHTML = `<span class="an-spin">🪙</span><span>جاري تحميل بيانات الاستهلاك...</span>`;
     content.style.display = "none";
 
     try {
       const token = localStorage.getItem("access_token") || "";
-      const res   = await fetch(`/api/ai-usage/overview?days=${period}`, {
+
+      // Timeout after 15 seconds
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+
+      const res = await fetch(`/api/ai-usage/overview?days=${period}`, {
         headers: { Authorization: "Bearer " + token },
+        signal: controller.signal,
       });
-      if (!res.ok) throw new Error(await res.text());
+      clearTimeout(timer);
+
+      if (res.status === 401) {
+        showError("انتهت الجلسة — يرجى تسجيل الدخول مرة أخرى");
+        return;
+      }
+      if (!res.ok) {
+        const txt = await res.text().catch(() => res.statusText);
+        showError(`خطأ من السيرفر (${res.status}): ${txt.slice(0, 120)}`);
+        return;
+      }
+
       const data = await res.json();
 
       renderKPI        (data.summary      || {});
@@ -357,18 +399,37 @@
 
       loading.style.display = "none";
       content.style.display = "block";
+
     } catch (err) {
-      loading.innerHTML = `<span style="color:#f87171;font-size:0.9rem;">❌ فشل تحميل البيانات: ${err.message}</span>`;
+      if (err.name === "AbortError") {
+        showError("انتهت مهلة الاتصال — تأكد من أن السيرفر يعمل");
+      } else {
+        showError("فشل الاتصال: " + (err.message || String(err)));
+      }
+      console.error("[AI Usage]", err);
     }
   };
 
-  /* ── Auto-load on page switch ───────────────────────────────────────────── */
-  document.addEventListener("DOMContentLoaded", () => {
-    const origGo = window.go;
-    window.go = function (el) {
-      origGo && origGo(el);
-      const page = el?.dataset?.page || el;
-      if (page === "page-ai-usage") loadAiUsage();
-    };
-  });
+  function showError(msg) {
+    const loading = document.getElementById("usage-loading");
+    const content = document.getElementById("usage-content");
+    if (content) content.style.display = "none";
+    if (loading) {
+      loading.style.display = "flex";
+      loading.innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:2.5rem;margin-bottom:14px;">⚠️</div>
+          <div style="color:#f87171;font-size:0.9rem;margin-bottom:16px;max-width:400px;line-height:1.6;">${msg}</div>
+          <button onclick="loadAiUsage()" style="
+            background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);
+            color:#818cf8;padding:9px 22px;border-radius:10px;cursor:pointer;
+            font-family:inherit;font-size:0.85rem;transition:.15s;"
+            onmouseover="this.style.background='rgba(99,102,241,.25)'"
+            onmouseout="this.style.background='rgba(99,102,241,.15)'">
+            🔄 إعادة المحاولة
+          </button>
+        </div>`;
+    }
+  }
+
 })();

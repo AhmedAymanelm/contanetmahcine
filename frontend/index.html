@@ -43,7 +43,7 @@
         <div class="navgroup-label">القياس</div>
         <a data-page="page-analytics" onclick="go(this)"><span class="ic">📈</span> التحليلات</a>
         <a data-page="page-recs" onclick="go(this)"><span class="ic">💡</span> التوصيات</a>
-        <a data-page="page-ai-usage" onclick="go(this)"><span class="ic">🪙</span> استهلاك الـ AI</a>
+        <a data-page="page-ai-usage" onclick="go(this); loadAiUsage()"><span class="ic">🪙</span> استهلاك الـ AI</a>
 
         <div class="navgroup-label">النظام</div>
         <a data-page="page-api" onclick="go(this)"><span class="ic">🔑</span> إعدادات الربط والـ API</a>
@@ -800,15 +800,17 @@
       <div class="an-card" style="padding:22px;">
         <p class="an-section-title" style="margin-bottom:16px;">📉 التكلفة اليومية (آخر 14 يوم)</p>
         <canvas id="usage-daily-chart" height="180"></canvas>
+        <p id="usage-daily-empty" style="display:none;color:var(--muted);text-align:center;padding:45px 0;font-size:0.85rem;">لا توجد بيانات كافية للرسم البياني حتى الآن 📉</p>
       </div>
 
       <!-- By Operation Donut -->
       <div class="an-card" style="padding:22px;">
         <p class="an-section-title" style="margin-bottom:16px;">🔧 التكلفة حسب العملية</p>
-        <div style="display:flex;gap:20px;align-items:center;">
+        <div id="usage-op-wrap" style="display:flex;gap:20px;align-items:center;">
           <canvas id="usage-op-chart" width="160" height="160" style="flex-shrink:0;"></canvas>
           <div id="usage-op-legend" style="flex:1;font-size:0.82rem;display:flex;flex-direction:column;gap:8px;"></div>
         </div>
+        <p id="usage-op-empty" style="display:none;color:var(--muted);text-align:center;padding:45px 0;font-size:0.85rem;">لا توجد عمليات مسجلة بعد — ولّد محتوى وستظهر هنا 🚀</p>
       </div>
     </div>
 

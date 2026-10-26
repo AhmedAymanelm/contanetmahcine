@@ -23,17 +23,19 @@ from app.models.app_setting import AppSetting
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Auto-create tables for SQLite (no Alembic needed) ──────────────────
+    # ── Auto-create tables (SQLite or PostgreSQL) ──────────────────────────
     from app.db.session import engine, _is_sqlite
-    if _is_sqlite:
-        from app.models.base import Base
-        import app.models.source, app.models.raw_article
-        import app.models.content_item, app.models.carousel_template
-        import app.models.app_setting, app.models.user
-        import app.models.oauth_token, app.models.banned_word
-        import app.models.ai_usage_log   # <-- token tracking
+    from app.models.base import Base
+    import app.models.source, app.models.raw_article
+    import app.models.content_item, app.models.carousel_template
+    import app.models.app_setting, app.models.user
+    import app.models.oauth_token, app.models.banned_word
+    import app.models.ai_usage_log   # <-- token tracking
+    try:
         Base.metadata.create_all(bind=engine)
-        print("[Startup] SQLite tables created/verified.")
+        print(f"[Startup] DB tables created/verified ({'SQLite' if _is_sqlite else 'PostgreSQL'}).")
+    except Exception as _e:
+        print(f"[Startup] DB create_all warning: {_e}")
 
         # ── One-time migration from Neon if MIGRATE_FROM_URL is set ────────
         migrate_url = os.environ.get("MIGRATE_FROM_URL", "").strip()
