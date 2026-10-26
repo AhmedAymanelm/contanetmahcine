@@ -344,6 +344,18 @@ async def get_ai_summary(db: Session = Depends(get_db)):
         )
         ai_text = msg.content[0].text.strip() if msg.content else "{}"
 
+        # ── Log token usage
+        try:
+            from app.services.ai_usage_tracker import log_usage
+            log_usage(
+                operation="ai_insights",
+                model="claude-sonnet-4-5",
+                input_tokens=msg.usage.input_tokens,
+                output_tokens=msg.usage.output_tokens,
+            )
+        except Exception:
+            pass
+
         # Parse Claude's JSON response
         try:
             ai_data = json.loads(ai_text)
@@ -411,6 +423,19 @@ async def get_content_ideas(db: Session = Depends(get_db)):
             messages=[{"role": "user", "content": prompt}]
         )
         ideas_text = msg.content[0].text if msg.content else ""
+
+        # ── Log token usage
+        try:
+            from app.services.ai_usage_tracker import log_usage
+            log_usage(
+                operation="content_ideas",
+                model="claude-sonnet-4-5",
+                input_tokens=msg.usage.input_tokens,
+                output_tokens=msg.usage.output_tokens,
+            )
+        except Exception:
+            pass
+
         return {"ideas": ideas_text, "generated_at": datetime.now(timezone.utc).isoformat()}
     except Exception as e:
         return {"error": f"خطأ في Claude: {str(e)}"}

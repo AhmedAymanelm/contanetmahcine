@@ -42,6 +42,17 @@ Execute the following task exactly as requested.
                     {"role": "user", "content": task_description}
                 ]
             )
+            # ── Log token usage ───────────────────────────────────────────────
+            try:
+                from app.services.ai_usage_tracker import log_usage
+                log_usage(
+                    operation=f"agent_task:{agent_config.name[:30]}",
+                    model=self.model_name,
+                    input_tokens=response.usage.input_tokens,
+                    output_tokens=response.usage.output_tokens,
+                )
+            except Exception:
+                pass
             return response.content[0].text
         except Exception as e:
             print(f"Error calling Claude API: {e}")
@@ -82,7 +93,27 @@ Execute the following task exactly as requested. You must respond using the outp
                     {"role": "user", "content": task_description}
                 ]
             )
-            
+
+            # ── Log token usage ───────────────────────────────────────────────
+            try:
+                from app.services.ai_usage_tracker import log_usage
+                # Infer operation from schema name
+                op_name = schema.__name__ if hasattr(schema, "__name__") else "structured_task"
+                op_map = {
+                    "PostContent":    "generate_post",
+                    "CarouselContent": "generate_carousel",
+                    "VideoScript":    "generate_video_script",
+                }
+                operation = op_map.get(op_name, f"structured:{op_name}")
+                log_usage(
+                    operation=operation,
+                    model=self.model_name,
+                    input_tokens=response.usage.input_tokens,
+                    output_tokens=response.usage.output_tokens,
+                )
+            except Exception:
+                pass
+
             # Extract tool use response
             for content in response.content:
                 if content.type == "tool_use" and content.name == "output_formatter":

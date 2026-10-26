@@ -43,6 +43,7 @@
         <div class="navgroup-label">القياس</div>
         <a data-page="page-analytics" onclick="go(this)"><span class="ic">📈</span> التحليلات</a>
         <a data-page="page-recs" onclick="go(this)"><span class="ic">💡</span> التوصيات</a>
+        <a data-page="page-ai-usage" onclick="go(this)"><span class="ic">🪙</span> استهلاك الـ AI</a>
 
         <div class="navgroup-label">النظام</div>
         <a data-page="page-api" onclick="go(this)"><span class="ic">🔑</span> إعدادات الربط والـ API</a>
@@ -764,6 +765,97 @@
   </div><!-- /recs-content -->
 </section>
 
+<!-- ═══════════════════════════ AI USAGE PAGE ════════════════════════════ -->
+<section class="page" id="page-ai-usage">
+  <div class="topline">
+    <div>
+      <h1>🪙 استهلاك الـ AI</h1>
+      <p>تتبع التوكن والتكلفة لكل عملية في Claude</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <select id="usage-period-select" onchange="loadAiUsage()" style="background:var(--card);border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:10px;font-family:inherit;font-size:0.85rem;cursor:pointer;">
+        <option value="7">آخر 7 أيام</option>
+        <option value="30" selected>آخر 30 يوم</option>
+        <option value="90">آخر 90 يوم</option>
+        <option value="0">كل الوقت</option>
+      </select>
+      <button class="btn" onclick="loadAiUsage()" style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#818cf8;padding:8px 18px;border-radius:10px;font-size:0.88rem;">🔄 تحديث</button>
+    </div>
+  </div>
+
+  <div id="usage-loading" class="an-loading">
+    <span class="an-spin">🪙</span>
+    <span>جاري تحميل بيانات الاستهلاك...</span>
+  </div>
+
+  <div id="usage-content" style="display:none;">
+
+    <!-- ── Summary KPI Cards ───────────────────────────────────────────── -->
+    <div class="an-kpi-row" id="usage-kpi-row"></div>
+
+    <!-- ── Charts Row ────────────────────────────────────────────────────── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+
+      <!-- Daily Cost Trend -->
+      <div class="an-card" style="padding:22px;">
+        <p class="an-section-title" style="margin-bottom:16px;">📉 التكلفة اليومية (آخر 14 يوم)</p>
+        <canvas id="usage-daily-chart" height="180"></canvas>
+      </div>
+
+      <!-- By Operation Donut -->
+      <div class="an-card" style="padding:22px;">
+        <p class="an-section-title" style="margin-bottom:16px;">🔧 التكلفة حسب العملية</p>
+        <div style="display:flex;gap:20px;align-items:center;">
+          <canvas id="usage-op-chart" width="160" height="160" style="flex-shrink:0;"></canvas>
+          <div id="usage-op-legend" style="flex:1;font-size:0.82rem;display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Operation Breakdown Table ──────────────────────────────────────── -->
+    <p class="an-section-title">🔧 تفصيل حسب نوع العملية</p>
+    <div class="an-card" style="overflow:auto;margin-bottom:24px;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--line);color:var(--muted);">
+            <th style="padding:12px 16px;text-align:right;font-weight:600;">العملية</th>
+            <th style="padding:12px 16px;text-align:center;font-weight:600;">عدد الطلبات</th>
+            <th style="padding:12px 16px;text-align:center;font-weight:600;">توكن إدخال</th>
+            <th style="padding:12px 16px;text-align:center;font-weight:600;">توكن إخراج</th>
+            <th style="padding:12px 16px;text-align:center;font-weight:600;">التكلفة (USD)</th>
+            <th style="padding:12px 16px;text-align:center;font-weight:600;">شريط التكلفة</th>
+          </tr>
+        </thead>
+        <tbody id="usage-op-table"></tbody>
+      </table>
+    </div>
+
+    <!-- ── Model Breakdown ─────────────────────────────────────────────────── -->
+    <p class="an-section-title">🤖 تفصيل حسب الموديل</p>
+    <div id="usage-model-cards" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;"></div>
+
+    <!-- ── Recent Logs ─────────────────────────────────────────────────────── -->
+    <p class="an-section-title">📋 آخر 50 طلب</p>
+    <div class="an-card" style="overflow:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--line);color:var(--muted);">
+            <th style="padding:10px 14px;text-align:right;font-weight:600;">#</th>
+            <th style="padding:10px 14px;text-align:right;font-weight:600;">العملية</th>
+            <th style="padding:10px 14px;text-align:right;font-weight:600;">الموديل</th>
+            <th style="padding:10px 14px;text-align:center;font-weight:600;">إدخال</th>
+            <th style="padding:10px 14px;text-align:center;font-weight:600;">إخراج</th>
+            <th style="padding:10px 14px;text-align:center;font-weight:600;">التكلفة</th>
+            <th style="padding:10px 14px;text-align:right;font-weight:600;">الوقت</th>
+          </tr>
+        </thead>
+        <tbody id="usage-log-table"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /usage-content -->
+</section>
+
 <!-- ── API & Integrations Settings Page ────────────────────────────────────── -->
 <section class="page" id="page-api">
   <div class="topline">
@@ -1369,5 +1461,6 @@
 <script src="js/recommendations.js"></script>
 <script src="js/api_settings.js"></script>
 <script src="js/general_settings.js"></script>
+<script src="js/ai_usage.js?v=1"></script>
 </body>
 </html>

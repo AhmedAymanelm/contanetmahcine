@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routers import sources, raw_articles, content, stats, templates, social, auth, threads, settings as settings_router_module
 from app.api.routers.analytics import router as analytics_router
 from app.api.routers.recommendations import router as recommendations_router
+from app.api.routers.ai_usage import router as ai_usage_router
 from app.core.config import settings
 from app.core.security import get_current_user
 from fastapi import Depends
@@ -30,6 +31,7 @@ async def lifespan(app: FastAPI):
         import app.models.content_item, app.models.carousel_template
         import app.models.app_setting, app.models.user
         import app.models.oauth_token, app.models.banned_word
+        import app.models.ai_usage_log   # <-- token tracking
         Base.metadata.create_all(bind=engine)
         print("[Startup] SQLite tables created/verified.")
 
@@ -158,6 +160,7 @@ app.include_router(threads.router, prefix="/api/threads", tags=["Threads API"], 
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"], dependencies=[Depends(get_current_user)])
 app.include_router(recommendations_router, prefix="/api/recommendations", tags=["Recommendations"], dependencies=[Depends(get_current_user)])
 app.include_router(settings_router_module.router, prefix="/api/settings", tags=["Settings"], dependencies=[Depends(get_current_user)])
+app.include_router(ai_usage_router, prefix="/api/ai-usage", tags=["AI Usage"], dependencies=[Depends(get_current_user)])
 
 # ── Image Proxy (no auth needed — used by img tags in browser) ─────────────
 from fastapi import Query

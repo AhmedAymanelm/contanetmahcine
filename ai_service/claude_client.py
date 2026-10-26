@@ -2,6 +2,9 @@ import json
 import os
 import anthropic
 
+# Operation name injected by callers at runtime (thread-local style via module var)
+_current_operation: str = "claude_call"
+
 def get_client(api_key: str):
     if not api_key:
         return None
@@ -37,6 +40,18 @@ def generate_structured_content(api_key: str, system_prompt: str, user_prompt: s
             ]
         )
         
+        # ── Log token usage ────────────────────────────────────────────────
+        try:
+            from app.services.ai_usage_tracker import log_usage
+            log_usage(
+                operation=_current_operation,
+                model=os.environ.get("DEFAULT_MODEL", "claude-sonnet-4-5"),
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+            )
+        except Exception:
+            pass
+
         # The result will be in the tool use block
         for content in response.content:
             if content.type == "tool_use" and content.name == "output_formatter":
