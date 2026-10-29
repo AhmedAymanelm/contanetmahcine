@@ -125,3 +125,20 @@ def get_usage_overview(
         "recent_logs":  recent_entries,
         "generated_at": now.isoformat(),
     }
+
+
+@router.post("/fix-claude-call-labels")
+def fix_claude_call_labels(db: Session = Depends(get_db)):
+    """
+    One-time migration: rename old 'claude_call' records to 'ai_extractor'
+    since that was the only caller of generate_structured_content before
+    the operation parameter was introduced.
+    """
+    updated = db.query(AiUsageLog).filter(
+        AiUsageLog.operation == "claude_call"
+    ).all()
+    count = len(updated)
+    for row in updated:
+        row.operation = "ai_extractor"
+    db.commit()
+    return {"detail": f"Updated {count} records from 'claude_call' → 'ai_extractor'"}
