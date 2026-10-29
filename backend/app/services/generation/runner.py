@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.raw_article import RawArticle
 from app.models.content_item import ContentItem
 from ai_service.generation_pipeline import generate_selected_content
+from ai_service.claude_client import QuotaExceededError
 from app.services.carousel_renderer import render_carousel_sync
 from app.core.config import settings
 
@@ -146,6 +147,16 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
             # Leave it as PENDING or change to a failed state so it can be retried
             article.status = "PENDING"
             db.commit()
+    except QuotaExceededError as e:
+        logger.error(f"Generation failed — Anthropic quota exceeded: {e}")
+        db.rollback()
+        try:
+            article = db.query(RawArticle).filter(RawArticle.id == raw_article_id).first()
+            if article:
+                article.status = "QUOTA_EXCEEDED"
+                db.commit()
+        except Exception:
+            pass
     except Exception as e:
         logger.error(f"Generation failed: {e}")
         db.rollback()

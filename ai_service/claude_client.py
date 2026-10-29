@@ -5,6 +5,12 @@ import anthropic
 # Operation name injected by callers at runtime (thread-local style via module var)
 _current_operation: str = "claude_call"
 
+
+class QuotaExceededError(Exception):
+    """Raised when the Anthropic API monthly usage limit has been reached."""
+    pass
+
+
 def get_client(api_key: str):
     if not api_key:
         return None
@@ -13,6 +19,7 @@ def get_client(api_key: str):
 def generate_structured_content(api_key: str, system_prompt: str, user_prompt: str, schema: dict) -> dict:
     """
     Calls Claude using Tool Use (Structured Output) to force JSON adherence based on a JSON schema.
+    Raises QuotaExceededError if the Anthropic monthly spend limit has been hit.
     """
     
     tools = [
@@ -59,5 +66,12 @@ def generate_structured_content(api_key: str, system_prompt: str, user_prompt: s
                 
         return {}
     except Exception as e:
+        err_str = str(e)
+        # ── Detect monthly quota / spend-limit errors ──────────────────────
+        if "usage limits" in err_str or "regain access" in err_str or (
+            hasattr(e, "status_code") and e.status_code == 400
+            and "usage" in err_str.lower()
+        ):
+            raise QuotaExceededError(err_str) from e
         print(f"Error calling Claude API: {e}")
         return {}

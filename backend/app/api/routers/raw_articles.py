@@ -28,7 +28,7 @@ async def get_raw_articles(db: Session = Depends(get_db)):
     # Show articles from the last 24 hours only (rolling window)
     display_cutoff = datetime.utcnow() - timedelta(hours=24)
     articles = db.query(RawArticle).filter(
-        RawArticle.status == "PENDING",
+        RawArticle.status.in_(["PENDING", "QUOTA_EXCEEDED"]),
         RawArticle.created_at >= display_cutoff
     ).order_by(RawArticle.created_at.desc()).limit(200).all()
     return articles
@@ -107,3 +107,24 @@ async def retry_article_generation(article_id: int, request: ArticleGenerateRequ
     _thread_pool.submit(process_article_generation, article_id, request.formats, request.carousel_platforms)
     logger.info(f"Retry generation submitted for article {article_id}")
     return {"detail": "Retry started"}
+
+@router.get("/quota-status")
+async def get_quota_status(db: Session = Depends(get_db)):
+    """Returns the count of articles blocked by quota exceeded error."""
+    blocked = db.query(RawArticle).filter(
+        RawArticle.status == "QUOTA_EXCEEDED"
+    ).count()
+    return {"quota_exceeded": blocked > 0, "blocked_count": blocked}
+
+@router.post("/retry-quota-exceeded")
+async def retry_quota_exceeded(db: Session = Depends(get_db)):
+    """Reset all QUOTA_EXCEEDED articles back to PENDING so they can be retried."""
+    articles = db.query(RawArticle).filter(
+        RawArticle.status == "QUOTA_EXCEEDED"
+    ).all()
+    count = len(articles)
+    for art in articles:
+        art.status = "PENDING"
+    db.commit()
+    logger.info(f"Reset {count} quota-exceeded articles back to PENDING")
+    return {"detail": f"Reset {count} articles to PENDING"}

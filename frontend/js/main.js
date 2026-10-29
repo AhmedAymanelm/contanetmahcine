@@ -694,8 +694,102 @@ if(document.getElementById('save-edit-btn')) {
 }
 
 // ---------------- RAW ARTICLES ----------------
+async function checkQuotaBanner() {
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/raw-articles/quota-status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const bannerId = 'quota-exceeded-banner';
+        let banner = document.getElementById(bannerId);
+        if (data.quota_exceeded) {
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = bannerId;
+                banner.style.cssText = `
+                    background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(245,158,11,0.1));
+                    border: 1px solid rgba(239,68,68,0.4);
+                    border-radius: 14px;
+                    padding: 16px 20px;
+                    margin-bottom: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    animation: genFadeUp 0.4s ease forwards;
+                `;
+                banner.innerHTML = `
+                    <div style="font-size:1.8rem; flex-shrink:0;">🚫</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:700; color:#f87171; font-size:0.95rem; margin-bottom:4px;">
+                            توليد المحتوى متوقف — تم استنزاف رصيد Anthropic
+                        </div>
+                        <div style="color:rgba(255,255,255,0.55); font-size:0.82rem; line-height:1.5;">
+                            ${data.blocked_count} مقال(ة) موقوفة. يرجى شحن رصيد على
+                            <a href="https://console.anthropic.com/settings/billing" target="_blank"
+                               style="color:#fbbf24; text-decoration:underline;">console.anthropic.com</a>
+                            ثم اضغط "إعادة المحاولة".
+                        </div>
+                    </div>
+                    <button onclick="retryQuotaArticles(this)" style="
+                        background: rgba(251,191,36,0.15);
+                        border: 1px solid rgba(251,191,36,0.4);
+                        color: #fbbf24;
+                        padding: 8px 18px;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        font-family: inherit;
+                        font-size: 0.82rem;
+                        font-weight: 600;
+                        white-space: nowrap;
+                        flex-shrink: 0;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='rgba(251,191,36,0.25)'"
+                      onmouseout="this.style.background='rgba(251,191,36,0.15)'">
+                        🔄 إعادة المحاولة
+                    </button>
+                `;
+                // Insert before the raw-articles-list
+                const rawList = document.getElementById('raw-articles-list');
+                if (rawList && rawList.parentNode) {
+                    rawList.parentNode.insertBefore(banner, rawList);
+                }
+            }
+            banner.style.display = 'flex';
+        } else {
+            if (banner) banner.style.display = 'none';
+        }
+    } catch (e) {
+        console.warn('[QuotaBanner]', e);
+    }
+}
+
+async function retryQuotaArticles(btn) {
+    const orig = btn.innerText;
+    btn.innerText = 'جاري...';
+    btn.disabled = true;
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/raw-articles/retry-quota-exceeded`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        showToast(`✅ ${data.detail}`, 'success');
+        const banner = document.getElementById('quota-exceeded-banner');
+        if (banner) banner.style.display = 'none';
+        fetchRawArticles();
+    } catch (e) {
+        showToast('❌ فشل الاتصال', 'error');
+        btn.innerText = orig;
+        btn.disabled = false;
+    }
+}
+
 async function fetchRawArticles() {
     try {
+        checkQuotaBanner();
         const res = await fetch(`${API_BASE}/raw-articles/`);
         if(!res.ok) return;
         const data = await res.json();
@@ -729,10 +823,18 @@ async function fetchRawArticles() {
                 const thumbStyle = art.image_url ? `background-image:url('${imgProxy(art.image_url)}'); background-size:cover; background-position:center;` : `background:${gradient};`;
                 const thumbContent = art.image_url ? '' : (art.source ? art.source.name : 'مجهول');
                 
+                const isQuotaBlocked = art.status === 'QUOTA_EXCEEDED';
+                const quotaBadge = isQuotaBlocked
+                    ? `<div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.35); color:#f87171; border-radius:8px; padding:5px 10px; font-size:11px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                           🚫 فشل التوليد — رصيد مستنزف
+                       </div>`
+                    : '';
+                
                 rawList.innerHTML += `
-                    <div class="panel" style="display:flex; flex-direction:column; justify-content:space-between;">
+                    <div class="panel" style="display:flex; flex-direction:column; justify-content:space-between;${isQuotaBlocked ? ' border-color:rgba(239,68,68,0.25); opacity:0.85;' : ''}">
                         <div>
                             <div class="thumb" style="width:100%; height:180px; margin-bottom:12px; border-radius:8px; ${thumbStyle} display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:18px; text-shadow:0 2px 4px rgba(0,0,0,0.2);">${thumbContent}</div>
+                            ${quotaBadge}
                             <div class="t" style="margin-bottom:8px; line-height:1.4;">${art.title || 'بدون عنوان'}</div>
                             <div class="snippet" style="font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:12px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${cleanSnippet}</div>
                         </div>
@@ -741,7 +843,7 @@ async function fetchRawArticles() {
                             <div style="display:flex; gap:6px;">
                                 <button class="btn ghost" style="padding:4px 10px; font-size:11px; color:var(--red); border-color:rgba(255,80,80,0.2);" onclick="deleteRawArticle(${art.id}, this)" title="حذف الخبر">🗑️</button>
                                 <button class="btn ghost" style="padding:4px 10px; font-size:11px;" onclick="openArticleById(${art.id})">قراءة</button>
-                                <button class="btn" style="padding:4px 10px; font-size:11px; background:var(--teal); color:#0a0a0a; border:none;" onclick='approveArticle(${art.id}, this)'>موافقة ⚡</button>
+                                <button class="btn" style="padding:4px 10px; font-size:11px; background:var(--teal); color:#0a0a0a; border:none;" onclick='approveArticle(${art.id}, this)'>${isQuotaBlocked ? '🔄 إعادة' : 'موافقة ⚡'}</button>
                             </div>
                         </div>
                     </div>
