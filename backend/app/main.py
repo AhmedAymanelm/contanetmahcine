@@ -125,6 +125,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[Startup] Failed to reset stuck articles: {e}")
 
+    # ── One-time migration: rename old 'claude_call' usage logs → 'ai_extractor' ──
+    try:
+        from app.models.ai_usage_log import AiUsageLog
+        db = SessionLocal()
+        old_records = db.query(AiUsageLog).filter(AiUsageLog.operation == "claude_call").all()
+        if old_records:
+            for row in old_records:
+                row.operation = "ai_extractor"
+            db.commit()
+            print(f"[Startup] Renamed {len(old_records)} 'claude_call' usage log(s) → 'ai_extractor'")
+        db.close()
+    except Exception as e:
+        print(f"[Startup] Failed to rename claude_call logs (non-fatal): {e}")
+
     start_scheduler()
     yield
     stop_scheduler()
