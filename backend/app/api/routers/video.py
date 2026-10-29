@@ -96,3 +96,4 @@ async def get_render_status(content_item_id: int):
         return {"status": status, "content_item_id": content_item_id}
 
     return {"content_item_id": content_item_id, **status}
+

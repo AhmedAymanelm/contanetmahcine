@@ -1414,6 +1414,22 @@ if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000); // Poll ev
                         </div>`;
                     }
 
+                    // Video render button (for all content types)
+                    const videoControls = `<div style="margin-bottom:10px;">
+                        <button id="vid-btn-${item.id}" class="btn" style="
+                            width:100%;background:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(239,68,68,0.1));
+                            color:#fb923c;border:1px solid rgba(251,146,60,0.35);
+                            padding:8px 14px;font-size:12.5px;border-radius:9px;
+                            cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
+                            transition:all .2s;"
+                            onmouseover="this.style.background='linear-gradient(135deg,rgba(251,146,60,0.25),rgba(239,68,68,0.18))'"
+                            onmouseout="this.style.background='linear-gradient(135deg,rgba(251,146,60,0.15),rgba(239,68,68,0.1))'"
+                            onclick="renderVideoSlideshow(${item.id})">
+                            🎬 تحويل لفيديو سلايدشو
+                        </button>
+                        <div id="vid-status-${item.id}" style="display:none;margin-top:6px;font-size:11.5px;color:var(--muted);text-align:center;"></div>
+                    </div>`;
+
                     subCardsHtml += `
                     <div id="review-card-${item.id}" style="background:var(--bg);border:1px solid var(--line);border-radius:13px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s;" onmouseover="this.style.borderColor='rgba(53,211,153,0.3)'" onmouseout="this.style.borderColor='var(--line)'">
                         <!-- Type badge + platforms -->
@@ -1425,6 +1441,8 @@ if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000); // Poll ev
                         <div style="flex:1;">${snippetHtml}</div>
                         <!-- Carousel controls -->
                         ${carouselControls}
+                        <!-- Video controls -->
+                        ${videoControls}
                         <!-- Actions -->
                         <div style="display:flex;gap:7px;padding-top:8px;border-top:1px solid var(--line);">
                             <button class="btn ghost" style="color:var(--red);padding:6px 10px;font-size:12.5px;" onclick="rejectContentItem(${item.id}, this)">رفض</button>
@@ -3206,4 +3224,66 @@ async function openNewsModal(url, title, safeTitle, safeSnippet) {
 
 function closeNewsModal() {
     document.getElementById('news-modal').style.display = 'none';
+}
+
+
+async function renderVideoSlideshow(id) {
+    const btn = document.getElementById('vid-btn-' + id);
+    const statusEl = document.getElementById('vid-status-' + id);
+    if (!btn || !statusEl) return;
+
+    btn.disabled = true;
+    btn.innerText = '⏳ جاري التحويل...';
+    statusEl.style.display = 'block';
+    statusEl.innerText = 'يتم إنشاء الفيديو... قد يستغرق دقيقة أو اثنتين';
+
+    const token = localStorage.getItem('cm_token') || localStorage.getItem('access_token') || '';
+    try {
+        const res = await fetch(`${API_BASE}/video/${id}/render`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast('❌ ' + (err.detail || 'فشل بدء التحويل'), 'error');
+            btn.disabled = false;
+            btn.innerText = '🎬 تحويل لفيديو سلايدشو';
+            statusEl.style.display = 'none';
+            return;
+        }
+
+        // Poll for completion every 3 seconds
+        let polls = 0;
+        const interval = setInterval(async () => {
+            polls++;
+            try {
+                const sRes = await fetch(`${API_BASE}/video/${id}/status`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const sData = await sRes.json();
+                if (sData.status === 'done' && sData.url) {
+                    clearInterval(interval);
+                    statusEl.innerHTML = `✅ تم! <a href="${sData.url}" target="_blank" style="color:#fb923c;font-weight:700;">تحميل الفيديو ↗</a>`;
+                    btn.disabled = false;
+                    btn.innerText = '🎬 تحويل لفيديو سلايدشو';
+                    showToast('✅ تم إنشاء الفيديو!', 'success');
+                } else if (sData.status === 'error') {
+                    clearInterval(interval);
+                    statusEl.innerText = '❌ فشل التحويل: ' + (sData.error || 'خطأ غير معروف');
+                    btn.disabled = false;
+                    btn.innerText = '🎬 تحويل لفيديو سلايدشو';
+                } else if (polls > 60) {
+                    clearInterval(interval);
+                    statusEl.innerText = '⚠️ انتهت المهلة — تحقق لاحقاً';
+                    btn.disabled = false;
+                    btn.innerText = '🎬 تحويل لفيديو سلايدشو';
+                }
+            } catch (e) { /* keep polling */ }
+        }, 3000);
+    } catch (e) {
+        showToast('❌ خطأ في الاتصال', 'error');
+        btn.disabled = false;
+        btn.innerText = '🎬 تحويل لفيديو سلايدشو';
+        statusEl.style.display = 'none';
+    }
 }
