@@ -9,7 +9,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../../")))
 
 from ai_service.claude_client import generate_structured_content
-import ai_service.claude_client as _cc
 from ai_service.schemas import ExtractedArticle
 from ai_service.prompts.extraction_prompt import EXTRACTION_SYSTEM_PROMPT, get_extraction_prompt
 
@@ -34,9 +33,13 @@ def extract(url: str) -> List[Dict]:
         """
         
         schema = ExtractedArticle.model_json_schema()
-        _cc._current_operation = "ai_extractor"
-        result = generate_structured_content(settings.ANTHROPIC_API_KEY, EXTRACTION_SYSTEM_PROMPT, prompt, schema)
-        _cc._current_operation = "claude_call"  # reset
+        result = generate_structured_content(
+            settings.ANTHROPIC_API_KEY,
+            EXTRACTION_SYSTEM_PROMPT,
+            prompt,
+            schema,
+            operation="ai_extractor",
+        )
         
         if result and len(result.get("content", "")) > 100:
             return [{

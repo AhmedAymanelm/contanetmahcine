@@ -1,9 +1,5 @@
-import json
 import os
 import anthropic
-
-# Operation name injected by callers at runtime (thread-local style via module var)
-_current_operation: str = "claude_call"
 
 
 class QuotaExceededError(Exception):
@@ -16,12 +12,20 @@ def get_client(api_key: str):
         return None
     return anthropic.Anthropic(api_key=api_key)
 
-def generate_structured_content(api_key: str, system_prompt: str, user_prompt: str, schema: dict) -> dict:
+def generate_structured_content(
+    api_key: str,
+    system_prompt: str,
+    user_prompt: str,
+    schema: dict,
+    operation: str = "claude_call",
+) -> dict:
     """
     Calls Claude using Tool Use (Structured Output) to force JSON adherence based on a JSON schema.
     Raises QuotaExceededError if the Anthropic monthly spend limit has been hit.
+
+    Args:
+        operation: Name logged to the AI usage tracker (e.g. 'ai_extractor', 'generate_post').
     """
-    
     tools = [
         {
             "name": "output_formatter",
@@ -46,12 +50,12 @@ def generate_structured_content(api_key: str, system_prompt: str, user_prompt: s
                 {"role": "user", "content": user_prompt}
             ]
         )
-        
+
         # ── Log token usage ────────────────────────────────────────────────
         try:
             from app.services.ai_usage_tracker import log_usage
             log_usage(
-                operation=_current_operation,
+                operation=operation,
                 model=os.environ.get("DEFAULT_MODEL", "claude-sonnet-4-5"),
                 input_tokens=response.usage.input_tokens,
                 output_tokens=response.usage.output_tokens,
@@ -63,7 +67,7 @@ def generate_structured_content(api_key: str, system_prompt: str, user_prompt: s
         for content in response.content:
             if content.type == "tool_use" and content.name == "output_formatter":
                 return content.input
-                
+
         return {}
     except Exception as e:
         err_str = str(e)
