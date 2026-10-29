@@ -12,6 +12,7 @@ from app.api.routers import sources, raw_articles, content, stats, templates, so
 from app.api.routers.analytics import router as analytics_router
 from app.api.routers.recommendations import router as recommendations_router
 from app.api.routers.ai_usage import router as ai_usage_router
+from app.api.routers.video import router as video_router
 from app.core.config import settings
 from app.core.security import get_current_user
 from fastapi import Depends
@@ -177,6 +178,7 @@ app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(recommendations_router, prefix="/api/recommendations", tags=["Recommendations"], dependencies=[Depends(get_current_user)])
 app.include_router(settings_router_module.router, prefix="/api/settings", tags=["Settings"], dependencies=[Depends(get_current_user)])
 app.include_router(ai_usage_router, prefix="/api/ai-usage", tags=["AI Usage"], dependencies=[Depends(get_current_user)])
+app.include_router(video_router, prefix="/api/video", tags=["Video"], dependencies=[Depends(get_current_user)])
 
 # ── Image Proxy (no auth needed — used by img tags in browser) ─────────────
 from fastapi import Query
