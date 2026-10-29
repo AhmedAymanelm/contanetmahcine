@@ -200,8 +200,7 @@
           },
         },
       },
-    });
-  }
+    });  }
 
   /* ── Operation Donut Chart ──────────────────────────────────────────────── */
   function renderOpChart(byOp) {
@@ -237,6 +236,8 @@
         }],
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false,
         cutout: "68%",
         plugins: {
           legend: { display: false },

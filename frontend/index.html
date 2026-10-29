@@ -794,21 +794,25 @@
     <div class="usage-kpi-grid" id="usage-kpi-row"></div>
 
     <!-- ── Charts Row ────────────────────────────────────────────────────── -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;margin-bottom:24px;align-items:start;">
 
       <!-- Daily Cost Trend -->
       <div class="an-card" style="padding:22px;">
         <p class="an-section-title" style="margin-bottom:16px;">📉 التكلفة اليومية (آخر 14 يوم)</p>
-        <canvas id="usage-daily-chart" height="180"></canvas>
+        <div style="position:relative;height:200px;">
+          <canvas id="usage-daily-chart"></canvas>
+        </div>
         <p id="usage-daily-empty" style="display:none;color:var(--muted);text-align:center;padding:45px 0;font-size:0.85rem;">لا توجد بيانات كافية للرسم البياني حتى الآن 📉</p>
       </div>
 
       <!-- By Operation Donut -->
       <div class="an-card" style="padding:22px;">
         <p class="an-section-title" style="margin-bottom:16px;">🔧 التكلفة حسب العملية</p>
-        <div id="usage-op-wrap" style="display:flex;gap:20px;align-items:center;">
-          <canvas id="usage-op-chart" width="160" height="160" style="flex-shrink:0;"></canvas>
-          <div id="usage-op-legend" style="flex:1;font-size:0.82rem;display:flex;flex-direction:column;gap:8px;"></div>
+        <div id="usage-op-wrap" style="display:flex;flex-direction:column;gap:16px;align-items:center;">
+          <div style="position:relative;width:160px;height:160px;flex-shrink:0;">
+            <canvas id="usage-op-chart"></canvas>
+          </div>
+          <div id="usage-op-legend" style="width:100%;font-size:0.82rem;display:flex;flex-direction:column;gap:8px;"></div>
         </div>
         <p id="usage-op-empty" style="display:none;color:var(--muted);text-align:center;padding:45px 0;font-size:0.85rem;">لا توجد عمليات مسجلة بعد — ولّد محتوى وستظهر هنا 🚀</p>
       </div>
