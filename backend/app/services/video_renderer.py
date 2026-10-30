@@ -447,19 +447,27 @@ def _extract_bars_from_text(text: str) -> List[Dict]:
     # Look for patterns like "X%", "X من Y", "X/Y"
     pattern = re.findall(r'([^\n،,]+?)[\s:]+(\d+(?:\.\d+)?)\s*(%|من|\/\d+)?', text)
     for i, match in enumerate(pattern[:5]):
-        label_raw = match[0].strip()[:30]
-        val = float(match[2] if match[2] and match[2] != '%' and '/' not in match[2] else match[1])
-        unit = match[2] or ""
-        if "%" in unit:
-            pct = min(float(match[1]), 100)
-        else:
-            pct = min(float(match[1]) * 10, 100)  # rough scale
-        bars.append({
-            "label": label_raw,
-            "pct": round(pct),
-            "value": match[1] + (unit if unit == "%" else ""),
-            "color": colors[i % len(colors)],
-        })
+        try:
+            label_raw = match[0].strip()[:30]
+            num_val = float(match[1])   # always the captured number
+            unit = match[2] or ""
+            if "%" in unit:
+                pct = min(num_val, 100)
+                display_val = match[1] + "%"
+            elif "من" in unit or "/" in unit:
+                pct = min(num_val * 10, 100)
+                display_val = match[1]
+            else:
+                pct = min(num_val * 10, 100)
+                display_val = match[1]
+            bars.append({
+                "label": label_raw,
+                "pct": round(pct),
+                "value": display_val,
+                "color": colors[i % len(colors)],
+            })
+        except (ValueError, IndexError):
+            continue
     return bars
 
 
