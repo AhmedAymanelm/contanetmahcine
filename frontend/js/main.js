@@ -420,14 +420,18 @@ function openEditModal(id) {
     } else {
         // Detect content type by keys present
         const keys = Object.keys(currentEditData);
+        const item = window.reviewItemsDataRaw ? window.reviewItemsDataRaw[currentEditId] : null;
+        const contentType = item ? item.content_type : '';
+        const isReelSlides = contentType === 'REEL' || keys.includes('slides') && !keys.includes('title') && !keys.includes('unified_post');
         const isPost = keys.includes('unified_post') || keys.includes('linkedin_post');
-        const isCarousel = keys.includes('slides') || keys.includes('title');
-        const isReel = keys.includes('hook') || keys.includes('body') || keys.includes('visual_cues');
+        const isCarousel = (keys.includes('slides') || keys.includes('title')) && !isReelSlides;
+        const isVideoScript = keys.includes('hook') || keys.includes('body') || keys.includes('visual_cues');
 
         const tabDefs = [];
         if (isPost) tabDefs.push({ id: 'post', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>', label: 'منشور موحّد', badge: '2 حقل' });
         if (isCarousel) tabDefs.push({ id: 'slides', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>', label: 'شرائح', badge: 'كاروسيل' });
-        if (isReel) tabDefs.push({ id: 'reel', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>', label: 'سكريبت ريلز', badge: '4 حقول' });
+        if (isVideoScript) tabDefs.push({ id: 'reel', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>', label: 'سكريبت فيديو', badge: '4 حقول' });
+        if (isReelSlides) tabDefs.push({ id: 'reel-slides', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>', label: 'شرائح الريلز', badge: 'ريلز' });
 
         // If no type detected, show raw JSON
         if (tabDefs.length === 0) {
@@ -452,7 +456,8 @@ function openEditModal(id) {
             const wrap = document.createElement('div');
             if (isPost) wrap.appendChild(buildPostPanel(currentEditData));
             if (isCarousel) wrap.appendChild(buildCarouselPanel(currentEditData));
-            if (isReel) wrap.appendChild(buildReelPanel(currentEditData));
+            if (isVideoScript) wrap.appendChild(buildReelPanel(currentEditData));
+            if (isReelSlides) wrap.appendChild(buildReelSlidesPanel(currentEditData));
             content.appendChild(wrap);
 
             // Show first
@@ -594,6 +599,63 @@ function emRemoveTip(slideIdx, tipIdx) {
     if (tips[tipIdx]) tips[tipIdx].remove();
 }
 
+function buildReelSlidesPanel(data) {
+    const div = document.createElement('div');
+    div.id = 'em-panel-reel-slides';
+    div.className = 'edit-panel-section edit-panel';
+
+    const slides = Array.isArray(data.slides) ? data.slides : [];
+    let slidesHtml = '<div id="em-reel-slides-container">';
+    slides.forEach((slide, idx) => slidesHtml += buildReelSlideCard(slide, idx));
+    slidesHtml += '</div>';
+    slidesHtml += `<button class="add-slide-em" onclick="emAddReelSlide()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> إضافة شريحة</button>`;
+
+    div.innerHTML = slidesHtml;
+    return div;
+}
+
+function buildReelSlideCard(slide, idx) {
+    const text = slide.text || '';
+    const note = slide.note || '';
+    return `
+    <div class="slide-card-em" data-reel-slide-idx="${idx}">
+        <div class="slide-card-em-head">
+            <div style="display:flex;align-items:center;gap:9px;font-size:12.5px;color:#FF5C00;font-weight:700;">
+                <span class="slide-num-em" style="background:rgba(255,92,0,0.15);color:#FF5C00;">${String(idx+1).padStart(2,'0')}</span> الشريحة ${idx + 1}
+            </div>
+            <button class="em-del-btn" onclick="emRemoveReelSlide(${idx})" title="حذف الشريحة"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+        </div>
+        <div class="slide-body-em">
+            <div>
+                <div class="mini-label-em"><code>text</code> نص الشريحة <span style="color:#FF5C00;font-size:10px;">(3-8 كلمات)</span></div>
+                <textarea class="mini-ta" rows="2" data-reel-slide="${idx}" data-field="text" style="font-size:16px;font-weight:700;">${text}</textarea>
+            </div>
+            <div>
+                <div class="mini-label-em"><code>note</code> ملاحظة المخرج (اختياري)</div>
+                <textarea class="mini-ta" rows="1" data-reel-slide="${idx}" data-field="note">${note}</textarea>
+            </div>
+        </div>
+    </div>`;
+}
+
+function emRemoveReelSlide(idx) {
+    const container = document.getElementById('em-reel-slides-container');
+    const cards = container.querySelectorAll('.slide-card-em[data-reel-slide-idx]');
+    if (cards.length <= 1) return;
+    cards[idx].remove();
+    container.querySelectorAll('.slide-card-em[data-reel-slide-idx]').forEach((c, i) => {
+        c.dataset.reelSlideIdx = i;
+        const num = c.querySelector('.slide-num-em');
+        if (num) num.textContent = String(i+1).padStart(2,'0');
+    });
+}
+
+function emAddReelSlide() {
+    const container = document.getElementById('em-reel-slides-container');
+    const idx = container.querySelectorAll('.slide-card-em[data-reel-slide-idx]').length;
+    container.insertAdjacentHTML('beforeend', buildReelSlideCard({ text:'', note:'' }, idx));
+}
+
 function buildReelPanel(data) {
     const div = document.createElement('div');
     div.id = 'em-panel-reel';
@@ -670,6 +732,21 @@ if(document.getElementById('save-edit-btn')) {
                     slides.push(slide);
                 });
                 newContent.slides = slides;
+            }
+
+            // Collect REEL slides
+            const reelSlidesContainer = document.getElementById('em-reel-slides-container');
+            if (reelSlidesContainer) {
+                const reelSlides = [];
+                reelSlidesContainer.querySelectorAll('.slide-card-em[data-reel-slide-idx]').forEach(card => {
+                    const textTA = card.querySelector('textarea[data-field="text"]');
+                    const noteTA = card.querySelector('textarea[data-field="note"]');
+                    reelSlides.push({
+                        text: textTA ? textTA.value : '',
+                        note: noteTA ? noteTA.value : ''
+                    });
+                });
+                if (reelSlides.length > 0) newContent.slides = reelSlides;
             }
         }
 
