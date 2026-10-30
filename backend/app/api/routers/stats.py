@@ -78,51 +78,19 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
     
     total_sources = db.query(Source).count()
     
-    # Platform Performance (Engagement/Interactions)
-    platforms_count = {"Instagram": 0, "Facebook": 0}
-    
-    global _cached_platforms_count, _last_platforms_fetch
-    if '_cached_platforms_count' not in globals():
-        _cached_platforms_count = {"Instagram": 0, "Facebook": 0}
-        _last_platforms_fetch = None
-
-    now = datetime.utcnow()
-    if _last_platforms_fetch is None or (now - _last_platforms_fetch).total_seconds() > 600:
-        # Fetch real Instagram stats
-        try:
-            from app.core.config import settings
-            import httpx
-            if settings.INSTAGRAM_ACCESS_TOKEN and settings.INSTAGRAM_ACCOUNT_ID:
-                url = f"https://graph.instagram.com/v19.0/{settings.INSTAGRAM_ACCOUNT_ID}/media?fields=like_count,comments_count&limit=50&access_token={settings.INSTAGRAM_ACCESS_TOKEN}"
-                with httpx.Client(timeout=3.0) as client:
-                    res = client.get(url)
-                    if res.status_code == 200:
-                        data = res.json().get("data", [])
-                        total_ig_eng = sum(item.get("like_count", 0) + item.get("comments_count", 0) for item in data)
-                        _cached_platforms_count["Instagram"] = total_ig_eng # REAL ENGAGEMENT ONLY
-        except Exception as e:
-            print(f"Error fetching IG stats: {e}")
-            
-        # Fetch real Facebook stats
-        try:
-            if settings.FACEBOOK_ACCESS_TOKEN and settings.FACEBOOK_PAGE_ID:
-                fb_url = f"https://graph.facebook.com/v19.0/{settings.FACEBOOK_PAGE_ID}/posts?fields=likes.summary(true),comments.summary(true)&limit=50&access_token={settings.FACEBOOK_ACCESS_TOKEN}"
-                with httpx.Client(timeout=3.0) as client:
-                    fb_res = client.get(fb_url)
-                    if fb_res.status_code == 200:
-                        fb_data = fb_res.json().get("data", [])
-                        total_fb_eng = 0
-                        for post in fb_data:
-                            likes = post.get("likes", {}).get("summary", {}).get("total_count", 0)
-                            comments = post.get("comments", {}).get("summary", {}).get("total_count", 0)
-                            total_fb_eng += (likes + comments)
-                        _cached_platforms_count["Facebook"] = total_fb_eng # REAL ENGAGEMENT ONLY
-        except Exception as e:
-            print(f"Error fetching FB stats: {e}")
-            
-        _last_platforms_fetch = now
-
-    platforms_count = _cached_platforms_count.copy()
+    # Platform Performance — count published content per platform from DB (no blocking network calls)
+    from app.models.content_item import ContentItem as CI
+    published_items = db.query(CI).filter(func.lower(CI.status) == 'published').all()
+    platforms_count = {"Instagram": 0, "Facebook": 0, "TikTok": 0, "X": 0, "Threads": 0}
+    for ci in published_items:
+        plats = ci.platforms or []
+        for plat_code in plats:
+            mapping = {"IG": "Instagram", "FB": "Facebook", "TT": "TikTok", "X": "X", "Th": "Threads"}
+            name = mapping.get(plat_code, plat_code)
+            if name in platforms_count:
+                platforms_count[name] += 1
+            else:
+                platforms_count[name] = 1
     
     # Last Ingestion Time
     last_article = db.query(RawArticle).order_by(RawArticle.created_at.desc()).first()
