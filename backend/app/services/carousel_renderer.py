@@ -456,9 +456,7 @@ async def render_carousel_images(
         return []
 
     theme = random.choice(THEMES)
-    style = random.choice(["dark_flat", "light_card", "modern_light"])
-    if theme["id"] == "brown":
-        style = "light_card"
+    style = "dark_flat"  # Always consistent dark style — no random light slides
 
     # Fetch custom template if provided
     custom_template = None
