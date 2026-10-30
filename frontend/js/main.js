@@ -1085,9 +1085,20 @@ function showConfirmModal(title, message, onConfirmCallback) {
 }
 
 // ---------------- TOAST NOTIFICATION ----------------
+// ── Toast dedup: suppress repeated connection-error toasts within 30s ────
+let _lastErrorToastTime = 0;
+const _ERROR_TOAST_COOLDOWN = 30000; // 30 seconds
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
+
+    // Suppress duplicate connection-error toasts (deploy restarts, brief outages)
+    if (type === 'error' && (message.includes('اتصال') || message.includes('الاتصال') || message.includes('الخادم') || message.includes('السيرفر'))) {
+        const now = Date.now();
+        if (now - _lastErrorToastTime < _ERROR_TOAST_COOLDOWN) return; // skip duplicate
+        _lastErrorToastTime = now;
+    }
     
     const toast = document.createElement('div');
     const bgColor = type === 'success' ? 'var(--teal)' : 'var(--red)';
@@ -1122,7 +1133,7 @@ function showToast(message, type = 'success') {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(20px)';
         setTimeout(() => toast.remove(), 300);
-    }, 4000);
+    }, type === 'error' ? 3000 : 4000);
 }
 
 async function fetchAllContent() {
