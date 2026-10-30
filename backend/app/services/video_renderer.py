@@ -536,6 +536,22 @@ def content_item_to_slides(
             slides.append(base({"category": "بوست", "label": str(i + 1),
                                  "headline": line[:150], "detail": ""}))
 
+    elif content_type == "REEL":
+        raw_slides = generated_content.get("slides", [])
+        for i, s in enumerate(raw_slides):
+            text = s.get("text", "")
+            note = s.get("note", "") or ""
+            is_first = (i == 0)
+            is_last  = (i == len(raw_slides) - 1)
+            slides.append(base({
+                "is_cover": is_first,
+                "category": "ابدأ" if is_first else ("شاركنا رأيك" if is_last else ""),
+                "label": "" if is_first else str(i),
+                "headline": text[:150],
+                "detail": note[:80] if note else "",
+                "bars": _extract_bars_from_text(text + " " + note) if note else [],
+            }))
+
     if not slides:
         slides = [base({"category": "محتوى", "label": "", "headline": "لا يوجد محتوى", "detail": ""})]
 

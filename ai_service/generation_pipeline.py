@@ -15,6 +15,10 @@ def generate_video_script(api_key: str, article_title: str, article_content: str
     agent = MasterAgent(api_key=api_key)
     return agent.writer.write_video_script(article_title, article_content)
 
+def generate_reel(api_key: str, article_title: str, article_content: str) -> dict:
+    agent = MasterAgent(api_key=api_key)
+    return agent.writer.write_reel(article_title, article_content)
+
 def generate_all_content(api_key: str, title: str, content: str,
                          platforms: Optional[List[str]] = None) -> Dict[str, Any]:
     """Generates all 3 types of content via the Writer Agent"""
@@ -32,5 +36,7 @@ def generate_selected_content(api_key: str, title: str, content: str, formats: l
         results["carousel"]     = agent.writer.write_carousel(title, content, platforms=platforms)
     if "VIDEO_SCRIPT" in formats:
         results["video_script"] = agent.writer.write_video_script(title, content)
+    if "REEL" in formats:
+        results["reel"] = agent.writer.write_reel(title, content)
     return results
 

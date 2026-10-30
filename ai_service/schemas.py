@@ -26,6 +26,14 @@ class VideoScript(BaseModel):
     call_to_action: str = Field(..., description="Closing CTA (e.g., follow, comment)")
     visual_cues: str = Field(..., description="Suggestions for text on screen or b-roll")
 
+# ── REEL: Video-ready slides — each slide = one screen in the final video ────
+class ReelSlide(BaseModel):
+    text: str = Field(..., description="The MAIN text displayed on screen. Bold, punchy, 2-15 words max. This is the ONLY thing the viewer reads.")
+    note: Optional[str] = Field(None, description="Optional small subtitle or stat shown below the main text (max 10 words). Use for numbers, percentages, or a single supporting fact.")
+
+class ReelContent(BaseModel):
+    slides: List[ReelSlide] = Field(..., min_length=5, max_length=9, description="5 to 9 slides. Each slide is ONE screen. First slide = hook. Last slide = CTA.")
+
 class ExtractedArticle(BaseModel):
     title: str = Field(..., description="The main headline of the article")
     content: str = Field(..., description="The clean main body text of the article")

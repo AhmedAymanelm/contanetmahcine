@@ -1,8 +1,9 @@
 from ai_service.agents.base_agent import AgentClient, AgentConfig
-from ai_service.schemas import PostContent, CarouselContent, VideoScript
+from ai_service.schemas import PostContent, CarouselContent, VideoScript, ReelContent
 from ai_service.prompts.post_prompt import get_post_prompt
 from ai_service.prompts.carousel_prompt import get_carousel_prompt, CAROUSEL_SYSTEM_PROMPT
 from ai_service.prompts.video_script_prompt import get_video_script_prompt
+from ai_service.prompts.reel_prompt import get_reel_prompt
 from typing import Dict, Any, List, Optional
 
 class WriterAgent:
@@ -46,10 +47,15 @@ class WriterAgent:
         prompt = get_video_script_prompt(title, content)
         return self.client.execute_structured_task(self.config, prompt, VideoScript)
 
+    def write_reel(self, title: str, content: str) -> dict:
+        prompt = get_reel_prompt(title, content)
+        return self.client.execute_structured_task(self.config, prompt, ReelContent)
+
     def write_all(self, title: str, content: str, platforms: Optional[List[str]] = None) -> Dict[str, Any]:
         """Generates all content sequentially"""
         return {
             "posts":        self.write_posts(title, content),
             "carousel":     self.write_carousel(title, content, platforms=platforms),
             "video_script": self.write_video_script(title, content),
+            "reel":         self.write_reel(title, content),
         }

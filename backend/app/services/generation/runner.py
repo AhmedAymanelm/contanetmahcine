@@ -17,7 +17,7 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
     saves the results as ContentItems, and updates status.
     """
     if formats is None:
-        formats = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
+        formats = ["POST", "CAROUSEL", "VIDEO_SCRIPT", "REEL"]
     if carousel_platforms is None:
         carousel_platforms = ["IG", "Li"]
         
@@ -126,6 +126,18 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
                     generated_content=generated["video_script"]
                 )
             )
+
+        # 4. Reel
+        if "reel" in generated and generated["reel"]:
+            items_to_add.append(
+                ContentItem(
+                    raw_article_id=article.id,
+                    content_type="REEL",
+                    status="pending_review",
+                    platforms=["IG", "TT"],
+                    generated_content=generated["reel"]
+                )
+            )
             
         # Commit items_to_add (POST, VIDEO) and mark article as generated
         # (Carousel items are already flushed/committed individually above)
@@ -177,7 +189,7 @@ def process_trend_generation(trend_title: str, trend_snippet: str, formats: list
     and saves the results as ContentItems.
     """
     if formats is None:
-        formats = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
+        formats = ["POST", "CAROUSEL", "VIDEO_SCRIPT", "REEL"]
         
     db = SessionLocal()
     try:
@@ -196,6 +208,10 @@ def process_trend_generation(trend_title: str, trend_snippet: str, formats: list
             item = ContentItem(content_type="VIDEO_SCRIPT", status="DRAFT", platforms=["TT", "IG"], generated_content={"trend_title": trend_title})
             db.add(item)
             draft_items["VIDEO_SCRIPT"] = item
+        if "REEL" in formats:
+            item = ContentItem(content_type="REEL", status="DRAFT", platforms=["IG", "TT"], generated_content={"trend_title": trend_title})
+            db.add(item)
+            draft_items["REEL"] = item
         
         db.commit()
         
@@ -240,6 +256,13 @@ def process_trend_generation(trend_title: str, trend_snippet: str, formats: list
             draft_items["VIDEO_SCRIPT"].status = "pending_review"
         elif "VIDEO_SCRIPT" in draft_items:
             db.delete(draft_items["VIDEO_SCRIPT"])
+
+        if "reel" in generated and generated["reel"] and "REEL" in draft_items:
+            generated["reel"]["trend_title"] = trend_title
+            draft_items["REEL"].generated_content = generated["reel"]
+            draft_items["REEL"].status = "pending_review"
+        elif "REEL" in draft_items:
+            db.delete(draft_items["REEL"])
             
         db.commit()
         logger.info(f"Trend generation completed for: {trend_title}")

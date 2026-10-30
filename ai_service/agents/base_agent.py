@@ -103,6 +103,7 @@ Execute the following task exactly as requested. You must respond using the outp
                     "PostContent":    "generate_post",
                     "CarouselContent": "generate_carousel",
                     "VideoScript":    "generate_video_script",
+                    "ReelContent":    "generate_reel",
                 }
                 operation = op_map.get(op_name, f"structured:{op_name}")
                 log_usage(

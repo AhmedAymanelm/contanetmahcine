@@ -205,6 +205,7 @@ async function fetchDashboardStats() {
                 let cTypeAr = 'بوست';
                 if (cType.toUpperCase() === 'CAROUSEL') cTypeAr = 'كاروسيل';
                 else if (cType.toUpperCase() === 'VIDEO' || cType.toUpperCase() === 'VIDEO_SCRIPT') cTypeAr = 'فيديو';
+                else if (cType.toUpperCase() === 'REEL') cTypeAr = 'ريلز';
 
                 let platformsArr = item.platforms || [];
                 let platforms = platformsArr.map(p => `<span>${p}</span>`).join('');
@@ -1242,6 +1243,7 @@ function renderContentList() {
                 let cTypeAr = 'بوست';
                 if (cType.toUpperCase() === 'CAROUSEL') cTypeAr = 'كاروسيل';
                 else if (cType.toUpperCase() === 'VIDEO' || cType.toUpperCase() === 'VIDEO_SCRIPT') cTypeAr = 'فيديو';
+                else if (cType.toUpperCase() === 'REEL') cTypeAr = 'ريلز';
                 
                 let title = 'بدون عنوان';
                 let gen = null;
@@ -1372,6 +1374,7 @@ if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000); // Poll ev
                     'POST':         { label:'منشور',    bg:'rgba(53,211,153,0.12)',  color:'var(--teal)' },
                     'CAROUSEL':     { label:'كاروسيل',  bg:'rgba(139,92,246,0.12)',  color:'#a78bfa' },
                     'VIDEO_SCRIPT': { label:'سكريبت',   bg:'rgba(251,146,60,0.12)',  color:'#fb923c' },
+                    'REEL':         { label:'ريلز',     bg:'rgba(255,92,0,0.12)',    color:'#FF5C00' },
                 };
 
                 // Build sub-cards HTML for each item in this group
@@ -1396,6 +1399,12 @@ if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000); // Poll ev
                         snippetHtml = `<div style="font-size:12.5px;line-height:1.6;color:var(--text);">
                             <b style="color:#fb923c;font-size:11px;">Hook</b><br>${generated && generated.hook || ''}
                             ${generated && generated.body ? `<br><b style="color:var(--muted);font-size:11px;margin-top:6px;display:block;">Body</b><br><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${generated.body}</span>` : ''}
+                        </div>`;
+                    } else if (item.content_type === 'REEL') {
+                        const firstSlide = generated && generated.slides && generated.slides[0] ? generated.slides[0].text : '';
+                        const slideCount = generated && generated.slides ? generated.slides.length : 0;
+                        snippetHtml = `<div style="font-size:12.5px;line-height:1.6;color:var(--text);">
+                            <b style="color:#FF5C00;font-size:11px;">${slideCount} شرائح فيديو</b><br>${firstSlide}
                         </div>`;
                     }
 
@@ -1612,6 +1621,7 @@ async function fetchScheduledContent() {
                 let cTypeAr = 'بوست';
                 if (cType.toUpperCase() === 'CAROUSEL') cTypeAr = 'كاروسيل';
                 else if (cType.toUpperCase() === 'VIDEO') cTypeAr = 'فيديو';
+                else if (cType.toUpperCase() === 'REEL') cTypeAr = 'ريلز';
                 
                 container.innerHTML += `
                     <div class="cal-slot plat-${platClass}">
@@ -3050,6 +3060,20 @@ function showCustomConfirm(msg, onConfirm) {
                             </div>
                         </label>
 
+                        <label id="card-reel" style="display:flex; align-items:center; gap:14px; padding:14px 16px; background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08); border-radius:14px; cursor:pointer; transition:all 0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                            <input type="checkbox" id="chk-format-reel" value="REEL" checked style="display:none;">
+                            <div id="chk-reel-dot" style="width:22px; height:22px; min-width:22px; border-radius:7px; background:linear-gradient(135deg,#FF5C00,#FF8C42); display:flex; align-items:center; justify-content:center; font-size:13px; transition:all 0.2s; box-shadow:0 4px 12px rgba(255,92,0,0.4);">✓</div>
+                            <div style="flex:1; text-align:right;">
+                                <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-bottom:3px;">
+                                    <span style="font-size:14px; font-weight:700; color:#fff;">ريلز (فيديو شرائح)</span>
+                                    <span style="font-size:18px;">🎞️</span>
+                                </div>
+                                <div style="font-size:12px; color:rgba(255,255,255,0.4); line-height:1.4;">شرائح جاهزة للفيديو • Instagram • TikTok</div>
+                            </div>
+                        </label>
+
                     </div>
                 </div>
                 
@@ -3082,16 +3106,17 @@ function showCustomConfirm(msg, onConfirm) {
         };
 
         // Toggle checkbox visual state
-        ['carousel','post','video'].forEach(key => {
+        ['carousel','post','video','reel'].forEach(key => {
             const card = document.getElementById(`card-${key}`);
-            const chk = document.getElementById(`chk-format-${key === 'post' ? 'post' : key === 'video' ? 'video' : 'carousel'}`);
+            const chk = document.getElementById(`chk-format-${key === 'post' ? 'post' : key === 'video' ? 'video' : key === 'reel' ? 'reel' : 'carousel'}`);
             const dot = document.getElementById(`chk-${key}-dot`);
             if (!card || !chk || !dot) return;
-            const uncheckedBg = { carousel:'rgba(255,255,255,0.06)', post:'rgba(255,255,255,0.06)', video:'rgba(255,255,255,0.06)' };
+            const uncheckedBg = { carousel:'rgba(255,255,255,0.06)', post:'rgba(255,255,255,0.06)', video:'rgba(255,255,255,0.06)', reel:'rgba(255,255,255,0.06)' };
             const checkedGradients = {
                 carousel: 'linear-gradient(135deg,#e040fb,#9c27b0)',
                 post: 'linear-gradient(135deg,#00c896,#00b4d8)',
-                video: 'linear-gradient(135deg,#ff6b35,#f7c59f)'
+                video: 'linear-gradient(135deg,#ff6b35,#f7c59f)',
+                reel: 'linear-gradient(135deg,#FF5C00,#FF8C42)'
             };
             card.addEventListener('click', () => {
                 chk.checked = !chk.checked;
@@ -3112,13 +3137,15 @@ function showCustomConfirm(msg, onConfirm) {
         const chkCar = document.getElementById('chk-format-carousel');
         const chkPost = document.getElementById('chk-format-post');
         const chkVid = document.getElementById('chk-format-video');
+        const chkReel = document.getElementById('chk-format-reel');
         
         if (chkCar && chkPost && chkVid) {
             if(chkCar.checked) formats.push('CAROUSEL');
             if(chkPost.checked) formats.push('POST');
             if(chkVid.checked) formats.push('VIDEO_SCRIPT');
+            if(chkReel && chkReel.checked) formats.push('REEL');
         } else {
-            formats.push('CAROUSEL', 'POST', 'VIDEO_SCRIPT');
+            formats.push('CAROUSEL', 'POST', 'VIDEO_SCRIPT', 'REEL');
         }
         
         if (formats.length === 0) {
