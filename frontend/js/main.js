@@ -1434,21 +1434,24 @@ if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000); // Poll ev
                         </div>`;
                     }
 
-                    // Video render button (for all content types)
-                    const videoControls = `<div style="margin-bottom:10px;">
-                        <button id="vid-btn-${item.id}" class="btn" style="
-                            width:100%;background:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(239,68,68,0.1));
-                            color:#fb923c;border:1px solid rgba(251,146,60,0.35);
-                            padding:8px 14px;font-size:12.5px;border-radius:9px;
-                            cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
-                            transition:all .2s;"
-                            onmouseover="this.style.background='linear-gradient(135deg,rgba(251,146,60,0.25),rgba(239,68,68,0.18))'"
-                            onmouseout="this.style.background='linear-gradient(135deg,rgba(251,146,60,0.15),rgba(239,68,68,0.1))'"
-                            onclick="renderVideoSlideshow(${item.id})">
-                            🎬 تحويل لفيديو سلايدشو
-                        </button>
-                        <div id="vid-status-${item.id}" style="display:none;margin-top:6px;font-size:11.5px;color:var(--muted);text-align:center;"></div>
-                    </div>`;
+                    // Video render button (ONLY for REEL content type)
+                    let videoControls = '';
+                    if (item.content_type === 'REEL') {
+                        videoControls = `<div style="margin-bottom:10px;">
+                            <button id="vid-btn-${item.id}" class="btn" style="
+                                width:100%;background:linear-gradient(135deg,rgba(255,92,0,0.18),rgba(255,140,66,0.12));
+                                color:#FF5C00;border:1px solid rgba(255,92,0,0.4);
+                                padding:8px 14px;font-size:12.5px;border-radius:9px;
+                                cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
+                                font-weight:700;transition:all .2s;"
+                                onmouseover="this.style.background='linear-gradient(135deg,rgba(255,92,0,0.28),rgba(255,140,66,0.2))'"
+                                onmouseout="this.style.background='linear-gradient(135deg,rgba(255,92,0,0.18),rgba(255,140,66,0.12))'"
+                                onclick="renderVideoSlideshow(${item.id})">
+                                🎬 تحويل لفيديو سلايدشو
+                            </button>
+                            <div id="vid-status-${item.id}" style="display:none;margin-top:6px;font-size:11.5px;color:var(--muted);text-align:center;"></div>
+                        </div>`;
+                    }
 
                     subCardsHtml += `
                     <div id="review-card-${item.id}" style="background:var(--bg);border:1px solid var(--line);border-radius:13px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s;" onmouseover="this.style.borderColor='rgba(53,211,153,0.3)'" onmouseout="this.style.borderColor='var(--line)'">
@@ -2014,6 +2017,12 @@ function renderPreview(platformId, gen, item) {
         postText = (gen.hook ? gen.hook + '\n\n' : '') + (gen.body || '') + (gen.call_to_action ? '\n\n' + gen.call_to_action : '');
     } else if (type === 'CAROUSEL') {
         postText = gen.title || '';
+    } else if (type === 'REEL') {
+        if (gen.slides && Array.isArray(gen.slides)) {
+            postText = gen.slides.map((s, idx) => `الشريحة ${idx + 1}:\n${s.text || ''}${s.note ? '\n(' + s.note + ')' : ''}`).join('\n\n');
+        } else {
+            postText = JSON.stringify(gen);
+        }
     }
 
     const escHtml = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
