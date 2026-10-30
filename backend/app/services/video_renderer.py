@@ -29,23 +29,25 @@ def _ease_in_out_cubic(t: float) -> float:
     return 4 * t * t * t if t < 0.5 else 1 - math.pow(-2 * t + 2, 3) / 2
 
 
-# ── Segmented progress bar ────────────────────────────────────────────────────
+# ── Segmented progress bar (RTL — fills right to left) ───────────────────────
 def _progress_bar_html(current: int, total: int, fill: float) -> str:
     n = min(total, 12)
     parts = []
     for i in range(n):
         seg = i + 1
         if seg < current:
+            # completed segment — fully filled
             inner = (
                 '<div style="position:absolute;top:0;left:0;right:0;bottom:0;'
-                'background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:3px;"></div>'
+                'background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:3px;"></div>'
             )
         elif seg == current:
+            # active segment — fills from RIGHT to LEFT
             pct = round(fill * 100, 1)
             inner = (
-                '<div style="position:absolute;top:0;left:0;bottom:0;'
+                '<div style="position:absolute;top:0;right:0;bottom:0;'
                 'width:' + str(pct) + '%;'
-                'background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:3px;'
+                'background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:3px;'
                 'box-shadow:0 0 10px rgba(99,102,241,0.8);"></div>'
             )
         else:
@@ -55,6 +57,8 @@ def _progress_bar_html(current: int, total: int, fill: float) -> str:
             'border-radius:3px;position:relative;overflow:hidden;">'
             + inner + "</div>"
         )
+    # RTL: reverse so segment 1 is on the right
+    parts = parts[::-1]
     return (
         '<div style="display:flex;gap:6px;align-items:center;flex:1;">'
         + "".join(parts) + "</div>"
@@ -115,17 +119,18 @@ def _slide_html(
     counter   = str(current) + " / " + str(total)
     footer_label = article_title or brand
 
-    # Typing reveal
+    # Full text = headline + detail merged (typing reveals both together)
+    full_text = headline
+    if detail:
+        full_text = headline + (" — " if headline else "") + detail
+
     if reveal < 1.0:
-        vis_h = headline[:max(1, int(len(headline) * reveal))]
+        chars = max(1, int(len(full_text) * reveal))
+        vis_full = full_text[:chars]
         cursor = '<span style="color:#6366f1;">|</span>'
     else:
-        vis_h = headline
+        vis_full = full_text
         cursor = ""
-
-    # Detail fades in after headline done
-    detail_a = max(0.0, (reveal - 0.8) / 0.2) if detail else 0.0
-    vis_d = detail[:max(0, int(len(detail) * detail_a))] if detail_a < 1.0 else detail
 
     # Bars appear after 0.7
     bars_op = min(1.0, max(0.0, (reveal - 0.7) / 0.3)) if bars else 0.0
@@ -144,10 +149,9 @@ def _slide_html(
             '<div style="display:flex;flex-direction:column;align-items:center;gap:22px;width:100%;">'
             + img_block
             + '<div style="font-size:32px;font-weight:700;color:rgba(255,255,255,0.4);">' + category + "</div>"
-            + '<div style="font-size:78px;font-weight:900;color:#fff;text-align:center;line-height:1.25;">'
-            + vis_h + cursor + "</div>"
-            + '<div style="width:70px;height:4px;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:2px;"></div>'
-            + ('<div style="font-size:32px;color:rgba(255,255,255,0.45);text-align:center;">' + vis_d + "</div>" if vis_d else "")
+            + '<div style="font-size:72px;font-weight:900;color:#fff;text-align:center;line-height:1.3;">'
+            + vis_full + cursor + "</div>"
+            + '<div style="width:70px;height:4px;background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:2px;"></div>'
             + "</div>"
         )
         card_html = '<div style="width:880px;padding:50px 56px;">' + card_body + "</div>"
@@ -156,11 +160,10 @@ def _slide_html(
     elif is_cover:
         card_body = (
             '<div style="display:flex;flex-direction:column;align-items:center;gap:32px;width:100%;">'
-            + '<div style="width:100px;height:4px;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:2px;"></div>'
+            + '<div style="width:100px;height:4px;background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:2px;"></div>'
             + '<div style="font-size:38px;font-weight:700;color:rgba(255,255,255,0.38);letter-spacing:3px;">' + (category or "") + "</div>"
-            + '<div style="font-size:86px;font-weight:900;color:#fff;text-align:center;line-height:1.2;text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
-            + vis_h + cursor + "</div>"
-            + ('<div style="font-size:36px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.5;max-width:700px;">' + vis_d + "</div>" if vis_d else "")
+            + '<div style="font-size:84px;font-weight:900;color:#fff;text-align:center;line-height:1.25;text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
+            + vis_full + cursor + "</div>"
             + "</div>"
         )
         card_html = '<div style="width:880px;padding:80px 56px;display:flex;flex-direction:column;align-items:center;">' + card_body + "</div>"
@@ -184,27 +187,19 @@ def _slide_html(
                 )
             badge_row = '<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;">' + b + "</div>"
 
-        detail_block = ""
-        if vis_d:
-            detail_block = (
-                '<div style="background:rgba(255,255,255,0.04);border-right:3px solid #6366f1;'
-                'border-radius:0 14px 14px 0;padding:20px 26px;width:100%;text-align:right;">'
-                '<span style="font-size:32px;color:rgba(255,255,255,0.6);line-height:1.6;">'
-                + vis_d + "</span></div>"
-            )
-
         bars_block = _bar_chart_html(bars, opacity=bars_op) if bars else ""
 
         card_body = (
             '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:26px;width:100%;">'
             '<div style="display:flex;align-items:flex-start;justify-content:space-between;width:100%;">'
             '<div style="font-size:170px;font-weight:900;color:rgba(255,255,255,0.05);line-height:1;" dir="ltr">' + number + "</div>"
-            '<div style="width:44px;height:4px;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:2px;margin-top:20px;"></div>'
+            '<div style="width:44px;height:4px;background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:2px;margin-top:20px;"></div>'
             "</div>"
             + badge_row
-            + '<div style="font-size:70px;font-weight:900;color:#fff;line-height:1.3;text-align:right;width:100%;margin-top:-18px;">'
-            + vis_h + cursor + "</div>"
-            + detail_block + bars_block + "</div>"
+            # Merged headline + detail as one flowing text block
+            + '<div style="font-size:66px;font-weight:900;color:#fff;line-height:1.4;text-align:right;width:100%;margin-top:-14px;">'
+            + vis_full + cursor + "</div>"
+            + bars_block + "</div>"
         )
         card_html = (
             '<div style="width:880px;background:rgba(255,255,255,0.03);'
