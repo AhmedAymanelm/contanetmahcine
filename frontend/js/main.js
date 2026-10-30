@@ -119,10 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ---------------- API Fetching ----------------
 
-async function fetchDashboardStats() {
+async function fetchDashboardStats(retryCount = 0) {
     try {
         const res = await fetch(`${API_BASE}/stats/`);
-        if (!res.ok) throw new Error('Failed to fetch stats');
+        if (!res.ok) throw new Error(`Stats API ${res.status}`);
         const data = await res.json();
         
         // Update stats blocks
@@ -243,7 +243,22 @@ async function fetchDashboardStats() {
         }
 
     } catch (err) {
-        console.error(err);
+        console.error('fetchDashboardStats error:', err);
+        if (retryCount < 3) {
+            // Retry after 5s, 10s, 20s
+            setTimeout(() => fetchDashboardStats(retryCount + 1), (retryCount + 1) * 5000);
+            return;
+        }
+        // Clear loading placeholders so UI doesn't stay frozen
+        ['stat-articles-sub','stat-pending-sub','stat-approved-sub','stat-scheduled-sub'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && (el.innerText.includes('جار') || el.innerText.includes('التحميل'))) el.innerText = '—';
+        });
+        const timeEl = document.getElementById('last-ingestion-time');
+        if (timeEl && timeEl.innerText.includes('جاري')) timeEl.innerText = 'تعذّر تحميل البيانات';
+        ['pipeline-count-raw','pipeline-count-draft','pipeline-count-review','pipeline-count-scheduled','pipeline-count-published'].forEach(id => {
+            const el = document.getElementById(id); if (el && el.innerText === '') el.innerText = '—';
+        });
     }
 }
 
