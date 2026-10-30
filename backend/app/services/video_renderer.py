@@ -29,6 +29,25 @@ ACCENT2  = "#FFB700"   # amber (for covers)
 ACCENT3  = "#7C3AED"   # purple accent
 BG       = "#080810"   # near-black with subtle blue tint
 
+# ── Author avatar (cached base64) ─────────────────────────────────────────────
+_author_img_b64 = None
+def _get_author_img_b64() -> str:
+    global _author_img_b64
+    if _author_img_b64 is not None:
+        return _author_img_b64
+    import os, base64
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    image_path = os.path.join(base_dir, "static", "assets", "author_mic.jpg")
+    try:
+        if os.path.exists(image_path):
+            with open(image_path, "rb") as f:
+                _author_img_b64 = "data:image/jpeg;base64," + base64.b64encode(f.read()).decode("utf-8")
+                return _author_img_b64
+    except Exception:
+        pass
+    _author_img_b64 = ""
+    return _author_img_b64
+
 
 # ── Easing ────────────────────────────────────────────────────────────────────
 def _ease_out_expo(t: float) -> float:
@@ -106,6 +125,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     article_title = slide.get("article_title", "")
     is_cover  = slide.get("is_cover", False)
     is_outro  = slide.get("is_outro", False)
+    is_cta    = slide.get("is_cta", False)
     image_url = slide.get("image_url", "")
 
     top_bar = _top_bar_html(current, total, pfill)
@@ -257,6 +277,54 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             + '<div style="position:absolute;bottom:80px;left:80px;right:80px;text-align:center;">'
             '<span style="font-size:24px;color:rgba(255,255,255,0.2);letter-spacing:4px;">'
             + (article_title or brand) + '</span></div>'
+            + "</body></html>"
+        )
+
+    # ── CTA SLIDE (last slide with author avatar) ─────────────────────────
+    elif is_cta:
+        author_img = _get_author_img_b64()
+        avatar_html = ""
+        if author_img:
+            avatar_html = (
+                '<div style="width:280px;height:280px;border-radius:50%;overflow:hidden;'
+                'border:6px solid ' + slide_accent + '44;'
+                'box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px ' + slide_accent + '22;'
+                'margin-bottom:48px;transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';">'
+                '<img src="' + author_img + '" style="width:100%;height:100%;object-fit:cover;object-position:35% 10%;" />'
+                '</div>'
+            )
+
+        content = (
+            '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
+            'justify-content:center;align-items:center;padding:160px 80px;">'
+            # Avatar
+            + avatar_html +
+            # CTA text
+            '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;">'
+            '<div style="font-size:88px;font-weight:900;color:#fff;line-height:1.2;'
+            'text-shadow:0 4px 40px rgba(0,0,0,0.4);">'
+            + headline[:120] + '</div>'
+            '</div>'
+            # Detail / subtitle
+            + ('<div style="margin-top:32px;padding:14px 36px;border-radius:14px;'
+               'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
+               'transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+               '<span style="font-size:30px;font-weight:600;color:rgba(255,255,255,0.6);">'
+               + detail + '</span></div>' if detail else '') +
+            # Follow button
+            '<div style="margin-top:56px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+            '<div style="display:inline-flex;align-items:center;gap:16px;'
+            'background:' + slide_accent + ';color:#fff;padding:18px 48px;border-radius:50px;'
+            'font-size:36px;font-weight:800;box-shadow:0 12px 40px ' + slide_accent + '55;">'
+            '<span>+ تابع</span>'
+            '<span dir="ltr">@' + brand + '</span>'
+            '</div></div>'
+            '</div>'
+        )
+        return (
+            "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
+            + cairo_css + css_base + "</style></head><body>"
+            + bg_layers + top_bar + dot_bar + content
             + "</body></html>"
         )
 
@@ -607,7 +675,8 @@ def content_item_to_slides(
             is_last  = (i == len(raw_slides) - 1)
             slides.append(base({
                 "is_cover": is_first,
-                "category": "ابدأ" if is_first else ("شاركنا رأيك" if is_last else ""),
+                "is_cta": is_last,
+                "category": "ابدأ" if is_first else ("" if is_last else ""),
                 "label": "" if is_first else str(i),
                 "headline": text[:150],
                 "detail": note[:80] if note else "",
