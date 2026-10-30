@@ -2009,6 +2009,61 @@ function renderPreview(platformId, gen, item) {
     const p = PLATFORM_INFO[platformId] || { name: platformId, color:'#333', textColor:'#fff' };
     const type = item.content_type;
 
+    // ── REEL: show video player or slide cards ──────────────────────────────
+    if (type === 'REEL') {
+        const slides = (gen.slides && Array.isArray(gen.slides)) ? gen.slides : [];
+        fetch(\`/api/video/${item.id}/status\`)
+            .then(r => r.ok ? r.json() : {})
+            .then(statusData => {
+                if (statusData.status === 'done' && statusData.url) {
+                    area.innerHTML = `
+                    <div style="text-align:center;max-width:460px;margin:0 auto;">
+                        <div style="font-size:12px;color:#FF5C00;margin-bottom:10px;font-weight:700;">🎬 ريلز — فيديو جاهز للنشر</div>
+                        <video src="${statusData.url}" controls autoplay muted loop
+                            style="width:100%;max-height:520px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5);background:#000;"></video>
+                        <div style="margin-top:8px;font-size:11px;color:var(--muted);">@zayedtech · ${slides.length} شريحة</div>
+                    </div>`;
+                } else {
+                    const renderingBanner = (statusData.status === 'rendering')
+                        ? `<div style="background:rgba(255,92,0,0.12);border:1px solid rgba(255,92,0,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#FF5C00;text-align:right;">⏳ جاري إنشاء الفيديو... يمكنك مراجعة الشرائح</div>` : '';
+                    const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    const slideCards = slides.map((s, i) => `
+                        <div style="background:#111;border-radius:12px;padding:14px 18px;border:1px solid #2a2a2a;direction:rtl;">
+                            <div style="font-size:10px;color:#FF5C00;font-weight:800;letter-spacing:1px;margin-bottom:6px;">الشريحة ${i + 1}</div>
+                            <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.4;">${esc(s.text)}</div>
+                            ${s.note ? `<div style="font-size:12px;color:#888;margin-top:6px;border-top:1px solid #222;padding-top:6px;">${esc(s.note)}</div>` : ''}
+                        </div>`).join('');
+                    area.innerHTML = `
+                    <div style="max-width:460px;margin:0 auto;">
+                        <div style="font-size:12px;color:#FF5C00;margin-bottom:10px;font-weight:700;">🎬 ريلز — ${slides.length} شريحة</div>
+                        ${renderingBanner}
+                        <div style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;padding-right:4px;">
+                            ${slideCards || '<div style="color:var(--muted);text-align:center;padding:20px;">لا توجد شرائح</div>'}
+                        </div>
+                        <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;">@zayedtech · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو</div>
+                    </div>`;
+                }
+            })
+            .catch(() => {
+                const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const slideCards = slides.map((s, i) => `
+                    <div style="background:#111;border-radius:12px;padding:14px 18px;border:1px solid #2a2a2a;direction:rtl;">
+                        <div style="font-size:10px;color:#FF5C00;font-weight:800;letter-spacing:1px;margin-bottom:6px;">الشريحة ${i + 1}</div>
+                        <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.4;">${esc(s.text)}</div>
+                        ${s.note ? `<div style="font-size:12px;color:#888;margin-top:6px;">${esc(s.note)}</div>` : ''}
+                    </div>`).join('');
+                area.innerHTML = `
+                <div style="max-width:460px;margin:0 auto;">
+                    <div style="font-size:12px;color:#FF5C00;margin-bottom:10px;font-weight:700;">🎬 ريلز — ${slides.length} شريحة</div>
+                    <div style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;">
+                        ${slideCards || '<div style="color:var(--muted);text-align:center;padding:20px;">لا توجد شرائح</div>'}
+                    </div>
+                </div>`;
+            });
+        return;
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     let postText = '';
     if (type === 'POST') {
         if (platformId === 'Li' && gen.linkedin_post) postText = gen.linkedin_post;
