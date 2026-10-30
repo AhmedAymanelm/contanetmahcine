@@ -57,10 +57,9 @@ def _progress_bar_html(current: int, total: int, fill: float) -> str:
             'border-radius:3px;position:relative;overflow:hidden;">'
             + inner + "</div>"
         )
-    # RTL: reverse so segment 1 is on the right
-    parts = parts[::-1]
+    # RTL: segment 1 on the right — use direction:rtl on the flex container
     return (
-        '<div style="display:flex;gap:6px;align-items:center;flex:1;">'
+        '<div style="display:flex;gap:6px;align-items:center;flex:1;direction:rtl;">'
         + "".join(parts) + "</div>"
     )
 
