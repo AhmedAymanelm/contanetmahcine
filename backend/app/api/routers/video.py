@@ -5,7 +5,7 @@ import concurrent.futures
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -16,23 +16,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-
-# Track in-progress renders {content_item_id: status}
 _render_status: dict = {}
 
 VIDEO_OUTPUT_DIR = Path(__file__).parent.parent.parent.parent / "static" / "video_output"
 
 
 def _do_render(content_item_id: int, slides: list, brand: str):
-    """Background task: runs the render and updates status dict."""
     _render_status[content_item_id] = "rendering"
     try:
         url = render_video_sync(slides, content_item_id, brand=brand)
         _render_status[content_item_id] = {"status": "done", "url": url}
-        logger.info(f"Video rendered for content item {content_item_id}: {url}")
+        logger.info(f"Video rendered for {content_item_id}: {url}")
     except Exception as e:
         _render_status[content_item_id] = {"status": "error", "error": str(e)}
-        logger.error(f"Video render failed for content item {content_item_id}: {e}")
+        logger.error(f"Video render failed for {content_item_id}: {e}", exc_info=True)
 
 
 @router.post("/{content_item_id}/render")
@@ -40,10 +37,6 @@ async def render_video_endpoint(
     content_item_id: int,
     db: Session = Depends(get_db),
 ):
-    """
-    Start rendering a content item as a slideshow video.
-    Returns immediately — poll /status to check progress.
-    """
     item = db.query(ContentItem).filter(ContentItem.id == content_item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Content item not found")
@@ -56,18 +49,37 @@ async def render_video_endpoint(
         except Exception:
             gen = {}
 
-    slides = content_item_to_slides(gen or {}, item.content_type or "POST")
-    if not slides:
-        raise HTTPException(status_code=400, detail="No slides could be extracted from this content item")
-
+    # Get article metadata from related raw_article
+    article_title = ""
+    image_url = ""
     brand = "غرفة المحتوى"
 
-    # Submit background render
+    try:
+        raw = item.raw_article  # relationship
+        if raw:
+            article_title = (raw.title or "")[:120]
+            image_url = raw.image_url or ""
+            source = raw.source_name or ""
+            if source:
+                brand = source
+    except Exception:
+        pass
+
+    slides = content_item_to_slides(
+        gen or {},
+        item.content_type or "POST",
+        brand=brand,
+        article_title=article_title,
+        image_url=image_url,
+    )
+    if not slides:
+        raise HTTPException(status_code=400, detail="No slides could be extracted")
+
     _render_status[content_item_id] = "queued"
     _thread_pool.submit(_do_render, content_item_id, slides, brand)
 
     return {
-        "detail": f"Video render started for content item {content_item_id} ({len(slides)} slides)",
+        "detail": f"Video render started ({len(slides)} slides)",
         "slides_count": len(slides),
         "poll_url": f"/api/video/{content_item_id}/status",
     }
@@ -75,13 +87,8 @@ async def render_video_endpoint(
 
 @router.get("/{content_item_id}/status")
 async def get_render_status(content_item_id: int):
-    """
-    Poll the render status for a content item.
-    Returns: queued | rendering | done (with url) | error
-    """
     status = _render_status.get(content_item_id)
     if status is None:
-        # Check if a video file already exists for this item
         existing = list(VIDEO_OUTPUT_DIR.glob(f"video_{content_item_id}_*.mp4"))
         if existing:
             latest = max(existing, key=lambda p: p.stat().st_mtime)
@@ -96,4 +103,3 @@ async def get_render_status(content_item_id: int):
         return {"status": status, "content_item_id": content_item_id}
 
     return {"content_item_id": content_item_id, **status}
-
