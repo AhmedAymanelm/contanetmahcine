@@ -3475,3 +3475,405 @@ async function renderVideoSlideshow(id) {
         statusEl.style.display = 'none';
     }
 }
+
+
+// ══════════════════════════════════════════════════════════════
+//  MANUAL ARTICLE PAGE
+// ══════════════════════════════════════════════════════════════
+
+async function submitManualArticle() {
+    const title = document.getElementById('manual-title').value.trim();
+    const content = document.getElementById('manual-content').value.trim();
+    if (!title) { showToast('⚠️ أدخل عنوان الخبر', 'error'); return; }
+    if (!content) { showToast('⚠️ أدخل محتوى الخبر', 'error'); return; }
+
+    const formats = Array.from(document.querySelectorAll('#manual-formats-grid input[type=checkbox]:checked')).map(c => c.value);
+    if (formats.length === 0) { showToast('⚠️ اختر نوعاً واحداً على الأقل', 'error'); return; }
+
+    const btn = document.getElementById('manual-submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin">⏳</span> جاري الإرسال...';
+
+    const statusEl = document.getElementById('manual-status');
+    statusEl.style.display = 'none';
+
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/raw-articles/manual`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                title,
+                content,
+                category: document.getElementById('manual-category').value.trim(),
+                image_url: document.getElementById('manual-image').value.trim(),
+                url: document.getElementById('manual-url').value.trim(),
+                source_name: 'يدوي'
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+
+        const article = await res.json();
+
+        // Now trigger generation
+        const genRes = await fetch(`${API_BASE}/raw-articles/${article.id}/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ formats })
+        });
+
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--teal)';
+        statusEl.style.borderColor = 'rgba(20,184,166,0.3)';
+        statusEl.style.background = 'rgba(20,184,166,0.08)';
+        statusEl.innerHTML = `✅ تم إرسال الخبر بنجاح! رقم المقال: <strong>#${article.id}</strong><br>
+            <span style="font-size:12px;opacity:0.8;">سيظهر المحتوى في صفحة المراجعة والموافقة خلال لحظات</span>
+            <br><br>
+            <button onclick="goId('page-review')" class="btn" style="padding:10px 20px;font-size:13px;">🔍 الذهاب للمراجعة</button>`;
+
+        showToast('✅ تم إرسال الخبر للمعالجة!', 'success');
+        clearManualForm();
+        fetchDashboardStats();
+
+    } catch (e) {
+        statusEl.style.display = 'block';
+        statusEl.style.color = '#f87171';
+        statusEl.style.borderColor = 'rgba(248,113,113,0.3)';
+        statusEl.style.background = 'rgba(248,113,113,0.08)';
+        statusEl.innerHTML = `❌ خطأ: ${e.message}`;
+        showToast('❌ فشل إرسال الخبر: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span> إرسال للمعالجة';
+    }
+}
+
+function clearManualForm() {
+    ['manual-title','manual-content','manual-category','manual-image','manual-url'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    document.getElementById('manual-status').style.display = 'none';
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  VISUAL TEMPLATE DESIGNER
+// ══════════════════════════════════════════════════════════════
+
+const VT_COLOR_PRESETS = [
+    { label: 'ليل نار',   c1: '#0a0a0a', c2: '#2d0800', accent: '#FF5C00' },
+    { label: 'بنفسجي',   c1: '#0d0520', c2: '#1e0a40', accent: '#a78bfa' },
+    { label: 'أزرق',     c1: '#020c1b', c2: '#0a1628', accent: '#38bdf8' },
+    { label: 'تيل',      c1: '#011514', c2: '#042f2e', accent: '#14b8a6' },
+    { label: 'ذهبي',     c1: '#0c0a00', c2: '#1a1200', accent: '#e0b563' },
+    { label: 'وردي',     c1: '#1a0010', c2: '#2d0022', accent: '#f472b6' },
+    { label: 'رمادي',    c1: '#0f0f0f', c2: '#1a1a1a', accent: '#94a3b8' },
+    { label: 'أخضر',     c1: '#001a0a', c2: '#002f14', accent: '#4ade80' },
+];
+
+const VT_ANIMATIONS = [
+    { id: 'slideUp',   label: '⬆️ من الأسفل' },
+    { id: 'fadeIn',    label: '🌅 تلاشي' },
+    { id: 'scaleIn',   label: '🔍 تكبير' },
+    { id: 'slideLeft', label: '⬅️ من اليمين' },
+];
+
+let vtState = {
+    name: 'قالب جديد',
+    type: 'REEL',
+    bgType: 'gradient',
+    color1: '#0a0a0a',
+    color2: '#1a0500',
+    textColor: '#ffffff',
+    accentColor: '#FF5C00',
+    fontSize: 42,
+    align: 'center',
+    animation: 'slideUp',
+};
+
+function loadVisualTemplates() {
+    // Render color presets
+    const presetsEl = document.getElementById('vt-color-presets');
+    if (presetsEl && !presetsEl.children.length) {
+        presetsEl.innerHTML = VT_COLOR_PRESETS.map((p, i) => `
+            <div onclick="applyVtPreset(${i})" title="${p.label}" style="
+                width:32px;height:32px;border-radius:8px;cursor:pointer;
+                background:linear-gradient(135deg,${p.c1},${p.c2});
+                border:2px solid ${p.accent};
+                transition:transform 0.15s;
+            " onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></div>
+        `).join('');
+    }
+
+    // Render animations
+    const animGrid = document.getElementById('vt-animation-grid');
+    if (animGrid && !animGrid.children.length) {
+        animGrid.innerHTML = VT_ANIMATIONS.map(a => `
+            <button id="vt-anim-${a.id}" onclick="setVtAnimation('${a.id}')" class="btn ${a.id === vtState.animation ? '' : 'ghost'}" style="padding:8px;font-size:12px;font-weight:600;">${a.label}</button>
+        `).join('');
+    }
+
+    // Set initial type highlight
+    setVtType('REEL', true);
+    setVtAlign('center', true);
+
+    // Load saved templates
+    fetchSavedVisualTemplates();
+    updateVtPreview();
+}
+
+function applyVtPreset(idx) {
+    const p = VT_COLOR_PRESETS[idx];
+    vtState.color1 = p.c1;
+    vtState.color2 = p.c2;
+    vtState.accentColor = p.accent;
+    document.getElementById('vt-color1').value = p.c1;
+    document.getElementById('vt-color1-hex').value = p.c1;
+    document.getElementById('vt-color2').value = p.c2;
+    document.getElementById('vt-color2-hex').value = p.c2;
+    document.getElementById('vt-accent-color').value = p.accent;
+    document.getElementById('vt-accent-color-label').textContent = p.accent;
+    updateVtPreview();
+}
+
+function syncColorPicker(pickerId, hexId) {
+    const hex = document.getElementById(hexId).value;
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+        document.getElementById(pickerId).value = hex;
+        updateVtPreview();
+    }
+}
+
+function setVtType(type, silent) {
+    vtState.type = type;
+    const reel = document.getElementById('vt-type-reel');
+    const carousel = document.getElementById('vt-type-carousel');
+    if (reel && carousel) {
+        const activeStyle = 'background:rgba(255,92,0,0.15);border-color:#FF5C00;color:#FF5C00;';
+        const carouselActiveStyle = 'background:rgba(20,184,166,0.15);border-color:#14b8a6;color:#14b8a6;';
+        const inactiveStyle = 'background:rgba(0,0,0,0.1);border-color:var(--line);color:var(--muted);';
+        reel.style.cssText += type === 'REEL' ? activeStyle : inactiveStyle;
+        carousel.style.cssText += type === 'CAROUSEL' ? carouselActiveStyle : inactiveStyle;
+    }
+    if (!silent) updateVtPreview();
+}
+
+function setVtBg(bgType) {
+    vtState.bgType = bgType;
+    ['gradient','solid','dark'].forEach(t => {
+        const btn = document.getElementById('vt-bg-' + t);
+        if (btn) { btn.className = t === bgType ? 'btn' : 'btn ghost'; }
+    });
+    if (bgType === 'dark') {
+        vtState.color1 = '#000000'; vtState.color2 = '#0a0a0a';
+        document.getElementById('vt-color1').value = '#000000';
+        document.getElementById('vt-color1-hex').value = '#000000';
+        document.getElementById('vt-color2').value = '#0a0a0a';
+        document.getElementById('vt-color2-hex').value = '#0a0a0a';
+    }
+    updateVtPreview();
+}
+
+function setVtAlign(align, silent) {
+    vtState.align = align;
+    ['center','right','left'].forEach(a => {
+        const btn = document.getElementById('vt-align-' + a);
+        if (btn) btn.className = a === align ? 'btn' : 'btn ghost';
+    });
+    if (!silent) updateVtPreview();
+}
+
+function setVtAnimation(anim) {
+    vtState.animation = anim;
+    VT_ANIMATIONS.forEach(a => {
+        const btn = document.getElementById('vt-anim-' + a.id);
+        if (btn) btn.className = a.id === anim ? 'btn' : 'btn ghost';
+    });
+    // Play animation preview
+    const screen = document.getElementById('vt-preview-screen');
+    const text = document.getElementById('vt-preview-text');
+    if (text) {
+        text.style.animation = 'none';
+        setTimeout(() => {
+            text.style.animation = `vt-${anim} 0.5s ease forwards`;
+        }, 50);
+    }
+}
+
+function updateVtPreview() {
+    const screen = document.getElementById('vt-preview-screen');
+    const textEl = document.getElementById('vt-preview-text');
+    const accentBar = document.getElementById('vt-preview-accent-bar');
+    const dot = document.getElementById('vt-preview-dot');
+    const catEl = document.getElementById('vt-preview-category');
+    if (!screen) return;
+
+    // Read current values
+    vtState.color1 = document.getElementById('vt-color1').value;
+    vtState.color2 = document.getElementById('vt-color2').value;
+    vtState.textColor = document.getElementById('vt-text-color').value;
+    vtState.accentColor = document.getElementById('vt-accent-color').value;
+    vtState.fontSize = document.getElementById('vt-font-size').value;
+    const sampleText = document.getElementById('vt-sample-text').value || 'نص تجريبي';
+
+    // Update hex labels
+    document.getElementById('vt-text-color-label').textContent = vtState.textColor;
+    document.getElementById('vt-accent-color-label').textContent = vtState.accentColor;
+    document.getElementById('vt-color1-hex').value = vtState.color1;
+    document.getElementById('vt-color2-hex').value = vtState.color2;
+
+    const bg = vtState.bgType === 'solid'
+        ? vtState.color1
+        : `linear-gradient(160deg, ${vtState.color1}, ${vtState.color2})`;
+
+    screen.style.background = bg;
+    if (textEl) {
+        textEl.style.color = vtState.textColor;
+        textEl.style.fontSize = Math.round(vtState.fontSize * 0.52) + 'px';
+        textEl.style.textAlign = vtState.align;
+        textEl.textContent = sampleText;
+    }
+    if (accentBar) accentBar.style.background = vtState.accentColor;
+    if (dot) dot.style.background = vtState.accentColor;
+    if (catEl) {
+        catEl.style.color = vtState.accentColor;
+        catEl.style.borderColor = vtState.accentColor + '66';
+        catEl.style.background = vtState.accentColor + '22';
+        catEl.textContent = vtState.type === 'REEL' ? 'ريلز' : 'كاروسيل';
+    }
+}
+
+async function saveVisualTemplate() {
+    vtState.name = document.getElementById('vt-name').value.trim() || 'قالب جديد';
+    vtState.color1 = document.getElementById('vt-color1').value;
+    vtState.color2 = document.getElementById('vt-color2').value;
+    vtState.textColor = document.getElementById('vt-text-color').value;
+    vtState.accentColor = document.getElementById('vt-accent-color').value;
+    vtState.fontSize = parseInt(document.getElementById('vt-font-size').value);
+
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/visual-templates/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                name: vtState.name,
+                template_type: vtState.type,
+                bg_type: vtState.bgType,
+                bg_color1: vtState.color1,
+                bg_color2: vtState.color2,
+                text_color: vtState.textColor,
+                accent_color: vtState.accentColor,
+                font_size: vtState.fontSize,
+                text_align: vtState.align,
+                animation: vtState.animation,
+            })
+        });
+        if (!res.ok) throw new Error('Save failed');
+        showToast('✅ تم حفظ القالب: ' + vtState.name, 'success');
+        fetchSavedVisualTemplates();
+    } catch (e) {
+        // If API not ready yet, save to localStorage as fallback
+        const saved = JSON.parse(localStorage.getItem('visual_templates') || '[]');
+        saved.push({ ...vtState, id: Date.now() });
+        localStorage.setItem('visual_templates', JSON.stringify(saved));
+        showToast('💾 تم الحفظ محلياً: ' + vtState.name, 'success');
+        renderSavedVtFromLocal();
+    }
+}
+
+async function fetchSavedVisualTemplates() {
+    try {
+        const token = localStorage.getItem('cm_token');
+        const res = await fetch(`${API_BASE}/visual-templates/`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error();
+        const templates = await res.json();
+        renderSavedVt(templates);
+    } catch {
+        renderSavedVtFromLocal();
+    }
+}
+
+function renderSavedVtFromLocal() {
+    const saved = JSON.parse(localStorage.getItem('visual_templates') || '[]');
+    renderSavedVt(saved);
+}
+
+function renderSavedVt(templates) {
+    const container = document.getElementById('vt-saved-templates');
+    const countEl = document.getElementById('vt-saved-count');
+    if (!container) return;
+    if (countEl) countEl.textContent = templates.length + ' قالب';
+    if (!templates.length) {
+        container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;grid-column:1/-1;">لا توجد قوالب محفوظة بعد</div>';
+        return;
+    }
+    container.innerHTML = templates.map(t => `
+        <div onclick="loadVtTemplate(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="
+            border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid transparent;
+            transition:all 0.2s;box-shadow:0 4px 12px rgba(0,0,0,0.3);
+        " onmouseover="this.style.borderColor='${t.accent_color || t.accentColor || '#FF5C00'}';this.style.transform='translateY(-2px)'"
+           onmouseout="this.style.borderColor='transparent';this.style.transform='translateY(0)'">
+            <div style="
+                height:80px;
+                background:linear-gradient(160deg,${t.bg_color1 || t.color1 || '#0a0a0a'},${t.bg_color2 || t.color2 || '#1a0500'});
+                display:flex;align-items:center;justify-content:center;
+                font-size:11px;font-weight:800;color:${t.text_color || t.textColor || '#fff'};
+                padding:8px;text-align:center;direction:rtl;
+            ">نموذج</div>
+            <div style="background:var(--panel-2);padding:8px 10px;">
+                <div style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
+                <div style="font-size:10px;color:${t.accent_color || t.accentColor || '#FF5C00'};margin-top:2px;">${t.template_type || t.type || 'REEL'}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadVtTemplate(t) {
+    // Load a saved template into the designer
+    vtState.name = t.name;
+    vtState.type = t.template_type || t.type || 'REEL';
+    vtState.bgType = t.bg_type || t.bgType || 'gradient';
+    vtState.color1 = t.bg_color1 || t.color1 || '#0a0a0a';
+    vtState.color2 = t.bg_color2 || t.color2 || '#1a0500';
+    vtState.textColor = t.text_color || t.textColor || '#ffffff';
+    vtState.accentColor = t.accent_color || t.accentColor || '#FF5C00';
+    vtState.fontSize = t.font_size || t.fontSize || 42;
+    vtState.align = t.text_align || t.align || 'center';
+    vtState.animation = t.animation || 'slideUp';
+
+    document.getElementById('vt-name').value = vtState.name;
+    document.getElementById('vt-color1').value = vtState.color1;
+    document.getElementById('vt-color1-hex').value = vtState.color1;
+    document.getElementById('vt-color2').value = vtState.color2;
+    document.getElementById('vt-color2-hex').value = vtState.color2;
+    document.getElementById('vt-text-color').value = vtState.textColor;
+    document.getElementById('vt-accent-color').value = vtState.accentColor;
+    document.getElementById('vt-font-size').value = vtState.fontSize;
+    document.getElementById('vt-font-size-val').textContent = vtState.fontSize;
+
+    setVtType(vtState.type, true);
+    setVtAlign(vtState.align, true);
+    setVtAnimation(vtState.animation);
+    updateVtPreview();
+    showToast('📂 تم تحميل القالب: ' + vtState.name, 'success');
+}
+
+// CSS animations injected once
+(function injectVtStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes vt-slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes vt-fadeIn  { from { opacity:0; } to { opacity:1; } }
+        @keyframes vt-scaleIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+        @keyframes vt-slideLeft { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+    `;
+    document.head.appendChild(style);
+})();
