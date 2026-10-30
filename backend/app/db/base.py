@@ -7,3 +7,4 @@ from app.models.carousel_template import CarouselTemplate  # noqa
 from app.models.oauth_token import OAuthToken  # noqa
 from app.models.user import User  # noqa
 from app.models.app_setting import AppSetting  # noqa
+from app.models.visual_template import VisualTemplate  # noqa

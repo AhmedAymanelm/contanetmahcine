@@ -49,10 +49,56 @@ async def trigger_ingestion(background_tasks: BackgroundTasks, db: Session = Dep
     return {"detail": "Ingestion started in the background"}
 
 from pydantic import BaseModel
+from app.models.source import Source
+
 
 class ArticleGenerateRequest(BaseModel):
     formats: List[str] = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
     carousel_platforms: List[str] = ["IG", "Li"]
+
+
+class ManualArticleRequest(BaseModel):
+    title: str
+    content: str
+    source_name: str = "يدوي"
+    url: str = ""
+    image_url: str = ""
+    category: str = ""
+
+
+@router.post("/manual")
+async def create_manual_article(request: ManualArticleRequest, db: Session = Depends(get_db)):
+    """Create a raw article manually without scraping."""
+    import uuid as _uuid
+
+    # Find or create the manual source
+    source = db.query(Source).filter(Source.name == "يدوي").first()
+    if not source:
+        source = Source(
+            name="يدوي",
+            url="manual://",
+            scraping_type="Manual",
+            is_active=False,
+        )
+        db.add(source)
+        db.flush()  # get source.id without committing
+
+    # Build a unique URL if none provided
+    article_url = request.url.strip() if request.url.strip() else f"manual://{_uuid.uuid4()}"
+
+    article = RawArticle(
+        source_id=source.id,
+        title=request.title,
+        content=request.content,
+        url=article_url,
+        image_url=request.image_url or None,
+        status="PENDING",
+    )
+    db.add(article)
+    db.commit()
+    db.refresh(article)
+    logger.info(f"Manual article created: id={article.id}, title={article.title}")
+    return article
 
 @router.post("/{article_id}/generate")
 async def generate_article_content(article_id: int, request: ArticleGenerateRequest, db: Session = Depends(get_db)):
