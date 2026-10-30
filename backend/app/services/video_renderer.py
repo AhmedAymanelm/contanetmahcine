@@ -26,7 +26,8 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 ACCENT   = "#FF5C00"   # deep orange
 ACCENT2  = "#FFB700"   # amber (for covers)
-BG       = "#080808"
+ACCENT3  = "#7C3AED"   # purple accent
+BG       = "#080810"   # near-black with subtle blue tint
 
 
 # ── Easing ────────────────────────────────────────────────────────────────────
@@ -89,7 +90,8 @@ def _bar_chart_html(bars: List[Dict], opacity: float = 1.0) -> str:
 # ── Slide HTML ────────────────────────────────────────────────────────────────
 def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float = 1.0) -> str:
     """
-    reveal: 0-0.5 = entrance (slide-up), 0.5-1 = hold
+    Premium editorial video slide — cinema-grade design.
+    reveal: 0-0.5 = entrance (slide-up + scale), 0.5-1 = hold
     pfill:  progress bar fill 0-1
     """
     number    = slide.get("number", "01")
@@ -106,46 +108,41 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     is_outro  = slide.get("is_outro", False)
     image_url = slide.get("image_url", "")
 
-    footer_label = article_title or brand
     top_bar = _top_bar_html(current, total, pfill)
-    counter_str = str(current) + " / " + str(total)
 
-    # Entrance animation: reveal 0→0.5 = slide up + fade in
+    # Entrance animation
     ent_t    = min(1.0, reveal / 0.5)
     ent_ease = _ease_out_expo(ent_t)
-    h_y   = int(70 * (1.0 - ent_ease))   # headline translateY 70→0
-    h_op  = round(ent_ease, 3)            # opacity 0→1
+    h_y   = int(80 * (1.0 - ent_ease))
+    h_op  = round(ent_ease, 3)
+    # Scale entrance: 0.92 -> 1.0
+    h_scale = round(0.92 + 0.08 * ent_ease, 3)
 
-    # Detail appears slightly after headline (reveal 0.25→0.75)
+    # Detail appears after headline
     d_t    = min(1.0, max(0.0, (reveal - 0.2) / 0.4))
     d_ease = _ease_out_expo(d_t)
-    d_y    = int(50 * (1.0 - d_ease))
+    d_y    = int(40 * (1.0 - d_ease))
     d_op   = round(d_ease, 3)
 
-    # Bars after detail
     bars_t  = min(1.0, max(0.0, (reveal - 0.35) / 0.35))
     bars_op = _ease_out_expo(bars_t)
 
-    # Full merged text for normal slides
-    full_text = headline
-    if detail:
-        full_text = headline + (" — " if headline else "") + detail
-
-    # Word-by-word reveal (split on spaces, reveal from right for RTL)
-    def _reveal_words(text: str, ratio: float) -> str:
-        words = text.split()
-        if not words:
-            return ""
-        n = max(1, math.ceil(len(words) * ratio))
-        return " ".join(words[:n])
-
-    # During entrance phase, reveal words progressively
-    if reveal < 0.5:
-        vis_text = _reveal_words(full_text, ent_ease)
-        cursor = ""
-    else:
-        vis_text = full_text
-        cursor = ""
+    # Color palette rotation per slide for visual variety
+    palette = [
+        ("#FF5C00", "#FF8A3D", "#1a0a00"),  # orange
+        ("#7C3AED", "#A78BFA", "#0f0520"),  # purple
+        ("#00C9FF", "#36D1DC", "#001a22"),  # cyan
+        ("#10B981", "#34D399", "#001a10"),  # emerald
+        ("#F43F5E", "#FB7185", "#1a0510"),  # rose
+        ("#EAB308", "#FDE047", "#1a1500"),  # gold
+    ]
+    pi = (current - 1) % len(palette)
+    slide_accent, slide_accent_light, bg_tint = palette[pi]
+    # Cover always uses orange, outro uses purple
+    if is_cover:
+        slide_accent, slide_accent_light, bg_tint = palette[0]
+    elif is_outro:
+        slide_accent, slide_accent_light, bg_tint = palette[1]
 
     css_base = (
         "* { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }"
@@ -153,163 +150,228 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         "body { background:" + BG + "; position:relative; overflow:hidden; }"
     )
 
-    # ── OUTRO ────────────────────────────────────────────────────────────────
+    # ── Background gradient layers ────────────────────────────────────────
+    bg_layers = (
+        # Base dark gradient
+        '<div style="position:absolute;inset:0;'
+        'background:linear-gradient(160deg,' + BG + ' 0%,' + bg_tint + ' 50%,' + BG + ' 100%);"></div>'
+        # Accent glow (top-right)
+        '<div style="position:absolute;top:-300px;right:-200px;width:800px;height:800px;'
+        'border-radius:50%;background:radial-gradient(circle,' + slide_accent + '12 0%,transparent 70%);'
+        'pointer-events:none;"></div>'
+        # Secondary glow (bottom-left)
+        '<div style="position:absolute;bottom:-250px;left:-150px;width:600px;height:600px;'
+        'border-radius:50%;background:radial-gradient(circle,' + slide_accent_light + '08 0%,transparent 60%);'
+        'pointer-events:none;"></div>'
+        # Noise texture overlay
+        '<div style="position:absolute;inset:0;opacity:0.03;'
+        'background-image:url(\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%224%22 height=%224%22><rect width=%224%22 height=%224%22 fill=%22%23fff%22 fill-opacity=%220.04%22/></svg>\');'
+        'background-repeat:repeat;pointer-events:none;"></div>'
+    )
+
+    # ── Slide counter dots (top area) ─────────────────────────────────────
+    dots = ""
+    for i in range(total):
+        is_active = (i < current)
+        is_current = (i == current - 1)
+        dot_w = "40px" if is_current else "12px"
+        dot_bg = ("linear-gradient(90deg," + slide_accent + "," + slide_accent_light + ")") if is_active else "rgba(255,255,255,0.15)"
+        dots += (
+            '<div style="width:' + dot_w + ';height:5px;border-radius:3px;'
+            'background:' + dot_bg + ';transition:all 0.3s;'
+            + ('box-shadow:0 0 12px ' + slide_accent + '88;' if is_current else '') +
+            '"></div>'
+        )
+    dot_bar = (
+        '<div style="position:absolute;top:60px;left:80px;right:80px;'
+        'display:flex;gap:6px;align-items:center;justify-content:center;z-index:50;">'
+        + dots + '</div>'
+    )
+
+    # ── OUTRO ─────────────────────────────────────────────────────────────
     if is_outro:
         overlay = ""
         if image_url:
             overlay = (
                 '<div style="position:absolute;top:0;left:0;right:0;height:1080px;">'
                 '<img src="' + image_url + '" style="width:100%;height:100%;object-fit:cover;"/>'
-                '<div style="position:absolute;top:0;left:0;right:0;bottom:0;'
-                'background:linear-gradient(to bottom,rgba(8,8,8,0.3) 0%,rgba(8,8,8,0.95) 70%,rgba(8,8,8,1) 100%);"></div>'
+                '<div style="position:absolute;inset:0;'
+                'background:linear-gradient(to bottom,transparent 0%,' + BG + 'ee 60%,' + BG + ' 100%);"></div>'
                 '</div>'
             )
         content = (
-            '<div style="position:absolute;bottom:280px;left:80px;right:80px;'
-            'transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
-            '<div style="font-size:26px;font-weight:700;color:' + ACCENT + ';letter-spacing:4px;text-transform:uppercase;margin-bottom:28px;">'
-            + (category or "اقرأ المزيد") + '</div>'
-            '<div style="font-size:82px;font-weight:900;color:#fff;line-height:1.15;text-align:right;'
-            'letter-spacing:-1px;text-shadow:0 4px 40px rgba(0,0,0,0.8);">'
-            + vis_text + '</div>'
-            '<div style="width:80px;height:4px;background:linear-gradient(270deg,' + ACCENT + ',' + ACCENT2 + ');margin-top:32px;margin-right:0;float:right;clear:both;"></div>'
-            '</div>'
+            '<div style="position:absolute;bottom:320px;left:80px;right:80px;'
+            'transform:translateY(' + str(h_y) + 'px) scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';">'
+            # Accent label
+            '<div style="display:inline-block;padding:8px 24px;border-radius:8px;'
+            'background:' + slide_accent + ';margin-bottom:36px;">'
+            '<span style="font-size:24px;font-weight:800;color:#fff;letter-spacing:2px;">'
+            + (category or "اقرأ المقال") + '</span></div>'
+            # Title
+            '<div style="font-size:72px;font-weight:900;color:#fff;line-height:1.2;text-align:right;'
+            'text-shadow:0 4px 40px rgba(0,0,0,0.6);">'
+            + headline[:130] + '</div>'
+            # Brand line
+            '<div style="margin-top:40px;display:flex;align-items:center;gap:16px;justify-content:flex-end;">'
+            '<div style="width:40px;height:3px;background:' + slide_accent + ';border-radius:2px;"></div>'
+            '<span style="font-size:28px;font-weight:700;color:' + slide_accent + ';">' + brand + '</span>'
+            '</div></div>'
         )
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
-            + top_bar + overlay + content
-            + '<div style="position:absolute;bottom:80px;left:80px;right:80px;'
-            'display:flex;justify-content:space-between;align-items:center;'
-            'border-top:1px solid rgba(255,255,255,0.1);padding-top:28px;">'
-            '<span style="font-size:24px;color:rgba(255,255,255,0.3);">احفظه</span>'
-            '<span style="font-size:24px;color:rgba(255,255,255,0.4);">' + counter_str + '</span>'
-            '</div>'
-            "</body></html>"
+            + bg_layers + top_bar + dot_bar + overlay + content
+            + "</body></html>"
         )
 
-    # ── COVER ────────────────────────────────────────────────────────────────
+    # ── COVER ─────────────────────────────────────────────────────────────
     elif is_cover:
-        # Big diagonal background strip
-        deco = (
-            '<div style="position:absolute;top:-200px;right:-200px;'
-            'width:700px;height:700px;border-radius:50%;'
-            'background:radial-gradient(circle,' + ACCENT + '18 0%,transparent 70%);pointer-events:none;"></div>'
-            '<div style="position:absolute;bottom:-200px;left:-200px;'
-            'width:600px;height:600px;border-radius:50%;'
-            'background:radial-gradient(circle,' + ACCENT2 + '12 0%,transparent 70%);pointer-events:none;"></div>'
-        )
         content = (
-            '<div style="position:absolute;top:50%;left:80px;right:80px;'
-            'transform:translateY(calc(-50% + ' + str(h_y) + 'px));opacity:' + str(h_op) + ';">'
-            '<div style="font-size:30px;font-weight:700;color:' + ACCENT + ';letter-spacing:5px;'
-            'text-transform:uppercase;margin-bottom:32px;text-align:center;">'
-            + (category or "") + '</div>'
-            '<div style="width:60px;height:4px;background:linear-gradient(270deg,' + ACCENT + ',' + ACCENT2 + ');margin:0 auto 40px;"></div>'
-            '<div style="font-size:100px;font-weight:900;color:#fff;line-height:1.1;text-align:center;'
-            'letter-spacing:-2px;text-shadow:0 8px 60px rgba(0,0,0,0.5);">'
-            + vis_text + '</div>'
-            '</div>'
+            '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
+            'justify-content:center;align-items:center;padding:100px 80px;">'
+            # Decorative ring
+            '<div style="width:200px;height:200px;border-radius:50%;'
+            'border:3px solid ' + slide_accent + '33;position:relative;margin-bottom:60px;'
+            'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';">'
+            '<div style="position:absolute;inset:20px;border-radius:50%;'
+            'background:linear-gradient(135deg,' + slide_accent + '22,' + slide_accent_light + '11);'
+            'display:flex;align-items:center;justify-content:center;">'
+            '<span style="font-size:80px;font-weight:900;color:' + slide_accent + ';">' + number + '</span>'
+            '</div></div>'
+            # Headline
+            '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;">'
+            '<div style="font-size:96px;font-weight:900;color:#fff;line-height:1.15;'
+            'letter-spacing:-2px;text-shadow:0 4px 60px rgba(0,0,0,0.4);">'
+            + headline[:120] + '</div>'
+            # Accent underline
+            '<div style="width:120px;height:5px;border-radius:3px;margin:48px auto 0;'
+            'background:linear-gradient(90deg,' + slide_accent + ',' + slide_accent_light + ');'
+            'box-shadow:0 0 24px ' + slide_accent + '66;"></div>'
+            '</div></div>'
         )
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
-            + top_bar + deco + content
-            + '<div style="position:absolute;bottom:80px;left:80px;right:80px;'
-            'display:flex;justify-content:space-between;align-items:center;">'
-            '<span style="font-size:24px;color:rgba(255,255,255,0.25);letter-spacing:2px;">' + footer_label + '</span>'
-            '<span style="font-size:24px;color:rgba(255,255,255,0.25);">' + counter_str + '</span>'
-            '</div>'
-            "</body></html>"
+            + bg_layers + top_bar + dot_bar + content
+            # Footer brand
+            + '<div style="position:absolute;bottom:80px;left:80px;right:80px;text-align:center;">'
+            '<span style="font-size:24px;color:rgba(255,255,255,0.2);letter-spacing:4px;">'
+            + (article_title or brand) + '</span></div>'
+            + "</body></html>"
         )
 
-    # ── NORMAL SLIDE ─────────────────────────────────────────────────────────
-    # Giant ghost number — bleeds off right edge, purely decorative
-    ghost_num = (
-        '<div style="position:absolute;right:-60px;top:50%;transform:translateY(-55%);'
-        'font-size:520px;font-weight:900;color:rgba(255,255,255,0.03);'
-        'line-height:1;pointer-events:none;user-select:none;" dir="ltr">'
-        + number + '</div>'
-    )
+    # ── NORMAL SLIDE ──────────────────────────────────────────────────────
 
-    # Category + label badges (top left, small + uppercase)
-    badge_line = ""
-    parts = []
-    if category:
-        parts.append(
-            '<span style="color:' + ACCENT + ';font-size:26px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">'
-            + category + '</span>'
-        )
-    if label:
-        parts.append(
-            '<span style="color:rgba(255,255,255,0.4);font-size:26px;font-weight:600;letter-spacing:2px;">'
-            + label + '</span>'
-        )
-    if parts:
-        badge_line = (
-            '<div style="display:flex;gap:20px;align-items:center;margin-bottom:32px;">'
-            + '<div style="width:3px;height:28px;background:' + ACCENT + ';border-radius:2px;flex-shrink:0;"></div>'
-            + " ".join(parts)
-            + '</div>'
-        )
-
-    # Orange horizontal rule
-    rule = (
-        '<div style="width:100%;height:2px;background:linear-gradient(270deg,' + ACCENT + ',transparent);'
-        'margin-bottom:48px;"></div>'
-    )
-
-    # Main text block (merged headline + detail)
-    # Font size adapts to text length
-    text_len = len(full_text)
-    if text_len < 40:
-        fs = 110
-    elif text_len < 70:
-        fs = 90
-    elif text_len < 100:
-        fs = 76
+    # Font size — adaptive to text length (shorter = bigger = better)
+    text_len = len(headline)
+    if text_len < 25:
+        fs = 120
+    elif text_len < 40:
+        fs = 100
+    elif text_len < 60:
+        fs = 82
+    elif text_len < 80:
+        fs = 68
     else:
-        fs = 64
+        fs = 56
 
-    main_text = (
-        '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';transition:none;">'
-        + badge_line
-        + rule
-        + '<div style="font-size:' + str(fs) + 'px;font-weight:900;color:#fff;'
-        'line-height:1.3;text-align:right;letter-spacing:-0.5px;">'
-        + vis_text + '</div>'
-        '</div>'
-    )
+    # Note/stat display — big accent number if it contains digits
+    note_html = ""
+    if detail:
+        import re as _re
+        has_number = bool(_re.search(r'\d', detail))
+        if has_number:
+            # Extract number and text parts
+            num_match = _re.search(r'[\d,.٪%]+', detail)
+            num_str = num_match.group(0) if num_match else ""
+            rest_text = detail.replace(num_str, "").strip() if num_str else detail
+            note_html = (
+                '<div style="margin-top:56px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+                '<div style="display:flex;align-items:baseline;gap:20px;justify-content:center;">'
+                '<span style="font-size:96px;font-weight:900;color:' + slide_accent + ';'
+                'letter-spacing:-3px;text-shadow:0 0 40px ' + slide_accent + '44;">' + num_str + '</span>'
+                + ('<span style="font-size:32px;font-weight:600;color:rgba(255,255,255,0.5);">' + rest_text + '</span>' if rest_text else '') +
+                '</div></div>'
+            )
+        else:
+            note_html = (
+                '<div style="margin-top:44px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+                '<div style="padding:12px 32px;border-radius:12px;background:rgba(255,255,255,0.06);'
+                'border:1px solid rgba(255,255,255,0.08);display:inline-block;">'
+                '<span style="font-size:30px;font-weight:600;color:rgba(255,255,255,0.6);">' + detail + '</span>'
+                '</div></div>'
+            )
 
-    # Bar chart below (fades in after text)
+    # Bar chart
     bars_html = ""
     if bars:
         bars_html = (
-            '<div style="margin-top:48px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+            '<div style="margin-top:56px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
             + _bar_chart_html(bars, opacity=bars_op)
             + '</div>'
         )
 
+    # Category pill
+    cat_html = ""
+    if category:
+        cat_html = (
+            '<div style="display:inline-block;padding:6px 20px;border-radius:20px;'
+            'background:' + slide_accent + '18;border:1px solid ' + slide_accent + '33;margin-bottom:28px;">'
+            '<span style="font-size:22px;font-weight:700;color:' + slide_accent + ';letter-spacing:2px;">'
+            + category + '</span></div>'
+        )
+
+    # Slide number — small accent label
+    num_label = ""
+    if label:
+        num_label = (
+            '<div style="margin-bottom:20px;opacity:0.5;">'
+            '<span style="font-size:120px;font-weight:900;color:' + slide_accent + '15;'
+            'position:absolute;right:80px;top:50%;transform:translateY(-80%);pointer-events:none;">'
+            + label.zfill(2) + '</span></div>'
+        )
+
+    # Accent vertical line decoration
+    accent_line = (
+        '<div style="position:absolute;right:65px;top:50%;transform:translateY(-50%);'
+        'width:4px;height:200px;border-radius:2px;'
+        'background:linear-gradient(to bottom,transparent,' + slide_accent + ',' + slide_accent_light + ',transparent);'
+        'opacity:0.4;"></div>'
+    )
+
     return (
         "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
         + cairo_css + css_base + "</style></head><body>"
+        + bg_layers
         + top_bar
-        + ghost_num
-        # Main layout — vertical centered
-        + '<div style="position:absolute;top:0;left:0;right:0;bottom:0;'
-        'display:flex;flex-direction:column;justify-content:center;'
-        'padding:160px 80px 160px;">'
-        + main_text
+        + dot_bar
+        + accent_line
+        + num_label
+        # Main content — centered
+        + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
+        'justify-content:center;align-items:center;padding:180px 100px 180px 100px;">'
+        # Category pill
+        + '<div style="transform:translateY(' + str(h_y) + 'px) scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';'
+        'text-align:center;width:100%;">'
+        + cat_html
+        # Main text — CENTERED, big, bold
+        + '<div style="font-size:' + str(fs) + 'px;font-weight:900;color:#fff;'
+        'line-height:1.25;text-align:center;letter-spacing:-1px;'
+        'text-shadow:0 4px 30px rgba(0,0,0,0.4);">'
+        + headline + '</div>'
+        + '</div>'
+        # Note / stat below
+        + '<div style="text-align:center;">'
+        + note_html
         + bars_html
+        + '</div>'
         + '</div>'
         # Footer
         + '<div style="position:absolute;bottom:70px;left:80px;right:80px;'
-        'display:flex;justify-content:space-between;align-items:center;">'
-        '<span style="font-size:24px;color:rgba(255,255,255,0.2);letter-spacing:2px;max-width:600px;'
-        'overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">' + footer_label + '</span>'
-        '<span style="font-size:24px;font-weight:700;color:rgba(255,255,255,0.25);">' + counter_str + '</span>'
-        '</div>'
-        "</body></html>"
+        'display:flex;justify-content:center;">'
+        '<span style="font-size:22px;color:rgba(255,255,255,0.15);letter-spacing:3px;">'
+        + (article_title or brand)[:60] + '</span></div>'
+        + "</body></html>"
     )
 
 

@@ -3,7 +3,7 @@ from ai_service.schemas import PostContent, CarouselContent, VideoScript, ReelCo
 from ai_service.prompts.post_prompt import get_post_prompt
 from ai_service.prompts.carousel_prompt import get_carousel_prompt, CAROUSEL_SYSTEM_PROMPT
 from ai_service.prompts.video_script_prompt import get_video_script_prompt
-from ai_service.prompts.reel_prompt import get_reel_prompt
+from ai_service.prompts.reel_prompt import get_reel_prompt, REEL_SYSTEM_PROMPT
 from typing import Dict, Any, List, Optional
 
 class WriterAgent:
@@ -49,7 +49,13 @@ class WriterAgent:
 
     def write_reel(self, title: str, content: str) -> dict:
         prompt = get_reel_prompt(title, content)
-        return self.client.execute_structured_task(self.config, prompt, ReelContent)
+        reel_config = AgentConfig(
+            name="Reel Slide Writer",
+            role="Visual Headline Writer for Short-Form Video",
+            goal="Write ultra-short punchy slide text (3-8 words max per slide) for Reels/TikTok videos.",
+            backstory=REEL_SYSTEM_PROMPT,
+        )
+        return self.client.execute_structured_task(reel_config, prompt, ReelContent)
 
     def write_all(self, title: str, content: str, platforms: Optional[List[str]] = None) -> Dict[str, Any]:
         """Generates all content sequentially"""
