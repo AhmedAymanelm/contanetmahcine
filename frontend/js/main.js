@@ -2027,7 +2027,7 @@ function renderPreview(platformId, gen, item) {
     // ── REEL: show video player or slide cards ──────────────────────────────
     if (type === 'REEL') {
         const slides = (gen.slides && Array.isArray(gen.slides)) ? gen.slides : [];
-        fetch(\`/api/video/${item.id}/status\`)
+        fetch(`/api/video/${item.id}/status`)
             .then(r => r.ok ? r.json() : {})
             .then(statusData => {
                 if (statusData.status === 'done' && statusData.url) {
@@ -2087,12 +2087,6 @@ function renderPreview(platformId, gen, item) {
         postText = (gen.hook ? gen.hook + '\n\n' : '') + (gen.body || '') + (gen.call_to_action ? '\n\n' + gen.call_to_action : '');
     } else if (type === 'CAROUSEL') {
         postText = gen.title || '';
-    } else if (type === 'REEL') {
-        if (gen.slides && Array.isArray(gen.slides)) {
-            postText = gen.slides.map((s, idx) => `الشريحة ${idx + 1}:\n${s.text || ''}${s.note ? '\n(' + s.note + ')' : ''}`).join('\n\n');
-        } else {
-            postText = JSON.stringify(gen);
-        }
     }
 
     const escHtml = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
