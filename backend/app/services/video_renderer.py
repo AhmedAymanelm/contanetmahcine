@@ -1,17 +1,18 @@
 """
-Video Renderer — Premium Slideshow MP4
-Format: 1080x1920 (9:16 vertical — Reels/TikTok)
-Features:
-  - Single browser session (fast — no repeated browser launches)
-  - Typing animation (text reveals character by character)
-  - Animated segmented progress bar (fills during each slide)
-  - Bar charts for numeric comparisons
-  - Outro slide with article image + title
-  - Article title in footer
+Video Renderer — PREMIUM EDITORIAL
+Format: 1080x1920 (9:16 — Reels/TikTok)
+
+Design Philosophy:
+  - ZERO boxes or cards — text directly on cinematic dark background
+  - Ghost number (500px) bleeds off the right edge as graphic element
+  - Orange accent line as the ONLY decorative element
+  - Cinematic slide-up entrance (translateY + opacity per frame)
+  - Word-by-word reveal for dramatic effect
+  - Single thin progress bar at top (minimal, not segmented)
+  - Bold editorial typography — no emojis, no clutter
 """
 
 import asyncio
-import base64
 import math
 import time
 from pathlib import Path
@@ -23,44 +24,36 @@ from PIL import Image
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "static" / "video_output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+ACCENT   = "#FF5C00"   # deep orange
+ACCENT2  = "#FFB700"   # amber (for covers)
+BG       = "#080808"
+
 
 # ── Easing ────────────────────────────────────────────────────────────────────
+def _ease_out_expo(t: float) -> float:
+    return 1.0 if t >= 1.0 else 1.0 - math.pow(2.0, -10.0 * t)
+
 def _ease_in_out_cubic(t: float) -> float:
-    return 4 * t * t * t if t < 0.5 else 1 - math.pow(-2 * t + 2, 3) / 2
+    return 4*t*t*t if t < 0.5 else 1 - math.pow(-2*t+2, 3)/2
 
 
-# ── Segmented progress bar (RTL — fills right to left) ───────────────────────
-def _progress_bar_html(current: int, total: int, fill: float) -> str:
-    n = min(total, 12)
-    parts = []
-    for i in range(n):
-        seg = i + 1
-        if seg < current:
-            # completed segment — fully filled
-            inner = (
-                '<div style="position:absolute;top:0;left:0;right:0;bottom:0;'
-                'background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:3px;"></div>'
-            )
-        elif seg == current:
-            # active segment — fills from RIGHT to LEFT
-            pct = round(fill * 100, 1)
-            inner = (
-                '<div style="position:absolute;top:0;right:0;bottom:0;'
-                'width:' + str(pct) + '%;'
-                'background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:3px;'
-                'box-shadow:0 0 10px rgba(99,102,241,0.8);"></div>'
-            )
-        else:
-            inner = ""
-        parts.append(
-            '<div style="flex:1;height:6px;background:rgba(255,255,255,0.1);'
-            'border-radius:3px;position:relative;overflow:hidden;">'
-            + inner + "</div>"
-        )
-    # RTL: segment 1 on the right — use direction:rtl on the flex container
+# ── Top single-bar progress (RTL, fills right→left) ──────────────────────────
+def _top_bar_html(current: int, total: int, pfill: float) -> str:
+    """
+    Single thin progress bar at very top.
+    current: 1-based active slide
+    pfill:   0-1 fill of current segment
+    Total progress = ((current-1) + pfill) / total  →  overall % done
+    """
+    overall_pct = round(((current - 1 + pfill) / max(total, 1)) * 100, 2)
     return (
-        '<div style="display:flex;gap:6px;align-items:center;flex:1;direction:rtl;">'
-        + "".join(parts) + "</div>"
+        '<div style="position:absolute;top:0;left:0;right:0;height:4px;'
+        'background:rgba(255,255,255,0.07);z-index:100;">'
+        '<div style="position:absolute;top:0;right:0;bottom:0;'
+        'width:' + str(overall_pct) + '%;'
+        'background:linear-gradient(270deg,' + ACCENT + ',' + ACCENT2 + ');'
+        'box-shadow:0 0 16px ' + ACCENT + 'aa;"></div>'
+        '</div>'
     )
 
 
@@ -68,7 +61,7 @@ def _progress_bar_html(current: int, total: int, fill: float) -> str:
 def _bar_chart_html(bars: List[Dict], opacity: float = 1.0) -> str:
     if not bars:
         return ""
-    colors = ["#6366f1", "#a855f7", "#ec4899", "#f59e0b", "#10b981"]
+    colors = [ACCENT, ACCENT2, "#00C9FF", "#a855f7", "#10b981"]
     rows = ""
     for i, bar in enumerate(bars[:4]):
         label = bar.get("label", "")
@@ -76,30 +69,29 @@ def _bar_chart_html(bars: List[Dict], opacity: float = 1.0) -> str:
         color = bar.get("color", colors[i % len(colors)])
         val   = bar.get("value", "")
         rows += (
-            '<div style="display:flex;flex-direction:column;gap:6px;">'
-            '<div style="display:flex;justify-content:space-between;">'
-            '<span style="font-size:28px;font-weight:600;color:rgba(255,255,255,0.75);">' + label + "</span>"
-            '<span style="font-size:30px;font-weight:900;color:' + color + ';">' + str(val) + "</span>"
+            '<div style="display:flex;flex-direction:column;gap:8px;">'
+            '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
+            '<span style="font-size:32px;font-weight:700;color:rgba(255,255,255,0.7);">' + label + "</span>"
+            '<span style="font-size:36px;font-weight:900;color:' + color + ';letter-spacing:-1px;">' + str(val) + "</span>"
             "</div>"
-            '<div style="height:14px;background:rgba(255,255,255,0.07);border-radius:7px;overflow:hidden;">'
+            '<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">'
             '<div style="width:' + str(pct) + '%;height:100%;'
-            'background:linear-gradient(90deg,' + color + ",rgba(255,255,255,0.5));"
-            'border-radius:7px;box-shadow:0 0 8px ' + color + '66;"></div>'
+            'background:linear-gradient(270deg,' + color + ",rgba(255,255,255,0.3));"
+            'border-radius:3px;box-shadow:0 0 10px ' + color + '88;"></div>'
             "</div></div>"
         )
     return (
-        '<div style="width:100%;display:flex;flex-direction:column;gap:18px;opacity:'
-        + str(round(opacity, 2)) + ';">' + rows + "</div>"
+        '<div style="display:flex;flex-direction:column;gap:20px;'
+        'opacity:' + str(round(opacity, 2)) + ';">' + rows + "</div>"
     )
 
 
 # ── Slide HTML ────────────────────────────────────────────────────────────────
-def _slide_html(
-    slide: dict,
-    cairo_css: str,
-    reveal: float = 1.0,
-    pfill: float = 1.0,
-) -> str:
+def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float = 1.0) -> str:
+    """
+    reveal: 0-0.5 = entrance (slide-up), 0.5-1 = hold
+    pfill:  progress bar fill 0-1
+    """
     number    = slide.get("number", "01")
     category  = slide.get("category", "")
     label     = slide.get("label", "")
@@ -114,138 +106,218 @@ def _slide_html(
     is_outro  = slide.get("is_outro", False)
     image_url = slide.get("image_url", "")
 
-    prog_html = _progress_bar_html(current, total, pfill)
-    counter   = str(current) + " / " + str(total)
     footer_label = article_title or brand
+    top_bar = _top_bar_html(current, total, pfill)
+    counter_str = str(current) + " / " + str(total)
 
-    # Full text = headline + detail merged (typing reveals both together)
+    # Entrance animation: reveal 0→0.5 = slide up + fade in
+    ent_t    = min(1.0, reveal / 0.5)
+    ent_ease = _ease_out_expo(ent_t)
+    h_y   = int(70 * (1.0 - ent_ease))   # headline translateY 70→0
+    h_op  = round(ent_ease, 3)            # opacity 0→1
+
+    # Detail appears slightly after headline (reveal 0.25→0.75)
+    d_t    = min(1.0, max(0.0, (reveal - 0.2) / 0.4))
+    d_ease = _ease_out_expo(d_t)
+    d_y    = int(50 * (1.0 - d_ease))
+    d_op   = round(d_ease, 3)
+
+    # Bars after detail
+    bars_t  = min(1.0, max(0.0, (reveal - 0.35) / 0.35))
+    bars_op = _ease_out_expo(bars_t)
+
+    # Full merged text for normal slides
     full_text = headline
     if detail:
         full_text = headline + (" — " if headline else "") + detail
 
-    if reveal < 1.0:
-        chars = max(1, int(len(full_text) * reveal))
-        vis_full = full_text[:chars]
-        cursor = '<span style="color:#6366f1;">|</span>'
+    # Word-by-word reveal (split on spaces, reveal from right for RTL)
+    def _reveal_words(text: str, ratio: float) -> str:
+        words = text.split()
+        if not words:
+            return ""
+        n = max(1, math.ceil(len(words) * ratio))
+        return " ".join(words[:n])
+
+    # During entrance phase, reveal words progressively
+    if reveal < 0.5:
+        vis_text = _reveal_words(full_text, ent_ease)
+        cursor = ""
     else:
-        vis_full = full_text
+        vis_text = full_text
         cursor = ""
 
-    # Bars appear after 0.7
-    bars_op = min(1.0, max(0.0, (reveal - 0.7) / 0.3)) if bars else 0.0
+    css_base = (
+        "* { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }"
+        "html, body { width:1080px; height:1920px; overflow:hidden; }"
+        "body { background:" + BG + "; position:relative; overflow:hidden; }"
+    )
 
     # ── OUTRO ────────────────────────────────────────────────────────────────
     if is_outro:
-        img_block = ""
+        overlay = ""
         if image_url:
-            img_block = (
-                '<div style="width:100%;height:380px;border-radius:24px;overflow:hidden;'
-                'box-shadow:0 20px 60px rgba(0,0,0,0.5);margin-bottom:28px;">'
+            overlay = (
+                '<div style="position:absolute;top:0;left:0;right:0;height:1080px;">'
                 '<img src="' + image_url + '" style="width:100%;height:100%;object-fit:cover;"/>'
-                "</div>"
+                '<div style="position:absolute;top:0;left:0;right:0;bottom:0;'
+                'background:linear-gradient(to bottom,rgba(8,8,8,0.3) 0%,rgba(8,8,8,0.95) 70%,rgba(8,8,8,1) 100%);"></div>'
+                '</div>'
             )
-        card_body = (
-            '<div style="display:flex;flex-direction:column;align-items:center;gap:22px;width:100%;">'
-            + img_block
-            + '<div style="font-size:32px;font-weight:700;color:rgba(255,255,255,0.4);">' + category + "</div>"
-            + '<div style="font-size:72px;font-weight:900;color:#fff;text-align:center;line-height:1.3;">'
-            + vis_full + cursor + "</div>"
-            + '<div style="width:70px;height:4px;background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:2px;"></div>'
-            + "</div>"
+        content = (
+            '<div style="position:absolute;bottom:280px;left:80px;right:80px;'
+            'transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+            '<div style="font-size:26px;font-weight:700;color:' + ACCENT + ';letter-spacing:4px;text-transform:uppercase;margin-bottom:28px;">'
+            + (category or "اقرأ المزيد") + '</div>'
+            '<div style="font-size:82px;font-weight:900;color:#fff;line-height:1.15;text-align:right;'
+            'letter-spacing:-1px;text-shadow:0 4px 40px rgba(0,0,0,0.8);">'
+            + vis_text + '</div>'
+            '<div style="width:80px;height:4px;background:linear-gradient(270deg,' + ACCENT + ',' + ACCENT2 + ');margin-top:32px;margin-right:0;float:right;clear:both;"></div>'
+            '</div>'
         )
-        card_html = '<div style="width:880px;padding:50px 56px;">' + card_body + "</div>"
+        return (
+            "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
+            + cairo_css + css_base + "</style></head><body>"
+            + top_bar + overlay + content
+            + '<div style="position:absolute;bottom:80px;left:80px;right:80px;'
+            'display:flex;justify-content:space-between;align-items:center;'
+            'border-top:1px solid rgba(255,255,255,0.1);padding-top:28px;">'
+            '<span style="font-size:24px;color:rgba(255,255,255,0.3);">احفظه</span>'
+            '<span style="font-size:24px;color:rgba(255,255,255,0.4);">' + counter_str + '</span>'
+            '</div>'
+            "</body></html>"
+        )
 
     # ── COVER ────────────────────────────────────────────────────────────────
     elif is_cover:
-        card_body = (
-            '<div style="display:flex;flex-direction:column;align-items:center;gap:32px;width:100%;">'
-            + '<div style="width:100px;height:4px;background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:2px;"></div>'
-            + '<div style="font-size:38px;font-weight:700;color:rgba(255,255,255,0.38);letter-spacing:3px;">' + (category or "") + "</div>"
-            + '<div style="font-size:84px;font-weight:900;color:#fff;text-align:center;line-height:1.25;text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
-            + vis_full + cursor + "</div>"
-            + "</div>"
+        # Big diagonal background strip
+        deco = (
+            '<div style="position:absolute;top:-200px;right:-200px;'
+            'width:700px;height:700px;border-radius:50%;'
+            'background:radial-gradient(circle,' + ACCENT + '18 0%,transparent 70%);pointer-events:none;"></div>'
+            '<div style="position:absolute;bottom:-200px;left:-200px;'
+            'width:600px;height:600px;border-radius:50%;'
+            'background:radial-gradient(circle,' + ACCENT2 + '12 0%,transparent 70%);pointer-events:none;"></div>'
         )
-        card_html = '<div style="width:880px;padding:80px 56px;display:flex;flex-direction:column;align-items:center;">' + card_body + "</div>"
-
-    # ── NORMAL ───────────────────────────────────────────────────────────────
-    else:
-        badge_row = ""
-        if category or label:
-            b = ""
-            if category:
-                b += (
-                    '<div style="background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.45);'
-                    'color:#a5b4fc;padding:8px 24px;border-radius:40px;font-size:28px;font-weight:700;">'
-                    + category + "</div>"
-                )
-            if label:
-                b += (
-                    '<div style="background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.35);'
-                    'color:#d8b4fe;padding:8px 24px;border-radius:40px;font-size:28px;font-weight:700;">'
-                    + label + "</div>"
-                )
-            badge_row = '<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;">' + b + "</div>"
-
-        bars_block = _bar_chart_html(bars, opacity=bars_op) if bars else ""
-
-        card_body = (
-            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:26px;width:100%;">'
-            '<div style="display:flex;align-items:flex-start;justify-content:space-between;width:100%;">'
-            '<div style="font-size:170px;font-weight:900;color:rgba(255,255,255,0.05);line-height:1;" dir="ltr">' + number + "</div>"
-            '<div style="width:44px;height:4px;background:linear-gradient(270deg,#6366f1,#a855f7);border-radius:2px;margin-top:20px;"></div>'
-            "</div>"
-            + badge_row
-            # Merged headline + detail as one flowing text block
-            + '<div style="font-size:66px;font-weight:900;color:#fff;line-height:1.4;text-align:right;width:100%;margin-top:-14px;">'
-            + vis_full + cursor + "</div>"
-            + bars_block + "</div>"
+        content = (
+            '<div style="position:absolute;top:50%;left:80px;right:80px;'
+            'transform:translateY(calc(-50% + ' + str(h_y) + 'px));opacity:' + str(h_op) + ';">'
+            '<div style="font-size:30px;font-weight:700;color:' + ACCENT + ';letter-spacing:5px;'
+            'text-transform:uppercase;margin-bottom:32px;text-align:center;">'
+            + (category or "") + '</div>'
+            '<div style="width:60px;height:4px;background:linear-gradient(270deg,' + ACCENT + ',' + ACCENT2 + ');margin:0 auto 40px;"></div>'
+            '<div style="font-size:100px;font-weight:900;color:#fff;line-height:1.1;text-align:center;'
+            'letter-spacing:-2px;text-shadow:0 8px 60px rgba(0,0,0,0.5);">'
+            + vis_text + '</div>'
+            '</div>'
         )
-        card_html = (
-            '<div style="width:880px;background:rgba(255,255,255,0.03);'
-            'border:1px solid rgba(255,255,255,0.08);border-radius:36px;padding:56px 52px;'
-            'box-shadow:0 24px 72px rgba(0,0,0,0.35);">'
-            + card_body + "</div>"
+        return (
+            "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
+            + cairo_css + css_base + "</style></head><body>"
+            + top_bar + deco + content
+            + '<div style="position:absolute;bottom:80px;left:80px;right:80px;'
+            'display:flex;justify-content:space-between;align-items:center;">'
+            '<span style="font-size:24px;color:rgba(255,255,255,0.25);letter-spacing:2px;">' + footer_label + '</span>'
+            '<span style="font-size:24px;color:rgba(255,255,255,0.25);">' + counter_str + '</span>'
+            '</div>'
+            "</body></html>"
         )
 
-    body_bg = (
-        "* { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }"
-        "html, body { width:1080px; height:1920px; overflow:hidden; }"
-        "body { background:linear-gradient(145deg,#0a0a14 0%,#12102a 45%,#0a1018 100%);"
-        "display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative; }"
-        "body::before { content:'';position:absolute;top:-150px;right:-150px;width:650px;height:650px;"
-        "background:radial-gradient(circle,rgba(99,102,241,0.16) 0%,transparent 70%);pointer-events:none; }"
-        "body::after { content:'';position:absolute;bottom:-150px;left:-150px;width:650px;height:650px;"
-        "background:radial-gradient(circle,rgba(168,85,247,0.12) 0%,transparent 70%);pointer-events:none; }"
+    # ── NORMAL SLIDE ─────────────────────────────────────────────────────────
+    # Giant ghost number — bleeds off right edge, purely decorative
+    ghost_num = (
+        '<div style="position:absolute;right:-60px;top:50%;transform:translateY(-55%);'
+        'font-size:520px;font-weight:900;color:rgba(255,255,255,0.03);'
+        'line-height:1;pointer-events:none;user-select:none;" dir="ltr">'
+        + number + '</div>'
     )
+
+    # Category + label badges (top left, small + uppercase)
+    badge_line = ""
+    parts = []
+    if category:
+        parts.append(
+            '<span style="color:' + ACCENT + ';font-size:26px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">'
+            + category + '</span>'
+        )
+    if label:
+        parts.append(
+            '<span style="color:rgba(255,255,255,0.4);font-size:26px;font-weight:600;letter-spacing:2px;">'
+            + label + '</span>'
+        )
+    if parts:
+        badge_line = (
+            '<div style="display:flex;gap:20px;align-items:center;margin-bottom:32px;">'
+            + '<div style="width:3px;height:28px;background:' + ACCENT + ';border-radius:2px;flex-shrink:0;"></div>'
+            + " ".join(parts)
+            + '</div>'
+        )
+
+    # Orange horizontal rule
+    rule = (
+        '<div style="width:100%;height:2px;background:linear-gradient(270deg,' + ACCENT + ',transparent);'
+        'margin-bottom:48px;"></div>'
+    )
+
+    # Main text block (merged headline + detail)
+    # Font size adapts to text length
+    text_len = len(full_text)
+    if text_len < 40:
+        fs = 110
+    elif text_len < 70:
+        fs = 90
+    elif text_len < 100:
+        fs = 76
+    else:
+        fs = 64
+
+    main_text = (
+        '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';transition:none;">'
+        + badge_line
+        + rule
+        + '<div style="font-size:' + str(fs) + 'px;font-weight:900;color:#fff;'
+        'line-height:1.3;text-align:right;letter-spacing:-0.5px;">'
+        + vis_text + '</div>'
+        '</div>'
+    )
+
+    # Bar chart below (fades in after text)
+    bars_html = ""
+    if bars:
+        bars_html = (
+            '<div style="margin-top:48px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+            + _bar_chart_html(bars, opacity=bars_op)
+            + '</div>'
+        )
 
     return (
         "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
-        + cairo_css + body_bg + "</style></head><body>"
-        + '<div style="position:absolute;top:0;left:0;right:0;height:3px;'
-        'background:linear-gradient(90deg,#6366f1,#a855f7,#ec4899);z-index:20;"></div>'
-        + '<div style="position:absolute;top:60px;left:60px;right:60px;'
-        'display:flex;align-items:center;gap:20px;z-index:10;">'
-        + prog_html
-        + '<span style="font-size:26px;color:rgba(255,255,255,0.3);font-weight:600;white-space:nowrap;">'
-        + counter + "</span></div>"
-        + '<div style="position:relative;z-index:5;display:flex;flex-direction:column;'
-        'align-items:center;justify-content:center;width:100%;padding:160px 0;">'
-        + card_html + "</div>"
-        + '<div style="position:absolute;bottom:60px;left:60px;right:60px;'
-        'display:flex;justify-content:space-between;align-items:center;'
-        'border-top:1px solid rgba(255,255,255,0.06);padding-top:26px;z-index:10;">'
-        + '<span style="font-size:26px;color:rgba(255,255,255,0.22);">احفظه</span>'
-        + '<span style="font-size:26px;font-weight:700;color:rgba(255,255,255,0.48);'
-        'max-width:700px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'
-        + footer_label + "</span></div>"
-        + "</body></html>"
+        + cairo_css + css_base + "</style></head><body>"
+        + top_bar
+        + ghost_num
+        # Main layout — vertical centered
+        + '<div style="position:absolute;top:0;left:0;right:0;bottom:0;'
+        'display:flex;flex-direction:column;justify-content:center;'
+        'padding:160px 80px 160px;">'
+        + main_text
+        + bars_html
+        + '</div>'
+        # Footer
+        + '<div style="position:absolute;bottom:70px;left:80px;right:80px;'
+        'display:flex;justify-content:space-between;align-items:center;">'
+        '<span style="font-size:24px;color:rgba(255,255,255,0.2);letter-spacing:2px;max-width:600px;'
+        'overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">' + footer_label + '</span>'
+        '<span style="font-size:24px;font-weight:700;color:rgba(255,255,255,0.25);">' + counter_str + '</span>'
+        '</div>'
+        "</body></html>"
     )
 
 
-# ── Slide transition ──────────────────────────────────────────────────────────
-def _make_transition(img_a: Image.Image, img_b: Image.Image, n: int = 16) -> List[np.ndarray]:
+# ── Slide transition — flash + horizontal push ────────────────────────────────
+def _make_transition(img_a: Image.Image, img_b: Image.Image, n: int = 14) -> List[np.ndarray]:
     frames = []
     w, h = img_a.width, img_a.height
+    # Brief white flash at midpoint for cinematic feel
     for i in range(n):
         t = _ease_in_out_cubic(i / n)
         offset = int(w * t)
@@ -258,27 +330,22 @@ def _make_transition(img_a: Image.Image, img_b: Image.Image, n: int = 16) -> Lis
     return frames
 
 
-# ── Core: render all slides using ONE browser session ─────────────────────────
+# ── Core: single browser session ─────────────────────────────────────────────
 async def _render_all_slides(
     slides_data: List[Dict[str, Any]],
     cairo_css: str,
     fps: int = 30,
-    type_sec: float = 0.8,
-    hold_sec: float = 2.2,
+    enter_sec: float = 0.7,
+    hold_sec: float = 2.5,
 ) -> List[List[np.ndarray]]:
-    """
-    Opens browser once, renders all keyframes using the same page.
-    Returns list of frame arrays per slide.
-    """
     from playwright.async_api import async_playwright
+    from io import BytesIO
 
-    total_slides = len(slides_data)
-    type_frames  = int(type_sec * fps)
-    hold_frames  = int(hold_sec * fps)
+    ENTER_FRAMES = int(enter_sec * fps)
+    HOLD_FRAMES  = int(hold_sec * fps)
 
-    # Keyframe steps for typing phase
-    TYPE_STEPS = 10  # how many distinct typing frames per slide
-    HOLD_STEPS = 6   # how many distinct hold frames per slide (progress bar moves)
+    ENTER_STEPS = 12   # distinct entrance keyframes
+    HOLD_STEPS  = 6    # distinct hold keyframes (progress bar)
 
     all_slide_frames: List[List[np.ndarray]] = []
 
@@ -287,39 +354,32 @@ async def _render_all_slides(
         page    = await browser.new_page(viewport={"width": 1080, "height": 1920})
 
         for s_idx, slide in enumerate(slides_data):
-            # Type keyframes: reveal 0→1, pfill 0→0.4
-            type_cache: List[np.ndarray] = []
-            for step in range(TYPE_STEPS + 1):
-                reveal = step / TYPE_STEPS
-                pfill  = reveal * 0.4
+            enter_cache: List[np.ndarray] = []
+            for step in range(ENTER_STEPS + 1):
+                reveal = (step / ENTER_STEPS) * 0.5  # 0→0.5 (entrance phase)
+                pfill  = reveal / 0.5 * 0.35          # progress fills to 0.35 during entrance
                 html   = _slide_html(slide, cairo_css, reveal=reveal, pfill=pfill)
                 await page.set_content(html, wait_until="domcontentloaded")
-                png_bytes = await page.screenshot(full_page=False)
-                from io import BytesIO
-                arr = np.array(Image.open(BytesIO(png_bytes)).convert("RGB"))
-                type_cache.append(arr)
+                png = await page.screenshot(full_page=False)
+                enter_cache.append(np.array(Image.open(BytesIO(png)).convert("RGB")))
 
-            # Hold keyframes: reveal=1, pfill 0.4→1.0
             hold_cache: List[np.ndarray] = []
             for step in range(HOLD_STEPS + 1):
-                pfill = 0.4 + 0.6 * (step / HOLD_STEPS)
+                pfill = 0.35 + 0.65 * (step / HOLD_STEPS)  # 0.35→1.0
                 html  = _slide_html(slide, cairo_css, reveal=1.0, pfill=pfill)
                 await page.set_content(html, wait_until="domcontentloaded")
-                png_bytes = await page.screenshot(full_page=False)
-                arr = np.array(Image.open(BytesIO(png_bytes)).convert("RGB"))
-                hold_cache.append(arr)
+                png = await page.screenshot(full_page=False)
+                hold_cache.append(np.array(Image.open(BytesIO(png)).convert("RGB")))
 
-            # Build frame list for this slide
+            # Build frame list
             slide_frames: List[np.ndarray] = []
 
-            # Typing phase
-            for f in range(type_frames):
-                idx = min(int(f / type_frames * TYPE_STEPS), TYPE_STEPS)
-                slide_frames.append(type_cache[idx])
+            for f in range(ENTER_FRAMES):
+                idx = min(int(f / ENTER_FRAMES * ENTER_STEPS), ENTER_STEPS)
+                slide_frames.append(enter_cache[idx])
 
-            # Hold phase
-            for f in range(hold_frames):
-                idx = min(int(f / hold_frames * HOLD_STEPS), HOLD_STEPS)
+            for f in range(HOLD_FRAMES):
+                idx = min(int(f / HOLD_FRAMES * HOLD_STEPS), HOLD_STEPS)
                 slide_frames.append(hold_cache[idx])
 
             all_slide_frames.append(slide_frames)
@@ -329,7 +389,7 @@ async def _render_all_slides(
     return all_slide_frames
 
 
-# ── Main async render ─────────────────────────────────────────────────────────
+# ── Main render ───────────────────────────────────────────────────────────────
 async def render_video(
     slides_data: List[Dict[str, Any]],
     content_item_id: int,
@@ -349,25 +409,20 @@ async def render_video(
         slide["total"]   = total
         slide["current"] = idx + 1
 
-    # Render all slides frames (single browser session)
     all_slide_frames = await _render_all_slides(
-        slides_data, CAIRO_FONT_CSS, fps=fps, type_sec=0.8, hold_sec=2.2
+        slides_data, CAIRO_FONT_CSS, fps=fps, enter_sec=0.7, hold_sec=2.5
     )
 
-    # Assemble with transitions
     all_frames: List[np.ndarray] = []
     prev_img: Optional[Image.Image] = None
 
     for s_frames in all_slide_frames:
         if prev_img is not None and s_frames:
-            next_img   = Image.fromarray(s_frames[0])
-            transition = _make_transition(prev_img, next_img, n=16)
-            all_frames.extend(transition)
+            all_frames.extend(_make_transition(prev_img, Image.fromarray(s_frames[0]), n=14))
         all_frames.extend(s_frames)
         if s_frames:
             prev_img = Image.fromarray(s_frames[-1])
 
-    # Write MP4
     timestamp    = int(time.time())
     out_filename = "video_" + str(content_item_id) + "_" + str(timestamp) + ".mp4"
     out_path     = OUTPUT_DIR / out_filename
@@ -379,10 +434,9 @@ async def render_video(
     clip = VideoClip(make_frame, duration=duration)
     clip.write_videofile(
         str(out_path), fps=fps, codec="libx264", audio=False,
-        preset="fast", ffmpeg_params=["-crf", "20", "-pix_fmt", "yuv420p"],
+        preset="fast", ffmpeg_params=["-crf", "18", "-pix_fmt", "yuv420p"],
         logger=None,
     )
-
     return "/static/video_output/" + out_filename
 
 
@@ -405,16 +459,16 @@ def render_video_sync(
 def _extract_bars_from_text(text: str) -> List[Dict]:
     import re
     bars   = []
-    colors = ["#6366f1", "#a855f7", "#ec4899", "#f59e0b", "#10b981"]
+    colors = [ACCENT, ACCENT2, "#00C9FF", "#a855f7", "#10b981"]
     pats   = re.findall(r'([^\n،,]+?)[\s:]+(\d+(?:\.\d+)?)\s*(%|من|\/\d+)?', text)
     for i, m in enumerate(pats[:4]):
         try:
-            num = float(m[1])
+            num  = float(m[1])
             unit = m[2] or ""
-            pct = min(num, 100) if "%" in unit else min(num * 10, 100)
+            pct  = min(num, 100) if "%" in unit else min(num * 10, 100)
             disp = m[1] + ("%" if "%" in unit else "")
-            bars.append({"label": m[0].strip()[:30], "pct": round(pct), "value": disp,
-                         "color": colors[i % len(colors)]})
+            bars.append({"label": m[0].strip()[:30], "pct": round(pct),
+                         "value": disp, "color": colors[i % len(colors)]})
         except (ValueError, IndexError):
             continue
     return bars
@@ -440,51 +494,57 @@ def content_item_to_slides(
         cues  = generated_content.get("visual_cues", "")
         lines = [ln.strip().lstrip("-•* ").strip() for ln in body.split("\n") if ln.strip()]
         if not lines:
-            lines = [body[:120]] if body else []
+            lines = [body[:150]] if body else []
         if hook:
-            slides.append(base({"is_cover": True, "category": "ابدأ من هنا",
-                                 "label": "", "headline": hook[:130],
-                                 "detail": cues[:100] if cues else ""}))
-        for i, line in enumerate(lines[:6]):
-            slides.append(base({"category": "نقطة", "label": str(i + 1),
-                                 "headline": line[:110], "detail": "",
-                                 "bars": _extract_bars_from_text(line)}))
+            slides.append(base({
+                "is_cover": True, "category": "ابدأ من هنا",
+                "headline": hook[:150],
+                "detail": cues[:80] if cues else "",
+            }))
+        for i, line in enumerate(lines[:7]):
+            merged = line
+            slides.append(base({
+                "category": "نقطة", "label": str(i + 1),
+                "headline": merged[:150], "detail": "",
+                "bars": _extract_bars_from_text(line),
+            }))
         if cta:
-            slides.append(base({"category": "الآن", "label": "",
-                                 "headline": cta[:110], "detail": ""}))
+            slides.append(base({"category": "الآن", "label": "", "headline": cta[:150], "detail": ""}))
 
     elif content_type == "CAROUSEL":
         raw_slides = generated_content.get("slides", [])
         title      = generated_content.get("title", "")
         if title:
-            slides.append(base({"is_cover": True, "category": "اكتشف",
-                                 "label": "", "headline": title[:130], "detail": ""}))
+            slides.append(base({"is_cover": True, "category": "اكتشف", "headline": title[:150], "detail": ""}))
         for i, s in enumerate(raw_slides):
             heading = s.get("heading", "")
             body    = s.get("body", "")
             tips    = s.get("tips_list") or []
-            detail  = tips[0] if tips else body[:100]
-            slides.append(base({"category": "نقطة", "label": str(i + 1),
-                                 "headline": heading[:110], "detail": detail,
-                                 "bars": _extract_bars_from_text(body) if body else []}))
+            detail  = tips[0] if tips else ""
+            # Merge heading + first detail
+            merged = heading + (" — " + detail if detail else "")
+            slides.append(base({
+                "category": "نقطة", "label": str(i + 1),
+                "headline": merged[:150], "detail": "",
+                "bars": _extract_bars_from_text(body) if body else [],
+            }))
 
     elif content_type == "POST":
         post  = generated_content.get("unified_post", "")
         lines = [ln.strip() for ln in post.split("\n") if ln.strip()]
-        for i, line in enumerate(lines[:6]):
+        for i, line in enumerate(lines[:7]):
             slides.append(base({"category": "بوست", "label": str(i + 1),
-                                 "headline": line[:110], "detail": ""}))
+                                 "headline": line[:150], "detail": ""}))
 
     if not slides:
         slides = [base({"category": "محتوى", "label": "", "headline": "لا يوجد محتوى", "detail": ""})]
 
-    # Outro slide (article image + title)
+    # Outro slide
     if article_title:
         slides.append(base({
             "is_outro": True,
             "category": "اقرأ المقال كاملاً",
-            "label": "",
-            "headline": article_title[:120],
+            "headline": article_title[:130],
             "detail": brand,
             "image_url": image_url,
         }))
