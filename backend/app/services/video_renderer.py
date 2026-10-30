@@ -33,18 +33,25 @@ BG       = "#080810"   # near-black with subtle blue tint
 _author_img_b64 = None
 def _get_author_img_b64() -> str:
     global _author_img_b64
-    if _author_img_b64 is not None:
+    if _author_img_b64:
         return _author_img_b64
     import os, base64
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    image_path = os.path.join(base_dir, "static", "assets", "author_mic.jpg")
-    try:
-        if os.path.exists(image_path):
-            with open(image_path, "rb") as f:
-                _author_img_b64 = "data:image/jpeg;base64," + base64.b64encode(f.read()).decode("utf-8")
-                return _author_img_b64
-    except Exception:
-        pass
+    candidate_paths = [
+        os.path.join(base_dir, "static", "assets", "author_mic.jpg"),
+        os.path.join(base_dir, "..", "backend", "static", "assets", "author_mic.jpg"),
+        os.path.join(base_dir, "..", "static", "assets", "author_mic.jpg"),
+        "/app/backend/static/assets/author_mic.jpg",
+        "/app/static/assets/author_mic.jpg",
+    ]
+    for p in candidate_paths:
+        try:
+            if os.path.exists(p):
+                with open(p, "rb") as f:
+                    _author_img_b64 = "data:image/jpeg;base64," + base64.b64encode(f.read()).decode("utf-8")
+                    return _author_img_b64
+        except Exception:
+            pass
     _author_img_b64 = ""
     return _author_img_b64
 
@@ -121,7 +128,8 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     bars      = slide.get("bars", [])
     total     = slide.get("total", 1)
     current   = slide.get("current", 1)
-    brand     = slide.get("brand", "غرفة المحتوى")
+    brand       = slide.get("brand", "zayedtech")
+    author_name = slide.get("author_name", "د. زايد الحميري")
     article_title = slide.get("article_title", "")
     is_cover  = slide.get("is_cover", False)
     is_outro  = slide.get("is_outro", False)
@@ -286,40 +294,67 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         avatar_html = ""
         if author_img:
             avatar_html = (
-                '<div style="width:280px;height:280px;border-radius:50%;overflow:hidden;'
-                'border:6px solid ' + slide_accent + '44;'
-                'box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px ' + slide_accent + '22;'
-                'margin-bottom:48px;transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';">'
+                '<div style="width:260px;height:260px;border-radius:50%;overflow:hidden;'
+                'border:8px solid ' + slide_accent + ';'
+                'box-shadow:0 0 50px ' + slide_accent + '55, 0 20px 60px rgba(0,0,0,0.6);'
+                'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';flex-shrink:0;">'
                 '<img src="' + author_img + '" style="width:100%;height:100%;object-fit:cover;object-position:35% 10%;" />'
                 '</div>'
             )
 
-        content = (
-            '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
-            'justify-content:center;align-items:center;padding:160px 80px;">'
-            # Avatar
-            + avatar_html +
-            # CTA text
-            '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;">'
-            '<div style="font-size:88px;font-weight:900;color:#fff;line-height:1.2;'
-            'text-shadow:0 4px 40px rgba(0,0,0,0.4);">'
-            + headline[:120] + '</div>'
+        author_info_html = (
+            '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;margin-top:20px;">'
+            '<div style="font-size:44px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">' + author_name + '</div>'
+            '<div style="font-size:24px;font-weight:700;color:' + slide_accent + ';margin-top:4px;letter-spacing:1px;" dir="ltr">@' + brand + '</div>'
             '</div>'
-            # Detail / subtitle
-            + ('<div style="margin-top:32px;padding:14px 36px;border-radius:14px;'
-               'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
-               'transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
-               '<span style="font-size:30px;font-weight:600;color:rgba(255,255,255,0.6);">'
-               + detail + '</span></div>' if detail else '') +
-            # Follow button
-            '<div style="margin-top:56px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
-            '<div style="display:inline-flex;align-items:center;gap:16px;'
-            'background:' + slide_accent + ';color:#fff;padding:18px 48px;border-radius:50px;'
-            'font-size:36px;font-weight:800;box-shadow:0 12px 40px ' + slide_accent + '55;">'
+        )
+
+        category_pill = (
+            '<div style="margin-top:28px;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+            '<div style="display:inline-block;padding:8px 28px;border-radius:30px;'
+            'background:' + slide_accent + '22;border:1.5px solid ' + slide_accent + ';">'
+            '<span style="font-size:24px;font-weight:800;color:' + slide_accent + ';">' + (category or "شاركنا رأيك") + '</span>'
+            '</div></div>'
+        )
+
+        headline_html = (
+            '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;margin-top:20px;max-width:920px;">'
+            '<div style="font-size:60px;font-weight:900;color:#fff;line-height:1.25;letter-spacing:-1px;'
+            'text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
+            + headline[:130] + '</div>'
+            '</div>'
+        )
+
+        detail_text = detail or "اكتب رأيك في التعليقات 👇"
+        detail_html = (
+            '<div style="margin-top:24px;padding:12px 32px;border-radius:12px;'
+            'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
+            'transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+            '<span style="font-size:26px;font-weight:600;color:rgba(255,255,255,0.7);">'
+            + detail_text + '</span></div>'
+        )
+
+        follow_btn = (
+            '<div style="margin-top:32px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+            '<div style="display:inline-flex;align-items:center;gap:12px;'
+            'background:linear-gradient(135deg,' + slide_accent + ',' + slide_accent_light + ');'
+            'color:#fff;padding:14px 44px;border-radius:50px;'
+            'font-size:28px;font-weight:800;box-shadow:0 12px 35px ' + slide_accent + '55;">'
             '<span>+ تابع</span>'
             '<span dir="ltr">@' + brand + '</span>'
             '</div></div>'
-            '</div>'
+        )
+
+        content = (
+            '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
+            'justify-content:center;align-items:center;padding:100px 80px;">'
+            + avatar_html
+            + author_info_html
+            + category_pill
+            + headline_html
+            + detail_html
+            + follow_btn
+            + '</div>'
         )
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
@@ -437,8 +472,8 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         # Footer
         + '<div style="position:absolute;bottom:70px;left:80px;right:80px;'
         'display:flex;justify-content:center;">'
-        '<span style="font-size:22px;color:rgba(255,255,255,0.15);letter-spacing:3px;">'
-        + (article_title or brand)[:60] + '</span></div>'
+        '<span style="font-size:22px;color:rgba(255,255,255,0.25);letter-spacing:2px;">'
+        + author_name + ' · @' + brand + '</span></div>'
         + "</body></html>"
     )
 
@@ -523,7 +558,7 @@ async def _render_all_slides(
 async def render_video(
     slides_data: List[Dict[str, Any]],
     content_item_id: int,
-    brand: str = "غرفة المحتوى",
+    brand: str = "zayedtech",
     fps: int = 30,
 ) -> str:
     from moviepy.editor import VideoClip
@@ -573,7 +608,7 @@ async def render_video(
 def render_video_sync(
     slides_data: List[Dict[str, Any]],
     content_item_id: int,
-    brand: str = "غرفة المحتوى",
+    brand: str = "zayedtech",
     fps: int = 30,
 ) -> str:
     loop = asyncio.new_event_loop()
@@ -608,14 +643,21 @@ def _extract_bars_from_text(text: str) -> List[Dict]:
 def content_item_to_slides(
     generated_content: dict,
     content_type: str,
-    brand: str = "غرفة المحتوى",
+    brand: str = "zayedtech",
+    author_name: str = "د. زايد الحميري",
     article_title: str = "",
     image_url: str = "",
 ) -> List[Dict[str, Any]]:
     slides: List[Dict[str, Any]] = []
 
     def base(extra: dict) -> dict:
-        return {"brand": brand, "article_title": article_title, "bars": [], **extra}
+        return {
+            "brand": brand,
+            "author_name": author_name,
+            "article_title": article_title,
+            "bars": [],
+            **extra
+        }
 
     if content_type == "VIDEO_SCRIPT":
         hook  = generated_content.get("hook", "")
@@ -639,7 +681,13 @@ def content_item_to_slides(
                 "bars": _extract_bars_from_text(line),
             }))
         if cta:
-            slides.append(base({"category": "الآن", "label": "", "headline": cta[:150], "detail": ""}))
+            slides.append(base({
+                "is_cta": True,
+                "category": "شاركنا رأيك",
+                "label": "",
+                "headline": cta[:150],
+                "detail": "اكتب رأيك في التعليقات 👇",
+            }))
 
     elif content_type == "CAROUSEL":
         raw_slides = generated_content.get("slides", [])
@@ -651,13 +699,22 @@ def content_item_to_slides(
             body    = s.get("body", "")
             tips    = s.get("tips_list") or []
             detail  = tips[0] if tips else ""
-            # Merge heading + first detail
-            merged = heading + (" — " + detail if detail else "")
-            slides.append(base({
-                "category": "نقطة", "label": str(i + 1),
-                "headline": merged[:150], "detail": "",
-                "bars": _extract_bars_from_text(body) if body else [],
-            }))
+            is_last = (i == len(raw_slides) - 1)
+            if is_last:
+                slides.append(base({
+                    "is_cta": True,
+                    "category": "شاركنا رأيك",
+                    "label": "",
+                    "headline": heading[:150] or "شاركنا رأيك",
+                    "detail": body[:80] or detail[:80] or "اكتب رأيك في التعليقات 👇",
+                }))
+            else:
+                merged = heading + (" — " + detail if detail else "")
+                slides.append(base({
+                    "category": "نقطة", "label": str(i + 1),
+                    "headline": merged[:150], "detail": "",
+                    "bars": _extract_bars_from_text(body) if body else [],
+                }))
 
     elif content_type == "POST":
         post  = generated_content.get("unified_post", "")
@@ -676,18 +733,18 @@ def content_item_to_slides(
             slides.append(base({
                 "is_cover": is_first,
                 "is_cta": is_last,
-                "category": "ابدأ" if is_first else ("" if is_last else ""),
-                "label": "" if is_first else str(i),
+                "category": "ابدأ" if is_first else ("شاركنا رأيك" if is_last else ""),
+                "label": "" if (is_first or is_last) else str(i),
                 "headline": text[:150],
                 "detail": note[:80] if note else "",
-                "bars": _extract_bars_from_text(text + " " + note) if note else [],
+                "bars": _extract_bars_from_text(text + " " + note) if (note and not is_last) else [],
             }))
 
     if not slides:
         slides = [base({"category": "محتوى", "label": "", "headline": "لا يوجد محتوى", "detail": ""})]
 
-    # Outro slide
-    if article_title:
+    # Outro slide — only for content types that don't already have their own closing CTA slide
+    if article_title and content_type not in ("REEL", "VIDEO_SCRIPT"):
         slides.append(base({
             "is_outro": True,
             "category": "اقرأ المقال كاملاً",

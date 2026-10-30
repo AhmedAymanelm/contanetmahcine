@@ -56,11 +56,23 @@ async def render_video_endpoint(
         except Exception:
             gen = {}
 
-    slides = content_item_to_slides(gen or {}, item.content_type or "POST")
+    raw_art = item.raw_article
+    art_title = raw_art.title if raw_art else ""
+    art_img = raw_art.image_url if raw_art else ""
+
+    brand = "zayedtech"
+    author_name = "د. زايد الحميري"
+
+    slides = content_item_to_slides(
+        gen or {},
+        item.content_type or "POST",
+        brand=brand,
+        author_name=author_name,
+        article_title="" if (item.content_type in ("REEL", "VIDEO_SCRIPT")) else art_title,
+        image_url=art_img,
+    )
     if not slides:
         raise HTTPException(status_code=400, detail="No slides could be extracted from this content item")
-
-    brand = "غرفة المحتوى"
 
     # Submit background render
     _render_status[content_item_id] = "queued"
