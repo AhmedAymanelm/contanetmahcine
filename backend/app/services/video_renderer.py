@@ -417,10 +417,13 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             logo_html = ""
             if m_logo:
                 logo_html = (
-                    '<div style="background:rgba(255,255,255,0.96);padding:24px 36px;border-radius:28px;'
-                    'box-shadow:0 0 50px rgba(212,175,55,0.35), 0 20px 60px rgba(0,0,0,0.6);'
-                    'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';margin-bottom:28px;">'
-                    '<img src="' + m_logo + '" style="height:110px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
+                    '<div style="background:rgba(255,255,255,0.97);padding:36px 54px;border-radius:40px;'
+                    'box-shadow:0 0 70px rgba(212,175,55,0.45), 0 25px 80px rgba(0,0,0,0.7);'
+                    'border:2.5px solid rgba(212,175,55,0.55);'
+                    'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';margin-bottom:32px;'
+                    'display:flex;align-items:center;justify-content:center;">'
+                    '<img src="' + m_logo + '" style="width:380px;max-width:440px;height:auto;max-height:260px;object-fit:contain;'
+                    'filter:drop-shadow(0 4px 18px rgba(0,0,0,0.18));" alt="وزارة تمكين المجتمع" />'
                     '</div>'
                 )
 
