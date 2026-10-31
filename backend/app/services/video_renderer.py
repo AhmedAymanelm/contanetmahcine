@@ -115,32 +115,149 @@ def _top_bar_html(current: int, total: int, pfill: float) -> str:
     )
 
 
-# ── Bar chart ─────────────────────────────────────────────────────────────────
-def _bar_chart_html(bars: List[Dict], opacity: float = 1.0) -> str:
+# ── Multi-Bar Comparison Dashboard ────────────────────────────────────────────
+def _render_multi_bar_dashboard(bars: List[Dict], slide_accent: str, reveal: float, d_y: float, d_op: float) -> str:
     if not bars:
         return ""
-    colors = [ACCENT, ACCENT2, "#00C9FF", "#a855f7", "#10b981"]
+    colors = [slide_accent, "#FFB700", "#00E5FF", "#10B981", "#A855F7"]
     rows = ""
+    fill_factor = min(1.0, max(0.0, (reveal - 0.2) / 0.5))
+
     for i, bar in enumerate(bars[:4]):
         label = bar.get("label", "")
-        pct   = max(0, min(100, bar.get("pct", 0)))
+        pct   = max(5, min(100, bar.get("pct", 0)))
+        anim_pct = round(pct * fill_factor, 1)
         color = bar.get("color", colors[i % len(colors)])
-        val   = bar.get("value", "")
+        val   = bar.get("value", f"{pct}%")
+        mb    = 18 if i < min(len(bars), 4) - 1 else 0
+
         rows += (
-            '<div style="display:flex;flex-direction:column;gap:8px;">'
-            '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
-            '<span style="font-size:32px;font-weight:700;color:rgba(255,255,255,0.7);">' + label + "</span>"
-            '<span style="font-size:36px;font-weight:900;color:' + color + ';letter-spacing:-1px;">' + str(val) + "</span>"
-            "</div>"
-            '<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">'
-            '<div style="width:' + str(pct) + '%;height:100%;'
-            'background:linear-gradient(270deg,' + color + ",rgba(255,255,255,0.3));"
-            'border-radius:3px;box-shadow:0 0 10px ' + color + '88;"></div>'
-            "</div></div>"
+            f'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:{mb}px;">'
+            f'  <div style="display:flex;justify-content:space-between;align-items:center;">'
+            f'    <div style="display:flex;align-items:center;gap:12px;">'
+            f'      <div style="width:12px;height:12px;border-radius:50%;background:{color};box-shadow:0 0 14px {color};"></div>'
+            f'      <span style="font-size:28px;font-weight:800;color:rgba(255,255,255,0.9);letter-spacing:-0.5px;">{label}</span>'
+            f'    </div>'
+            f'    <span style="font-size:36px;font-weight:900;color:{color};letter-spacing:-1px;text-shadow:0 0 25px {color}66;">{val}</span>'
+            f'  </div>'
+            f'  <div style="height:20px;background:rgba(0,0,0,0.6);border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:3px;overflow:visible;position:relative;box-shadow:inset 0 2px 6px rgba(0,0,0,0.8);">'
+            f'    <div style="width:{anim_pct}%;height:100%;border-radius:6px;background:linear-gradient(90deg,{color},{color}dd);box-shadow:0 0 20px {color}88;position:relative;">'
+            f'      <div style="position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:#ffffff;box-shadow:0 0 12px #ffffff,0 0 20px {color};"></div>'
+            f'    </div>'
+            f'  </div>'
+            f'</div>'
         )
+
     return (
-        '<div style="display:flex;flex-direction:column;gap:20px;'
-        'opacity:' + str(round(opacity, 2)) + ';">' + rows + "</div>"
+        f'<div style="margin-top:40px;transform:translateY({d_y}px);opacity:{d_op};width:100%;max-width:880px;">'
+        f'  <div style="background:linear-gradient(145deg,rgba(255,255,255,0.08) 0%,rgba(15,15,25,0.85) 100%);'
+        f'              border:1.5px solid rgba(255,255,255,0.14);border-radius:32px;padding:32px 42px;'
+        f'              box-shadow:0 25px 60px rgba(0,0,0,0.6),0 0 50px {slide_accent}25;backdrop-filter:blur(25px);">'
+        f'    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.08);">'
+        f'      <span style="font-size:24px;font-weight:800;color:rgba(255,255,255,0.6);letter-spacing:1px;">📊 مؤشرات وبيانات مقارنة</span>'
+        f'      <span style="display:inline-flex;align-items:center;gap:8px;font-size:18px;font-weight:800;color:{slide_accent};background:{slide_accent}18;padding:5px 16px;border-radius:20px;border:1px solid {slide_accent}33;">'
+        f'        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{slide_accent};box-shadow:0 0 8px {slide_accent};"></span>بيانات مباشرة'
+        f'      </span>'
+        f'    </div>'
+        f'    {rows}'
+        f'  </div>'
+        f'</div>'
+    )
+
+
+# ── Hero Single Stat HUD ──────────────────────────────────────────────────────
+def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent: str, slide_accent_light: str, reveal: float, d_y: float, d_op: float, headline: str = "") -> str:
+    import re
+    # Extract numbers or percentages
+    num_match = re.search(r'([+\-▲▼↗]?\s*[\d,.]+\s*(?:%|٪|x|X|k|K|M|B|تريليون|مليار|مليون)?)', stat_text)
+    num_str = num_match.group(0).strip() if num_match else ""
+    label_text = stat_text.replace(num_str, "").strip() if num_str else stat_text
+    label_text = re.sub(r'^[،,:\-–]\s*', '', label_text).strip()
+
+    if pct_val is None:
+        if "%" in num_str or "٪" in num_str:
+            clean_digits = re.search(r'[\d.]+', num_str)
+            if clean_digits:
+                pct_val = min(100.0, float(clean_digits.group(0)))
+
+    is_upward = bool(re.search(r'نمو|زيادة|ارتفاع|قفزة|مضاعفة|صعود|تريليون|مليار|ربح|أرباح|قياسي|تفوق', stat_text + " " + headline))
+    badge_icon = "📈" if is_upward else "⚡"
+    badge_text = "مؤشر قياسي" if is_upward else "إحصائية موثقة"
+    badge_color = "#35D399" if is_upward else slide_accent
+
+    # Progress bar HTML (if percentage detected)
+    progress_bar_html = ""
+    if pct_val is not None and pct_val > 0:
+        fill_pct = min(100.0, pct_val)
+        anim_fill = round(fill_pct * min(1.0, max(0.0, (reveal - 0.2) / 0.5)), 1)
+        progress_bar_html = (
+            f'<div style="margin-top:20px;">'
+            f'  <div style="height:22px;background:rgba(0,0,0,0.65);border:1.5px solid rgba(255,255,255,0.12);'
+            f'              border-radius:12px;padding:3px;position:relative;overflow:visible;'
+            f'              box-shadow:inset 0 2px 8px rgba(0,0,0,0.8);">'
+            f'    <div style="width:{anim_fill}%;height:100%;border-radius:8px;'
+            f'                background:linear-gradient(90deg,{slide_accent},#FFB700,#00E5FF);'
+            f'                box-shadow:0 0 25px {slide_accent}, 0 0 10px #FFB700;position:relative;">'
+            f'      <div style="position:absolute;left:-8px;top:50%;transform:translateY(-50%);'
+            f'                  width:22px;height:22px;border-radius:50%;background:#ffffff;'
+            f'                  box-shadow:0 0 16px #ffffff,0 0 30px {slide_accent};"></div>'
+            f'    </div>'
+            f'  </div>'
+            f'  <div style="display:flex;justify-content:space-between;margin-top:10px;font-family:monospace;'
+            f'              font-size:16px;color:rgba(255,255,255,0.35);font-weight:700;direction:ltr;">'
+            f'    <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>'
+            f'  </div>'
+            f'</div>'
+        )
+
+    # Dynamic Sparkline Chart SVG (Trendline wave)
+    svg_id = abs(hash(stat_text)) % 100000
+    svg_dash = 900
+    dash_offset = round(svg_dash * (1.0 - min(1.0, max(0.0, (reveal - 0.25) / 0.45))))
+
+    sparkline_svg = (
+        f'<svg viewBox="0 0 800 120" style="width:100%;height:100px;margin-top:16px;overflow:visible;">'
+        f'  <defs>'
+        f'    <linearGradient id="hudGrad_{svg_id}" x1="0" y1="0" x2="0" y2="1">'
+        f'      <stop offset="0%" stop-color="{slide_accent}" stop-opacity="0.38"/>'
+        f'      <stop offset="100%" stop-color="{slide_accent}" stop-opacity="0.0"/>'
+        f'    </linearGradient>'
+        f'    <filter id="glow_{svg_id}" x="-20%" y="-20%" width="140%" height="140%">'
+        f'      <feGaussianBlur stdDeviation="6" result="blur"/>'
+        f'      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>'
+        f'    </filter>'
+        f'  </defs>'
+        f'  <line x1="0" y1="35" x2="800" y2="35" stroke="rgba(255,255,255,0.06)" stroke-dasharray="6 6"/>'
+        f'  <line x1="0" y1="80" x2="800" y2="80" stroke="rgba(255,255,255,0.06)" stroke-dasharray="6 6"/>'
+        f'  <path d="M 0 110 C 180 105, 300 85, 450 60 C 580 40, 680 20, 790 10 L 790 120 L 0 120 Z" fill="url(#hudGrad_{svg_id})"/>'
+        f'  <path d="M 0 110 C 180 105, 300 85, 450 60 C 580 40, 680 20, 790 10" fill="none" stroke="{slide_accent}" stroke-width="5" filter="url(#glow_{svg_id})" stroke-dasharray="{svg_dash}" stroke-dashoffset="{dash_offset}"/>'
+        f'  <circle cx="790" cy="10" r="14" fill="{slide_accent}" opacity="0.4"/>'
+        f'  <circle cx="790" cy="10" r="7" fill="#ffffff" filter="drop-shadow(0 0 12px {slide_accent})"/>'
+        f'</svg>'
+    )
+
+    return (
+        f'<div style="margin-top:40px;transform:translateY({d_y}px);opacity:{d_op};width:100%;max-width:880px;">'
+        f'  <div style="background:linear-gradient(145deg,rgba(255,255,255,0.08) 0%,rgba(15,15,25,0.85) 100%);'
+        f'              border:1.5px solid rgba(255,255,255,0.14);border-radius:36px;padding:32px 44px;'
+        f'              box-shadow:0 25px 60px rgba(0,0,0,0.6), 0 0 60px {slide_accent}25;'
+        f'              backdrop-filter:blur(25px);display:flex;flex-direction:column;">'
+        f'    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
+        f'      <span style="font-size:30px;font-weight:800;color:rgba(255,255,255,0.9);letter-spacing:-0.5px;">{label_text or "المؤشر العام"}</span>'
+        f'      <span style="display:inline-flex;align-items:center;gap:8px;background:{badge_color}18;border:1.5px solid {badge_color}44;color:{badge_color};font-size:22px;padding:6px 18px;border-radius:50px;font-weight:800;">'
+        f'        {badge_icon} {badge_text}'
+        f'      </span>'
+        f'    </div>'
+        f'    <div style="display:flex;align-items:baseline;gap:16px;margin:6px 0;">'
+        f'      <span style="font-size:110px;font-weight:900;line-height:1;letter-spacing:-3px;'
+        f'                   background:linear-gradient(135deg,#ffffff 40%,{slide_accent});'
+        f'                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;'
+        f'                   filter:drop-shadow(0 0 35px {slide_accent}88);">{num_str}</span>'
+        f'    </div>'
+        f'    {progress_bar_html}'
+        f'    {sparkline_svg}'
+        f'  </div>'
+        f'</div>'
     )
 
 
@@ -565,40 +682,28 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     else:
         fs = 56
 
-    # Note/stat display — big accent number if it contains digits
-    note_html = ""
-    if detail:
-        import re as _re
-        has_number = bool(_re.search(r'\d', detail))
-        if has_number:
-            # Extract number and text parts
-            num_match = _re.search(r'[\d,.٪%]+', detail)
-            num_str = num_match.group(0) if num_match else ""
-            rest_text = detail.replace(num_str, "").strip() if num_str else detail
-            note_html = (
-                '<div style="margin-top:56px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
-                '<div style="display:flex;align-items:baseline;gap:20px;justify-content:center;">'
-                '<span style="font-size:96px;font-weight:900;color:' + slide_accent + ';'
-                'letter-spacing:-3px;text-shadow:0 0 40px ' + slide_accent + '44;">' + num_str + '</span>'
-                + ('<span style="font-size:32px;font-weight:600;color:rgba(255,255,255,0.5);">' + rest_text + '</span>' if rest_text else '') +
-                '</div></div>'
-            )
-        else:
-            note_html = (
-                '<div style="margin-top:44px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
-                '<div style="padding:12px 32px;border-radius:12px;background:rgba(255,255,255,0.06);'
-                'border:1px solid rgba(255,255,255,0.08);display:inline-block;">'
-                '<span style="font-size:30px;font-weight:600;color:rgba(255,255,255,0.6);">' + detail + '</span>'
-                '</div></div>'
-            )
+    # Adaptive font size — capped slightly when an epic HUD is displayed
+    import re as _re
+    has_num_in_detail = bool(detail and _re.search(r'\d', detail))
+    has_hud_data = has_num_in_detail or len(bars) >= 1
+    if has_hud_data:
+        fs = min(fs, 76)
 
-    # Bar chart
-    bars_html = ""
-    if bars:
-        bars_html = (
-            '<div style="margin-top:56px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
-            + _bar_chart_html(bars, opacity=bars_op)
-            + '</div>'
+    # ── Unified Epic Data HUD ─────────────────────────────────────────────────
+    hud_html = ""
+    if len(bars) > 1:
+        hud_html = _render_multi_bar_dashboard(bars, slide_accent, reveal, d_y, d_op)
+    elif has_hud_data:
+        stat_text = detail or (bars[0].get("label", "") + " " + str(bars[0].get("value", "")))
+        pct_val = bars[0].get("pct") if bars else None
+        hud_html = _render_hero_stat_hud(stat_text, pct_val, slide_accent, slide_accent_light, reveal, d_y, d_op, headline)
+    elif detail:
+        hud_html = (
+            '<div style="margin-top:44px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';text-align:center;">'
+            '<div style="padding:14px 36px;border-radius:16px;background:rgba(255,255,255,0.06);'
+            'border:1.5px solid rgba(255,255,255,0.12);display:inline-block;box-shadow:0 10px 30px rgba(0,0,0,0.3);">'
+            '<span style="font-size:30px;font-weight:600;color:rgba(255,255,255,0.85);line-height:1.4;">' + detail + '</span>'
+            '</div></div>'
         )
 
     # Category pill
@@ -653,10 +758,9 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         'text-shadow:0 4px 30px rgba(0,0,0,0.4);">'
         + headline + '</div>'
         + '</div>'
-        # Note / stat below
-        + '<div style="text-align:center;">'
-        + note_html
-        + bars_html
+        # Data HUD / Note below
+        + '<div style="width:100%;display:flex;justify-content:center;">'
+        + hud_html
         + '</div>'
         + '</div>'
         # Footer
