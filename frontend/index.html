@@ -386,7 +386,61 @@
                 <span style="font-size:11px;color:var(--muted);">اضغط لتطبيق التناسق الكامل</span>
               </div>
               <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="vt-color-presets">
-                <!-- Injected by JS -->
+                <div onclick="applyVtPreset(0)" title="لهب زايد تيك" style="border-radius:14px;cursor:pointer;overflow:hidden;border:2px solid #FF5C00;background:rgba(0,0,0,0.3);transition:all 0.2s;box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+                  <div style="height:44px;background:linear-gradient(135deg,#0a0a0a,#240a00);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#FF5C00;box-shadow:0 0 10px #FF5C00;border:2px solid rgba(255,255,255,0.8);"></div>
+                  </div>
+                  <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:#FF5C00;background:rgba(0,0,0,0.4);">لهب زايد تيك</div>
+                </div>
+
+                <div onclick="applyVtPreset(1)" title="سايبر بنفسجي" style="border-radius:14px;cursor:pointer;overflow:hidden;border:2px solid transparent;background:rgba(0,0,0,0.3);transition:all 0.2s;box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+                  <div style="height:44px;background:linear-gradient(135deg,#070514,#1a0f3c);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#8B5CF6;box-shadow:0 0 10px #8B5CF6;border:2px solid rgba(255,255,255,0.8);"></div>
+                  </div>
+                  <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:#8B5CF6;background:rgba(0,0,0,0.4);">سايبر بنفسجي</div>
+                </div>
+
+                <div onclick="applyVtPreset(2)" title="زمردي أعمال" style="border-radius:14px;cursor:pointer;overflow:hidden;border:2px solid transparent;background:rgba(0,0,0,0.3);transition:all 0.2s;box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+                  <div style="height:44px;background:linear-gradient(135deg,#041712,#0e382c);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#10B981;box-shadow:0 0 10px #10B981;border:2px solid rgba(255,255,255,0.8);"></div>
+                  </div>
+                  <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:#10B981;background:rgba(0,0,0,0.4);">زمردي أعمال</div>
+                </div>
+
+                <div onclick="applyVtPreset(3)" title="أزرق نيون" style="border-radius:14px;cursor:pointer;overflow:hidden;border:2px solid transparent;background:rgba(0,0,0,0.3);transition:all 0.2s;box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+                  <div style="height:44px;background:linear-gradient(135deg,#020c1b,#0b1f3a);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#38BDF8;box-shadow:0 0 10px #38BDF8;border:2px solid rgba(255,255,255,0.8);"></div>
+                  </div>
+                  <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:#38BDF8;background:rgba(0,0,0,0.4);">أزرق نيون</div>
+                </div>
+
+                <div onclick="applyVtPreset(4)" title="ذهبي ملكي" style="border-radius:14px;cursor:pointer;overflow:hidden;border:2px solid transparent;background:rgba(0,0,0,0.3);transition:all 0.2s;box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+                  <div style="height:44px;background:linear-gradient(135deg,#0c0a02,#261d06);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#F59E0B;box-shadow:0 0 10px #F59E0B;border:2px solid rgba(255,255,255,0.8);"></div>
+                  </div>
+                  <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:#F59E0B;background:rgba(0,0,0,0.4);">ذهبي ملكي</div>
+                </div>
+
+                <div onclick="applyVtPreset(5)" title="قرمزي قوي" style="border-radius:14px;cursor:pointer;overflow:hidden;border:2px solid transparent;background:rgba(0,0,0,0.3);transition:all 0.2s;box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+                  <div style="height:44px;background:linear-gradient(135deg,#0d0406,#260a10);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#EF4444;box-shadow:0 0 10px #EF4444;border:2px solid rgba(255,255,255,0.8);"></div>
+                  </div>
+                  <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:#EF4444;background:rgba(0,0,0,0.4);">قرمزي قوي</div>
+                </div>
+
+                <div onclick="applyVtPreset(6)" title="مينيمال كربون" style="border-radius:14px;cursor:pointer;overflow:hidden;border:2px solid transparent;background:rgba(0,0,0,0.3);transition:all 0.2s;box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+                  <div style="height:44px;background:linear-gradient(135deg,#090a0d,#161922);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#14B8A6;box-shadow:0 0 10px #14B8A6;border:2px solid rgba(255,255,255,0.8);"></div>
+                  </div>
+                  <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:#14B8A6;background:rgba(0,0,0,0.4);">مينيمال كربون</div>
+                </div>
+
+                <div onclick="applyVtPreset(7)" title="وردي فاقع" style="border-radius:14px;cursor:pointer;overflow:hidden;border:2px solid transparent;background:rgba(0,0,0,0.3);transition:all 0.2s;box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+                  <div style="height:44px;background:linear-gradient(135deg,#14030d,#2b061b);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#EC4899;box-shadow:0 0 10px #EC4899;border:2px solid rgba(255,255,255,0.8);"></div>
+                  </div>
+                  <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:#EC4899;background:rgba(0,0,0,0.4);">وردي فاقع</div>
+                </div>
               </div>
             </div>
 
@@ -476,7 +530,10 @@
                 <span style="font-size:11px;color:var(--muted);">تطبَّق في رندرة الفيديو</span>
               </div>
               <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="vt-animation-grid">
-                <!-- Injected by JS -->
+                <button id="vt-anim-slideUp" onclick="setVtAnimation('slideUp')" type="button" style="padding:11px 8px;font-size:12px;font-weight:800;cursor:pointer;border-radius:12px;transition:all 0.2s;border:1.5px solid #FF5C00;background:rgba(255,92,0,0.15);color:#FF5C00;">⬆️ صعود</button>
+                <button id="vt-anim-scaleIn" onclick="setVtAnimation('scaleIn')" type="button" style="padding:11px 8px;font-size:12px;font-weight:800;cursor:pointer;border-radius:12px;transition:all 0.2s;border:1.5px solid var(--line);background:rgba(0,0,0,0.2);color:var(--muted);">💫 انبثاق</button>
+                <button id="vt-anim-fadeIn" onclick="setVtAnimation('fadeIn')" type="button" style="padding:11px 8px;font-size:12px;font-weight:800;cursor:pointer;border-radius:12px;transition:all 0.2s;border:1.5px solid var(--line);background:rgba(0,0,0,0.2);color:var(--muted);">🌅 تلاشي</button>
+                <button id="vt-anim-slideLeft" onclick="setVtAnimation('slideLeft')" type="button" style="padding:11px 8px;font-size:12px;font-weight:800;cursor:pointer;border-radius:12px;transition:all 0.2s;border:1.5px solid var(--line);background:rgba(0,0,0,0.2);color:var(--muted);">⬅️ من اليمين</button>
               </div>
             </div>
 
@@ -540,7 +597,7 @@
                     </div>
 
                     <!-- Slide counter -->
-                    <div id="vt-preview-number" style="position:absolute;top:18px;left:14px;font-size:9.5px;color:rgba(255,255,255,0.4);font-family:var(--mono);letter-spacing:1px;font-weight:700;">
+                    <div id="vt-preview-number" style="position:absolute;top:18px;left:14px;font-size:9.5px;color:rgba(255,255,255,0.6);font-family:var(--mono);letter-spacing:1px;font-weight:700;direction:ltr;display:inline-block;">
                       01 / 07
                     </div>
 
@@ -562,7 +619,7 @@
                     <!-- MAIN SLIDE CONTENT -->
                     <div id="vt-main-content-box" style="padding:22px 20px;text-align:center;width:100%;box-sizing:border-box;z-index:2;direction:rtl;">
                       <div id="vt-preview-text" style="font-size:20px;font-weight:900;color:#ffffff;line-height:1.35;letter-spacing:-0.4px;transition:all 0.2s;text-shadow:0 2px 10px rgba(0,0,0,0.7);font-family:Cairo,sans-serif;">
-                        <!-- Injected text -->
+                        غوغل خسرت نصف تريليون دولار في يوم واحد — أسوأ يوم في تاريخ الشركة!
                       </div>
                     </div>
 
@@ -1578,7 +1635,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="js/main.js?v=10"></script>
+<script src="js/main.js?v=20261031_03"></script>
 
 <!-- ════════════════════════════════ ANALYTICS PAGE ════════════════════════════ -->
 <style>

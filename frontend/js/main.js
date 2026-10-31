@@ -2729,6 +2729,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(fetchAllContent, 600);
     setTimeout(fetchReviewContent, 900);
     setTimeout(fetchScheduledContent, 1200);
+    setTimeout(fetchSavedVisualTemplates, 1500);
     setTimeout(fetchPlatformStatus, 5000); // Platform status last (external API calls - not critical)
 
     // Refresh data every 60 seconds
@@ -2907,7 +2908,7 @@ async function loadTemplates() {
                         <button onclick="deleteTemplate(${tpl.id})" style="position:absolute; top:10px; left:10px; background:rgba(239, 68, 68, 0.9); color:#fff; border:none; width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3); transition:background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='rgba(239, 68, 68, 0.9)'" title="حذف القالب">
                             🗑️
                         </button>
-                        <div style="height:220px; background-image:url(${tpl.cover_bg_path.startsWith('http') ? tpl.cover_bg_path : tpl.cover_bg_path}); background-size:cover; background-position:center; position:relative;">
+                        <div style="height:220px; background-image:url(${tpl.cover_bg_path ? tpl.cover_bg_path : ''}); background-size:cover; background-position:center; position:relative;">
                             <div style="position:absolute; bottom:0; left:0; width:100%; height:50%; background:linear-gradient(to top, var(--panel-2), transparent);"></div>
                         </div>
                         <div style="padding:20px; position:relative; z-index:5;">
@@ -4174,3 +4175,20 @@ function loadVtTemplate(t) {
     `;
     document.head.appendChild(style);
 })();
+
+// Bind all VT functions explicitly to window for HTML inline onclick
+window.setVtType = setVtType;
+window.setVtBg = setVtBg;
+window.setVtAlign = setVtAlign;
+window.setVtAnimation = setVtAnimation;
+window.applyVtPreset = applyVtPreset;
+window.setVtSlideView = setVtSlideView;
+window.playVtAnimation = playVtAnimation;
+window.loadSampleTextPreset = loadSampleTextPreset;
+window.resetVtDesigner = resetVtDesigner;
+window.saveVisualTemplate = saveVisualTemplate;
+window.deleteVisualTemplate = deleteVisualTemplate;
+window.loadVtTemplate = loadVtTemplate;
+window.syncColorPicker = syncColorPicker;
+window.updateVtPreview = updateVtPreview;
+window.loadVisualTemplates = loadVisualTemplates;
