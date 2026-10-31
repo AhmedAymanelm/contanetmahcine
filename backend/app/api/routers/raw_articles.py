@@ -35,12 +35,38 @@ async def get_raw_articles(db: Session = Depends(get_db)):
 
 @router.get("/generating", response_model=List[RawArticleResponse])
 async def get_generating_articles(db: Session = Depends(get_db)):
-    display_cutoff = datetime.utcnow() - timedelta(hours=24)
+    from app.models.content_item import ContentItem
     articles = db.query(RawArticle).filter(
-        RawArticle.status == "APPROVED_FOR_GENERATION",
-        RawArticle.created_at >= display_cutoff
+        RawArticle.status == "APPROVED_FOR_GENERATION"
     ).order_by(RawArticle.created_at.desc()).all()
-    return articles
+
+    active_generating = []
+    has_updates = False
+
+    for art in articles:
+        # If content items already exist for this article, mark as GENERATED so it leaves generating state
+        items_count = db.query(ContentItem).filter(ContentItem.raw_article_id == art.id).count()
+        if items_count > 0:
+            art.status = "GENERATED"
+            has_updates = True
+            continue
+
+        # If it has been stuck for more than 10 minutes with 0 items, auto-reset to PENDING
+        created_time = art.created_at.replace(tzinfo=None) if art.created_at else datetime.utcnow()
+        if (datetime.utcnow() - created_time).total_seconds() > 600:
+            art.status = "PENDING"
+            has_updates = True
+            continue
+
+        active_generating.append(art)
+
+    if has_updates:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    return active_generating
 
 @router.post("/ingest")
 async def trigger_ingestion(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):

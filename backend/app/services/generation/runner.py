@@ -42,6 +42,8 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
         # Only fail if we expected non-carousel content but got nothing
         if not generated and formats_no_carousel:
             logger.error("AI Generation failed or returned empty.")
+            article.status = "PENDING"
+            db.commit()
             return
 
         # Create Content Items
@@ -205,6 +207,15 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
         except:
             pass
     finally:
+        # Guarantee article is never left in APPROVED_FOR_GENERATION
+        try:
+            art_check = db.query(RawArticle).filter(RawArticle.id == raw_article_id).first()
+            if art_check and art_check.status == "APPROVED_FOR_GENERATION":
+                items_cnt = db.query(ContentItem).filter(ContentItem.raw_article_id == raw_article_id).count()
+                art_check.status = "GENERATED" if items_cnt > 0 else "PENDING"
+                db.commit()
+        except Exception:
+            pass
         db.close()
 
 def process_trend_generation(trend_title: str, trend_snippet: str, formats: list = None):

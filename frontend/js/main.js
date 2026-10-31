@@ -1444,35 +1444,32 @@ if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000); // Poll ev
             });
 
             // ── Render "generating" placeholders (one per generating article) ──
-            generatingData.forEach(art => {
-                // Calculate time stuck
-                const createdAt = art.created_at ? new Date(art.created_at) : null;
-                const minutesStuck = createdAt ? Math.floor((Date.now() - createdAt.getTime()) / 60000) : 0;
-                const isLikelyStuck = minutesStuck > 10;
+            // Exclude any articles whose content items are already present in the review list
+            const generatedArticleIds = new Set(data.map(item => item.raw_article_id).filter(Boolean));
+            const activeGenerating = generatingData.filter(art => !generatedArticleIds.has(art.id));
 
+            activeGenerating.forEach(art => {
                 reviewList.innerHTML += `
                 <div style="grid-column: 1 / -1;">
-                  <div style="border:1.5px dashed ${isLikelyStuck ? '#ef4444' : 'var(--teal)'}; border-radius:16px; background:var(--panel); padding:0; overflow:hidden; opacity:${isLikelyStuck ? '0.9' : '0.65'}; margin-bottom:0;">
+                  <div style="border:1px solid rgba(53,211,153,0.3); border-radius:16px; background:var(--panel); padding:0; overflow:hidden; margin-bottom:12px; box-shadow:0 4px 20px rgba(0,0,0,0.25);">
                     <!-- Article header -->
-                    <div style="display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line); background:linear-gradient(90deg,rgba(${isLikelyStuck ? '239,68,68' : '53,211,153'},0.06),transparent);">
+                    <div style="display:flex; align-items:center; gap:12px; padding:14px 18px; background:linear-gradient(90deg,rgba(53,211,153,0.08),transparent);">
                       ${art.image_url ? `<img src="${imgProxy(art.image_url)}" style="width:46px;height:46px;object-fit:cover;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
                       <div style="flex:1; min-width:0;">
                         <div style="font-size:13.5px;font-weight:600;color:var(--text);line-height:1.4;">${art.title || 'بدون عنوان'}</div>
-                        <div style="font-size:11px;color:var(--muted);margin-top:2px;">📡 ${art.source_name || ''} ${isLikelyStuck ? `<span style="color:#ef4444;margin-right:6px;">⚠️ متوقف منذ ${minutesStuck} دقيقة</span>` : ''}</div>
+                        <div style="font-size:11px;color:var(--muted);margin-top:2px;">📡 ${art.source_name || ''}</div>
                       </div>
-                      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:160px;">
-                        ${isLikelyStuck ? `
-                        <div style="display:flex;gap:6px;">
-                          <button onclick="retryStuckArticle(${art.id})" style="background:rgba(53,211,153,0.15);border:1px solid rgba(53,211,153,0.3);color:var(--teal);padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700;">🔄 إعادة محاولة</button>
-                          <button onclick="cancelStuckArticle(${art.id})" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#ef4444;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">✕</button>
-                        </div>` : `
-                        <div style="display:flex;align-items:center;gap:8px;color:var(--teal);font-size:12px;white-space:nowrap;">
-                          <div style="width:14px;height:14px;border:2px solid rgba(53,211,153,0.3);border-top:2px solid var(--teal);border-radius:50%;animation:spin 1s linear infinite;"></div>
-                          جاري الصياغة...
+                      <div style="display:flex;align-items:center;gap:12px;min-width:180px;">
+                        <div style="flex:1;">
+                          <div style="display:flex;align-items:center;gap:8px;color:var(--teal);font-size:12px;white-space:nowrap;margin-bottom:6px;">
+                            <div style="width:12px;height:12px;border:2px solid rgba(53,211,153,0.3);border-top:2px solid var(--teal);border-radius:50%;animation:spin 1s linear infinite;"></div>
+                            جاري الصياغة بالذكاء الاصطناعي...
+                          </div>
+                          <div style="width:100%;height:4px;background:rgba(53,211,153,0.15);border-radius:2px;overflow:hidden;">
+                            <div style="height:100%;background:var(--teal);border-radius:2px;animation:simulatedProgress 25s cubic-bezier(0.1, 0.7, 0.1, 1) forwards;"></div>
+                          </div>
                         </div>
-                        <div style="width:100%;height:4px;background:rgba(53,211,153,0.15);border-radius:2px;overflow:hidden;">
-                          <div style="height:100%;background:var(--teal);border-radius:2px;animation:simulatedProgress 25s cubic-bezier(0.1, 0.7, 0.1, 1) forwards;"></div>
-                        </div>`}
+                        <button onclick="cancelStuckArticle(${art.id})" title="إلغاء التوليد" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:var(--muted);padding:5px 9px;border-radius:8px;font-size:12px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'">✕</button>
                       </div>
                     </div>
                   </div>
