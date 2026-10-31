@@ -2166,12 +2166,12 @@ function renderPreview(platformId, gen, item) {
                             ${s.note ? `<div style="font-size:12px;color:#888;margin-top:6px;border-top:1px solid #222;padding-top:6px;">${esc(s.note)}</div>` : ''}
                         </div>`);
 
-                    const slideCards = (isClient ? contentCards : [ministryIdentCard, ...contentCards, ministryIdentCard]).join('');
+                    const slideCards = (isClient ? contentCards : [ministryIdentCard, ...contentCards]).join('');
 
                     area.innerHTML = `
                     <div style="max-width:460px;margin:0 auto;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                            <div style="font-size:12px;color:#FF5C00;font-weight:700;">🎬 ريلز — ${isClient ? slides.length : (slides.length + 2)} شريحة ${isClient ? '(هوية العميل)' : '(شاملة شرائح الوزارة)'}</div>
+                            <div style="font-size:12px;color:#FF5C00;font-weight:700;">🎬 ريلز — ${isClient ? slides.length : (slides.length + 1)} شريحة ${isClient ? '(هوية العميل)' : '(شاملة شريحة مقدمة الوزارة)'}</div>
                             ${badge}
                         </div>
                         ${renderingBanner}

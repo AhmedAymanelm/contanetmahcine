@@ -417,19 +417,19 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             logo_html = ""
             if m_logo:
                 logo_html = (
-                    '<div style="background:rgba(255,255,255,0.97);padding:40px 50px;border-radius:52px;'
+                    '<div style="background:rgba(255,255,255,0.97);padding:40px 50px;border-radius:48px;'
                     'box-shadow:0 0 90px rgba(212,175,55,0.5), 0 30px 90px rgba(0,0,0,0.75);'
                     'border:3.5px solid rgba(212,175,55,0.65);'
-                    'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';margin-bottom:36px;'
-                    'max-width:820px;width:90%;min-height:520px;box-sizing:border-box;'
+                    'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';margin-bottom:24px;'
+                    'max-width:780px;width:86%;min-height:660px;height:660px;box-sizing:border-box;'
                     'display:flex;align-items:center;justify-content:center;">'
-                    '<img src="' + m_logo + '" style="width:700px;max-width:90%;height:auto;max-height:440px;object-fit:contain;'
+                    '<img src="' + m_logo + '" style="width:680px;max-width:92%;height:auto;max-height:480px;object-fit:contain;'
                     'filter:drop-shadow(0 8px 24px rgba(0,0,0,0.2));" alt="وزارة تمكين المجتمع" />'
                     '</div>'
                 )
 
             category_pill = (
-                '<div style="margin-bottom:28px;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+                '<div style="margin-bottom:22px;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
                 '<div style="display:inline-block;padding:10px 36px;border-radius:30px;'
                 'background:rgba(212,175,55,0.18);border:1.5px solid #FFB700;">'
                 '<span style="font-size:26px;font-weight:800;color:#FFB700;">' + (category or "شاركونا رأيكم") + '</span>'
@@ -437,7 +437,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             )
 
             headline_html = (
-                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;max-width:920px;margin-bottom:24px;">'
+                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;max-width:920px;margin-bottom:20px;">'
                 '<div style="font-size:52px;font-weight:900;color:#fff;line-height:1.3;letter-spacing:-1px;'
                 'text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
                 + headline[:130] + '</div>'
@@ -455,7 +455,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
 
             content = (
                 '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
-                'justify-content:center;align-items:center;padding:60px 80px 100px;">'
+                'justify-content:center;align-items:center;padding:50px 80px 80px;">'
                 + logo_html
                 + category_pill
                 + headline_html
@@ -977,19 +977,6 @@ def content_item_to_slides(
                 "detail": str(note)[:80] if note else "",
                 "bars": _extract_bars_from_text(str(text) + " " + str(note)) if (note and not is_last) else [],
             }))
-
-        # ── Closing Ministry Ident Slide (Only for Ministry brand mode) ───
-        if brand_mode == "ministry":
-            closing_ident = base({
-                "is_ministry_ident": True,
-                "is_cover": False,
-                "category": "دولة الإمارات العربية المتحدة",
-                "headline": "وزارة تمكين المجتمع",
-                "detail": "MINISTRY OF COMMUNITY EMPOWERMENT",
-                "label": "",
-                "show_ministry_logo": True,
-            })
-            slides.append(closing_ident)
 
     if not slides:
         slides = [base({"category": "محتوى", "label": "", "headline": "لا يوجد محتوى", "detail": ""})]
