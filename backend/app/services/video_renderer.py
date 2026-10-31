@@ -174,67 +174,109 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
     label_text = stat_text.replace(num_str, "").strip() if num_str else stat_text
     label_text = re.sub(r'^[،,:\-–]\s*', '', label_text).strip()
 
-    if pct_val is None:
-        if "%" in num_str or "٪" in num_str:
+    is_percentage = bool(re.search(r'[%٪]', stat_text + " " + num_str))
+
+    if is_percentage:
+        if pct_val is None:
             clean_digits = re.search(r'[\d.]+', num_str)
             if clean_digits:
                 pct_val = min(100.0, float(clean_digits.group(0)))
+    else:
+        # Strictly reset pct_val to None if not a percentage so 0-100% bar is never shown for numbers
+        pct_val = None
 
     is_upward = bool(re.search(r'نمو|زيادة|ارتفاع|قفزة|مضاعفة|صعود|تريليون|مليار|ربح|أرباح|قياسي|تفوق', stat_text + " " + headline))
     badge_icon = "📈" if is_upward else "⚡"
     badge_text = "مؤشر قياسي" if is_upward else "إحصائية موثقة"
     badge_color = "#35D399" if is_upward else slide_accent
 
-    # Progress bar HTML (if percentage detected)
-    progress_bar_html = ""
-    if pct_val is not None and pct_val > 0:
+    # Graphic representation based on data type
+    visual_graphic_html = ""
+    svg_id = abs(hash(stat_text)) % 100000
+
+    if is_percentage and pct_val is not None and pct_val > 0:
+        # ── PERCENTAGE PROGRESS BAR (Strict LTR: starts at 0% on left and expands to right) ──
         fill_pct = min(100.0, pct_val)
         anim_fill = round(fill_pct * min(1.0, max(0.0, (reveal - 0.2) / 0.5)), 1)
-        progress_bar_html = (
-            f'<div style="margin-top:20px;">'
+        
+        svg_dash = 900
+        dash_offset = round(svg_dash * (1.0 - min(1.0, max(0.0, (reveal - 0.25) / 0.45))))
+        sparkline_svg = (
+            f'<svg viewBox="0 0 800 120" style="width:100%;height:90px;margin-top:16px;overflow:visible;">'
+            f'  <defs>'
+            f'    <linearGradient id="hudGrad_{svg_id}" x1="0" y1="0" x2="0" y2="1">'
+            f'      <stop offset="0%" stop-color="{slide_accent}" stop-opacity="0.38"/>'
+            f'      <stop offset="100%" stop-color="{slide_accent}" stop-opacity="0.0"/>'
+            f'    </linearGradient>'
+            f'    <filter id="glow_{svg_id}" x="-20%" y="-20%" width="140%" height="140%">'
+            f'      <feGaussianBlur stdDeviation="6" result="blur"/>'
+            f'      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>'
+            f'    </filter>'
+            f'  </defs>'
+            f'  <line x1="0" y1="35" x2="800" y2="35" stroke="rgba(255,255,255,0.06)" stroke-dasharray="6 6"/>'
+            f'  <line x1="0" y1="80" x2="800" y2="80" stroke="rgba(255,255,255,0.06)" stroke-dasharray="6 6"/>'
+            f'  <path d="M 0 110 C 180 105, 300 85, 450 60 C 580 40, 680 20, 790 10 L 790 120 L 0 120 Z" fill="url(#hudGrad_{svg_id})"/>'
+            f'  <path d="M 0 110 C 180 105, 300 85, 450 60 C 580 40, 680 20, 790 10" fill="none" stroke="{slide_accent}" stroke-width="5" filter="url(#glow_{svg_id})" stroke-dasharray="{svg_dash}" stroke-dashoffset="{dash_offset}"/>'
+            f'  <circle cx="790" cy="10" r="14" fill="{slide_accent}" opacity="0.4"/>'
+            f'  <circle cx="790" cy="10" r="7" fill="#ffffff" filter="drop-shadow(0 0 12px {slide_accent})"/>'
+            f'</svg>'
+        )
+
+        visual_graphic_html = (
+            f'<div style="margin-top:20px;direction:ltr;text-align:left;">'
             f'  <div style="height:22px;background:rgba(0,0,0,0.65);border:1.5px solid rgba(255,255,255,0.12);'
             f'              border-radius:12px;padding:3px;position:relative;overflow:visible;'
-            f'              box-shadow:inset 0 2px 8px rgba(0,0,0,0.8);">'
+            f'              box-shadow:inset 0 2px 8px rgba(0,0,0,0.8);direction:ltr;text-align:left;">'
             f'    <div style="width:{anim_fill}%;height:100%;border-radius:8px;'
             f'                background:linear-gradient(90deg,{slide_accent},#FFB700,#00E5FF);'
-            f'                box-shadow:0 0 25px {slide_accent}, 0 0 10px #FFB700;position:relative;">'
-            f'      <div style="position:absolute;left:-8px;top:50%;transform:translateY(-50%);'
+            f'                box-shadow:0 0 25px {slide_accent}, 0 0 10px #FFB700;'
+            f'                position:relative;margin:0;float:left;">'
+            f'      <div style="position:absolute;right:-9px;top:50%;transform:translateY(-50%);'
             f'                  width:22px;height:22px;border-radius:50%;background:#ffffff;'
             f'                  box-shadow:0 0 16px #ffffff,0 0 30px {slide_accent};"></div>'
             f'    </div>'
             f'  </div>'
             f'  <div style="display:flex;justify-content:space-between;margin-top:10px;font-family:monospace;'
-            f'              font-size:16px;color:rgba(255,255,255,0.35);font-weight:700;direction:ltr;">'
+            f'              font-size:16px;color:rgba(255,255,255,0.4);font-weight:700;direction:ltr;text-align:left;">'
             f'    <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>'
+            f'  </div>'
+            f'</div>'
+            f'{sparkline_svg}'
+        )
+    else:
+        # ── ABSOLUTE FINANCIAL VOLUME / NUMERICAL HISTOGRAM & APEX PEAK ──
+        # Vertical ascending columns indicating volume, scale, and financial momentum (NOT 0-100% bar)
+        col_heights = [30, 48, 66, 84, 104, 126]
+        col_labels  = ['بداية', 'توسع', 'تسارع', 'مضاعفة', 'قفزة', 'الذروة ⚡']
+        fill_factor = min(1.0, max(0.0, (reveal - 0.2) / 0.5))
+
+        cols_html = ""
+        for i, h in enumerate(col_heights):
+            is_last = (i == len(col_heights) - 1)
+            anim_h  = round(h * fill_factor, 1)
+            col_bg  = f'linear-gradient(180deg, #FFB700 0%, {slide_accent} 100%)' if is_last else 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.03) 100%)'
+            col_sh  = f'box-shadow: 0 0 25px {slide_accent}, 0 0 10px #FFB700;' if is_last else 'border:1px solid rgba(255,255,255,0.08);'
+            beacon  = f'<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:18px;height:18px;border-radius:50%;background:#ffffff;box-shadow:0 0 14px #ffffff,0 0 25px {slide_accent};"></div>' if is_last else ''
+
+            cols_html += (
+                f'<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;">'
+                f'  <div style="width:100%;max-width:34px;height:130px;display:flex;align-items:flex-end;justify-content:center;position:relative;">'
+                f'    {beacon}'
+                f'    <div style="width:100%;height:{anim_h}px;border-radius:8px 8px 4px 4px;background:{col_bg};{col_sh}"></div>'
+                f'  </div>'
+                f'  <span style="font-size:15px;font-weight:{900 if is_last else 600};color:{slide_accent if is_last else "rgba(255,255,255,0.4)"};white-space:nowrap;">{col_labels[i]}</span>'
+                f'</div>'
+            )
+
+        visual_graphic_html = (
+            f'<div style="margin-top:24px;padding:20px 24px 14px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.07);border-radius:24px;">'
+            f'  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;direction:rtl;">'
+            f'    {cols_html}'
             f'  </div>'
             f'</div>'
         )
 
-    # Dynamic Sparkline Chart SVG (Trendline wave)
-    svg_id = abs(hash(stat_text)) % 100000
-    svg_dash = 900
-    dash_offset = round(svg_dash * (1.0 - min(1.0, max(0.0, (reveal - 0.25) / 0.45))))
-
-    sparkline_svg = (
-        f'<svg viewBox="0 0 800 120" style="width:100%;height:100px;margin-top:16px;overflow:visible;">'
-        f'  <defs>'
-        f'    <linearGradient id="hudGrad_{svg_id}" x1="0" y1="0" x2="0" y2="1">'
-        f'      <stop offset="0%" stop-color="{slide_accent}" stop-opacity="0.38"/>'
-        f'      <stop offset="100%" stop-color="{slide_accent}" stop-opacity="0.0"/>'
-        f'    </linearGradient>'
-        f'    <filter id="glow_{svg_id}" x="-20%" y="-20%" width="140%" height="140%">'
-        f'      <feGaussianBlur stdDeviation="6" result="blur"/>'
-        f'      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>'
-        f'    </filter>'
-        f'  </defs>'
-        f'  <line x1="0" y1="35" x2="800" y2="35" stroke="rgba(255,255,255,0.06)" stroke-dasharray="6 6"/>'
-        f'  <line x1="0" y1="80" x2="800" y2="80" stroke="rgba(255,255,255,0.06)" stroke-dasharray="6 6"/>'
-        f'  <path d="M 0 110 C 180 105, 300 85, 450 60 C 580 40, 680 20, 790 10 L 790 120 L 0 120 Z" fill="url(#hudGrad_{svg_id})"/>'
-        f'  <path d="M 0 110 C 180 105, 300 85, 450 60 C 580 40, 680 20, 790 10" fill="none" stroke="{slide_accent}" stroke-width="5" filter="url(#glow_{svg_id})" stroke-dasharray="{svg_dash}" stroke-dashoffset="{dash_offset}"/>'
-        f'  <circle cx="790" cy="10" r="14" fill="{slide_accent}" opacity="0.4"/>'
-        f'  <circle cx="790" cy="10" r="7" fill="#ffffff" filter="drop-shadow(0 0 12px {slide_accent})"/>'
-        f'</svg>'
-    )
+    header_title = label_text or ("معدل الإنجاز" if is_percentage else "حجم النمو المالي")
 
     return (
         f'<div style="margin-top:40px;transform:translateY({d_y}px);opacity:{d_op};width:100%;max-width:880px;">'
@@ -243,7 +285,7 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
         f'              box-shadow:0 25px 60px rgba(0,0,0,0.6), 0 0 60px {slide_accent}25;'
         f'              backdrop-filter:blur(25px);display:flex;flex-direction:column;">'
         f'    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-        f'      <span style="font-size:30px;font-weight:800;color:rgba(255,255,255,0.9);letter-spacing:-0.5px;">{label_text or "المؤشر العام"}</span>'
+        f'      <span style="font-size:30px;font-weight:800;color:rgba(255,255,255,0.9);letter-spacing:-0.5px;">{header_title}</span>'
         f'      <span style="display:inline-flex;align-items:center;gap:8px;background:{badge_color}18;border:1.5px solid {badge_color}44;color:{badge_color};font-size:22px;padding:6px 18px;border-radius:50px;font-weight:800;">'
         f'        {badge_icon} {badge_text}'
         f'      </span>'
@@ -254,8 +296,7 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
         f'                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;'
         f'                   filter:drop-shadow(0 0 35px {slide_accent}88);">{num_str}</span>'
         f'    </div>'
-        f'    {progress_bar_html}'
-        f'    {sparkline_svg}'
+        f'    {visual_graphic_html}'
         f'  </div>'
         f'</div>'
     )
