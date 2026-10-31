@@ -417,14 +417,14 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             logo_html = ""
             if m_logo:
                 logo_html = (
-                    '<div style="background:rgba(255,255,255,0.97);padding:40px 60px;border-radius:44px;'
-                    'box-shadow:0 0 75px rgba(212,175,55,0.45), 0 25px 80px rgba(0,0,0,0.7);'
-                    'border:3px solid rgba(212,175,55,0.6);'
-                    'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';margin-bottom:32px;'
-                    'max-width:720px;width:100%;min-height:420px;box-sizing:border-box;'
+                    '<div style="background:rgba(255,255,255,0.97);padding:40px 50px;border-radius:52px;'
+                    'box-shadow:0 0 90px rgba(212,175,55,0.5), 0 30px 90px rgba(0,0,0,0.75);'
+                    'border:3.5px solid rgba(212,175,55,0.65);'
+                    'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';margin-bottom:36px;'
+                    'max-width:820px;width:90%;min-height:520px;box-sizing:border-box;'
                     'display:flex;align-items:center;justify-content:center;">'
-                    '<img src="' + m_logo + '" style="width:580px;max-width:92%;height:auto;max-height:340px;object-fit:contain;'
-                    'filter:drop-shadow(0 6px 20px rgba(0,0,0,0.18));" alt="وزارة تمكين المجتمع" />'
+                    '<img src="' + m_logo + '" style="width:700px;max-width:90%;height:auto;max-height:440px;object-fit:contain;'
+                    'filter:drop-shadow(0 8px 24px rgba(0,0,0,0.2));" alt="وزارة تمكين المجتمع" />'
                     '</div>'
                 )
 
