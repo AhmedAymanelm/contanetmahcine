@@ -42,6 +42,7 @@ def _do_render(content_item_id: int, slides: list, brand: str):
 async def render_video_endpoint(
     content_item_id: int,
     template_id: Optional[int] = None,
+    show_ministry_logo: bool = True,
     db: Session = Depends(get_db),
 ):
     """
@@ -76,6 +77,9 @@ async def render_video_endpoint(
     )
     if not slides:
         raise HTTPException(status_code=400, detail="No slides could be extracted from this content item")
+
+    for sl in slides:
+        sl["show_ministry_logo"] = show_ministry_logo
 
     # If visual template is selected, apply its slide styling
     tpl_name = "الافتراضي"

@@ -56,6 +56,35 @@ def _get_author_img_b64() -> str:
     return _author_img_b64
 
 
+# ── Ministry of Community Empowerment Logo (cached base64) ──────────────────────
+_ministry_logo_b64 = None
+def _get_ministry_logo_b64() -> str:
+    global _ministry_logo_b64
+    if _ministry_logo_b64:
+        return _ministry_logo_b64
+    import os, base64
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    candidate_paths = [
+        os.path.join(base_dir, "static", "assets", "ministry_logo_transparent.png"),
+        os.path.join(base_dir, "..", "backend", "static", "assets", "ministry_logo_transparent.png"),
+        os.path.join(base_dir, "..", "static", "assets", "ministry_logo_transparent.png"),
+        os.path.join(base_dir, "..", "frontend", "ministry_logo_transparent.png"),
+        "/app/backend/static/assets/ministry_logo_transparent.png",
+        "/app/frontend/ministry_logo_transparent.png",
+        "/app/static/assets/ministry_logo_transparent.png",
+    ]
+    for p in candidate_paths:
+        try:
+            if os.path.exists(p):
+                with open(p, "rb") as f:
+                    _ministry_logo_b64 = "data:image/png;base64," + base64.b64encode(f.read()).decode("utf-8")
+                    return _ministry_logo_b64
+        except Exception:
+            pass
+    _ministry_logo_b64 = ""
+    return _ministry_logo_b64
+
+
 # ── Easing ────────────────────────────────────────────────────────────────────
 def _ease_out_expo(t: float) -> float:
     return 1.0 if t >= 1.0 else 1.0 - math.pow(2.0, -10.0 * t)
@@ -135,6 +164,8 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     is_outro  = slide.get("is_outro", False)
     is_cta    = slide.get("is_cta", False)
     image_url = slide.get("image_url", "")
+    show_ministry_logo = slide.get("show_ministry_logo", True)
+    ministry_logo = _get_ministry_logo_b64() if show_ministry_logo else ""
 
     top_bar = _top_bar_html(current, total, pfill)
 
@@ -227,6 +258,17 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
 
     # ── OUTRO ─────────────────────────────────────────────────────────────
     if is_outro:
+        ministry_outro_badge = ""
+        if ministry_logo:
+            ministry_outro_badge = (
+                '<div style="position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center;z-index:60;'
+                'transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+                '<div style="background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);'
+                'padding:8px 24px;border-radius:20px;box-shadow:0 8px 28px rgba(0,0,0,0.35);'
+                'display:flex;align-items:center;justify-content:center;">'
+                '<img src="' + ministry_logo + '" style="height:55px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
+                '</div></div>'
+            )
         overlay = ""
         if image_url:
             overlay = (
@@ -257,12 +299,23 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
-            + bg_layers + top_bar + dot_bar + overlay + content
+            + bg_layers + top_bar + dot_bar + ministry_outro_badge + overlay + content
             + "</body></html>"
         )
 
     # ── COVER ─────────────────────────────────────────────────────────────
     elif is_cover:
+        ministry_cover_badge = ""
+        if ministry_logo:
+            ministry_cover_badge = (
+                '<div style="position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center;align-items:center;'
+                'z-index:60;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+                '<div style="background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);'
+                'padding:10px 28px;border-radius:24px;box-shadow:0 12px 35px rgba(0,0,0,0.45);'
+                'display:flex;align-items:center;justify-content:center;">'
+                '<img src="' + ministry_logo + '" style="height:68px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
+                '</div></div>'
+            )
         content = (
             '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
             'justify-content:center;align-items:center;padding:100px 80px;">'
@@ -289,16 +342,27 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
-            + bg_layers + top_bar + dot_bar + content
+            + bg_layers + top_bar + dot_bar + ministry_cover_badge + content
             # Footer brand
             + '<div style="position:absolute;bottom:80px;left:80px;right:80px;text-align:center;">'
-            '<span style="font-size:24px;color:rgba(255,255,255,0.2);letter-spacing:4px;">'
-            + (article_title or brand) + '</span></div>'
+            '<span style="font-size:24px;color:rgba(255,255,255,0.3);letter-spacing:4px;">'
+            + ('وزارة تمكين المجتمع · ' if show_ministry_logo else '') + (article_title or brand) + '</span></div>'
             + "</body></html>"
         )
 
     # ── CTA SLIDE (last slide with author avatar) ─────────────────────────
     elif is_cta:
+        ministry_cta_badge = ""
+        if ministry_logo:
+            ministry_cta_badge = (
+                '<div style="position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center;z-index:60;'
+                'transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+                '<div style="background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);'
+                'padding:8px 24px;border-radius:20px;box-shadow:0 8px 28px rgba(0,0,0,0.35);'
+                'display:flex;align-items:center;justify-content:center;">'
+                '<img src="' + ministry_logo + '" style="height:55px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
+                '</div></div>'
+            )
         author_img = _get_author_img_b64()
         avatar_html = ""
         if author_img:
@@ -368,11 +432,21 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
-            + bg_layers + top_bar + dot_bar + content
+            + bg_layers + top_bar + dot_bar + ministry_cta_badge + content
             + "</body></html>"
         )
 
     # ── NORMAL SLIDE ──────────────────────────────────────────────────────
+    ministry_normal_badge = ""
+    if ministry_logo:
+        ministry_normal_badge = (
+            '<div style="position:absolute;top:95px;right:75px;z-index:60;'
+            'display:flex;align-items:center;gap:10px;'
+            'background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);'
+            'padding:6px 18px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,0.35);">'
+            '<img src="' + ministry_logo + '" style="height:44px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
+            '</div>'
+        )
 
     # Font size — adaptive to text length (shorter = bigger = better)
     text_len = len(headline)
@@ -457,6 +531,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         + bg_layers
         + top_bar
         + dot_bar
+        + ministry_normal_badge
         + accent_line
         + num_label
         # Main content — centered
@@ -481,8 +556,8 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         # Footer
         + '<div style="position:absolute;bottom:70px;left:80px;right:80px;'
         'display:flex;justify-content:center;">'
-        '<span style="font-size:22px;color:rgba(255,255,255,0.25);letter-spacing:2px;">'
-        + author_name + ' · @' + brand + '</span></div>'
+        '<span style="font-size:22px;color:rgba(255,255,255,0.35);letter-spacing:2px;">'
+        + ('وزارة تمكين المجتمع · ' if show_ministry_logo else '') + author_name + ' · @' + brand + '</span></div>'
         + "</body></html>"
     )
 
@@ -665,6 +740,7 @@ def content_item_to_slides(
             "author_name": author_name,
             "article_title": article_title,
             "bars": [],
+            "show_ministry_logo": True,
             **extra
         }
 

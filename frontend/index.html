@@ -315,7 +315,10 @@
                 <div id="manual-preview-slide-canvas" style="width:280px;height:350px;border-radius:18px;background:linear-gradient(145deg,#0a0a0a,#240a00);border:2px solid rgba(255,92,0,0.4);box-shadow:0 18px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;justify-content:space-between;padding:20px;box-sizing:border-box;position:relative;overflow:hidden;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);">
                   <!-- Top Bar inside slide -->
                   <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span id="manual-preview-pill" style="background:rgba(255,92,0,0.2);color:#FF5C00;border:1px solid rgba(255,92,0,0.35);font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:10px;">@zayedtech</span>
+                    <div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.92);padding:2px 8px;border-radius:10px;">
+                      <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:14px;width:auto;" alt="شعار">
+                      <span style="font-size:8px;font-weight:900;color:#111;">وزارة تمكين المجتمع</span>
+                    </div>
                     <span id="manual-preview-page-pill" style="background:rgba(255,255,255,0.12);color:#fff;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;">1 / 4 🖼️</span>
                   </div>
 
@@ -793,6 +796,14 @@
                       01 / 07
                     </div>
 
+                    <!-- Ministry Official Badge in Mockup (Reel) -->
+                    <div id="vt-ministry-badge" style="position:absolute;top:38px;left:0;right:0;display:flex;justify-content:center;align-items:center;z-index:6;">
+                      <div style="background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:14px;padding:3px 10px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+                        <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:17px;width:auto;object-fit:contain;" alt="شعار الوزارة">
+                        <span style="font-size:8.5px;font-weight:900;color:#111;letter-spacing:0.2px;">وزارة تمكين المجتمع</span>
+                      </div>
+                    </div>
+
                     <!-- Side Social Actions (Mockup Instagram/TikTok) -->
                     <div id="vt-screen-social-actions" style="position:absolute;left:10px;bottom:50px;display:flex;flex-direction:column;gap:12px;align-items:center;z-index:5;">
                       <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
@@ -826,11 +837,10 @@
 
                     <!-- Author Footer Bar (Watermark) -->
                     <div id="vt-screen-footer" style="position:absolute;bottom:14px;right:14px;left:14px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">
-                      <div style="display:flex;align-items:center;gap:6px;">
-                        <span style="font-size:11px;">🎤</span>
-                        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.85);">د. زايد الحميري</span>
+                      <div style="display:flex;align-items:center;gap:5px;">
+                        <span style="font-size:8.5px;font-weight:800;color:rgba(255,255,255,0.85);">وزارة تمكين المجتمع · د. زايد</span>
                       </div>
-                      <span id="vt-footer-handle" style="font-size:9.5px;font-weight:700;color:#FF5C00;font-family:var(--mono);">@zayedtech</span>
+                      <span id="vt-footer-handle" style="font-size:9px;font-weight:700;color:#FF5C00;font-family:var(--mono);">@zayedtech</span>
                     </div>
 
                   </div>
@@ -1878,7 +1888,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="js/main.js?v=20261031_09"></script>
+<script src="js/main.js?v=20261031_10"></script>
 
 <!-- ════════════════════════════════ ANALYTICS PAGE ════════════════════════════ -->
 <style>
