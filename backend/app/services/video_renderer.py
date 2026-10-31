@@ -417,34 +417,28 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             logo_html = ""
             if m_logo:
                 logo_html = (
-                    '<div style="background:rgba(255,255,255,0.97);padding:36px 54px;border-radius:40px;'
-                    'box-shadow:0 0 70px rgba(212,175,55,0.45), 0 25px 80px rgba(0,0,0,0.7);'
-                    'border:2.5px solid rgba(212,175,55,0.55);'
+                    '<div style="background:rgba(255,255,255,0.97);padding:40px 56px;border-radius:44px;'
+                    'box-shadow:0 0 75px rgba(212,175,55,0.45), 0 25px 80px rgba(0,0,0,0.7);'
+                    'border:3px solid rgba(212,175,55,0.6);'
                     'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';margin-bottom:32px;'
+                    'max-width:680px;width:100%;box-sizing:border-box;'
                     'display:flex;align-items:center;justify-content:center;">'
-                    '<img src="' + m_logo + '" style="width:380px;max-width:440px;height:auto;max-height:260px;object-fit:contain;'
-                    'filter:drop-shadow(0 4px 18px rgba(0,0,0,0.18));" alt="وزارة تمكين المجتمع" />'
+                    '<img src="' + m_logo + '" style="width:560px;height:auto;max-height:410px;object-fit:contain;'
+                    'filter:drop-shadow(0 6px 20px rgba(0,0,0,0.18));" alt="وزارة تمكين المجتمع" />'
                     '</div>'
                 )
 
-            official_title = (
-                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;">'
-                '<div style="font-size:42px;font-weight:900;color:#ffffff;letter-spacing:1px;">وزارة تمكين المجتمع</div>'
-                '<div style="font-size:20px;font-weight:700;color:#FFB700;margin-top:6px;letter-spacing:2px;direction:ltr;">MINISTRY OF COMMUNITY EMPOWERMENT</div>'
-                '</div>'
-            )
-
             category_pill = (
-                '<div style="margin-top:28px;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
-                '<div style="display:inline-block;padding:8px 28px;border-radius:30px;'
+                '<div style="margin-bottom:28px;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+                '<div style="display:inline-block;padding:10px 36px;border-radius:30px;'
                 'background:rgba(212,175,55,0.18);border:1.5px solid #FFB700;">'
-                '<span style="font-size:24px;font-weight:800;color:#FFB700;">' + (category or "شاركونا رأيكم") + '</span>'
+                '<span style="font-size:26px;font-weight:800;color:#FFB700;">' + (category or "شاركونا رأيكم") + '</span>'
                 '</div></div>'
             )
 
             headline_html = (
-                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;margin-top:20px;max-width:920px;">'
-                '<div style="font-size:56px;font-weight:900;color:#fff;line-height:1.3;letter-spacing:-1px;'
+                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;max-width:920px;margin-bottom:24px;">'
+                '<div style="font-size:52px;font-weight:900;color:#fff;line-height:1.3;letter-spacing:-1px;'
                 'text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
                 + headline[:130] + '</div>'
                 '</div>'
@@ -452,7 +446,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
 
             detail_text = detail or "اكتبوا آراءكم ومقترحاتكم في التعليقات 👇"
             detail_html = (
-                '<div style="margin-top:24px;padding:12px 32px;border-radius:12px;'
+                '<div style="padding:12px 32px;border-radius:12px;'
                 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
                 'transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
                 '<span style="font-size:26px;font-weight:600;color:rgba(255,255,255,0.8);">'
@@ -461,9 +455,8 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
 
             content = (
                 '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
-                'justify-content:center;align-items:center;padding:100px 80px;">'
+                'justify-content:center;align-items:center;padding:60px 80px 100px;">'
                 + logo_html
-                + official_title
                 + category_pill
                 + headline_html
                 + detail_html
