@@ -2989,6 +2989,9 @@ async function fetchPlatformStatus() {
     const list = document.getElementById('platform-status-list');
     if (!list) return;
 
+    const token = localStorage.getItem('cm_token');
+    const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
     // Default states for platforms we haven't implemented APIs for yet
     const platforms = {
         'X': { name: 'X (تويتر)', desc: 'يتطلب تفعيل صلاحية النشر', status: 'غير مربوط', isConnected: false },
@@ -2998,7 +3001,7 @@ async function fetchPlatformStatus() {
     let instaConnected = false;
     let instaDesc = 'غير مربوط';
     try {
-        const res = await fetch(`${API_BASE}/social/instagram/status`);
+        const res = await fetch(`${API_BASE}/social/instagram/status`, { headers: authHeaders });
         if (res.ok) {
             const data = await res.json();
             instaConnected = data.connected;
@@ -3007,6 +3010,9 @@ async function fetchPlatformStatus() {
             } else {
                 instaDesc = data.error || 'فشل الاتصال — تحقق من التوكن والـ Account ID';
             }
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            instaDesc = errData.detail || 'غير مصرح أو فشل الاتصال';
         }
     } catch (e) {
         console.error("Failed to fetch Instagram status", e);
@@ -3015,7 +3021,7 @@ async function fetchPlatformStatus() {
     let fbConnected = false;
     let fbDesc = 'غير مربوط';
     try {
-        const res = await fetch(`${API_BASE}/social/facebook/status`);
+        const res = await fetch(`${API_BASE}/social/facebook/status`, { headers: authHeaders });
         if (res.ok) {
             const data = await res.json();
             fbConnected = data.connected;
@@ -3028,9 +3034,8 @@ async function fetchPlatformStatus() {
     let thConnected = false;
     let thDesc = 'غير مربوط';
     try {
-        const token = localStorage.getItem('cm_token');
         const res = await fetch(`${API_BASE}/threads/status`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: authHeaders
         });
         if (res.ok) {
             const data = await res.json();
@@ -3049,9 +3054,8 @@ async function fetchPlatformStatus() {
     let liConnected = false;
     let liDesc = 'غير مربوط';
     try {
-        const token = localStorage.getItem('cm_token');
         const res = await fetch(`${API_BASE}/social/linkedin/status`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: authHeaders
         });
         if (res.ok) {
             const data = await res.json();
@@ -3070,7 +3074,7 @@ async function fetchPlatformStatus() {
     let scConnected = false;
     let scDesc = 'غير مربوط';
     try {
-        const res = await fetch(`${API_BASE}/social/snapchat/status`);
+        const res = await fetch(`${API_BASE}/social/snapchat/status`, { headers: authHeaders });
         if (res.ok) {
             const data = await res.json();
             scConnected = data.connected;
