@@ -5,7 +5,8 @@ import concurrent.futures
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any, Union
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -26,6 +27,15 @@ _render_status: dict = {}
 VIDEO_OUTPUT_DIR = Path(__file__).parent.parent.parent.parent / "static" / "video_output"
 
 
+class VideoRenderRequest(BaseModel):
+    template_id: Optional[Union[int, str]] = None
+    template_name: Optional[str] = None
+    custom_colors: Optional[Dict[str, Any]] = None
+    slides_deck: Optional[List[Dict[str, Any]]] = None
+    slides_json: Optional[str] = None
+    show_ministry_logo: Optional[bool] = True
+
+
 def _do_render(content_item_id: int, slides: list, brand: str):
     """Background task: runs the render and updates status dict."""
     _render_status[content_item_id] = "rendering"
@@ -41,8 +51,9 @@ def _do_render(content_item_id: int, slides: list, brand: str):
 @router.post("/{content_item_id}/render")
 async def render_video_endpoint(
     content_item_id: int,
-    template_id: Optional[int] = None,
+    template_id: Optional[Union[int, str]] = None,
     show_ministry_logo: bool = True,
+    body: Optional[VideoRenderRequest] = None,
     db: Session = Depends(get_db),
 ):
     """
@@ -52,6 +63,12 @@ async def render_video_endpoint(
     item = db.query(ContentItem).filter(ContentItem.id == content_item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Content item not found")
+
+    if body:
+        if body.template_id is not None:
+            template_id = body.template_id
+        if body.show_ministry_logo is not None:
+            show_ministry_logo = body.show_ministry_logo
 
     gen = item.generated_content
     if isinstance(gen, str):
@@ -67,48 +84,74 @@ async def render_video_endpoint(
     brand = "zayedtech"
     author_name = "د. زايد الحميري"
 
-    slides = content_item_to_slides(
-        gen or {},
-        item.content_type or "POST",
-        brand=brand,
-        author_name=author_name,
-        article_title="" if (item.content_type in ("REEL", "VIDEO_SCRIPT")) else art_title,
-        image_url=art_img,
-    )
+    try:
+        slides = content_item_to_slides(
+            gen or {},
+            item.content_type or "POST",
+            brand=brand,
+            author_name=author_name,
+            article_title="" if (item.content_type in ("REEL", "VIDEO_SCRIPT")) else art_title,
+            image_url=art_img,
+        )
+    except Exception as e:
+        logger.error(f"Error extracting slides for content item {content_item_id}: {e}")
+        slides = []
+
     if not slides:
-        raise HTTPException(status_code=400, detail="No slides could be extracted from this content item")
+        raise HTTPException(status_code=400, detail="لا يمكن استخراج شرائح فيديو من هذا الخبر")
 
     for sl in slides:
         sl["show_ministry_logo"] = show_ministry_logo
 
-    # If visual template is selected, apply its slide styling
-    tpl_name = "الافتراضي"
-    if template_id:
-        tpl = db.query(VisualTemplate).filter(VisualTemplate.id == template_id).first()
-        if tpl:
-            tpl_name = tpl.name
-            tpl_deck = []
-            if tpl.slides_json:
-                try:
-                    tpl_deck = json.loads(tpl.slides_json)
-                except Exception:
-                    pass
-            for i, sl in enumerate(slides):
-                if tpl_deck:
-                    cfg = tpl_deck[i % len(tpl_deck)]
-                    sl["custom_colors"] = {
-                        "accent": cfg.get("accentColor") or cfg.get("accent_color") or tpl.accent_color or "#FF5C00",
-                        "color1": cfg.get("color1") or cfg.get("bg_color1") or tpl.bg_color1 or "#0a0a0a",
-                        "color2": cfg.get("color2") or cfg.get("bg_color2") or tpl.bg_color2 or "#1a0a00",
-                        "text_color": cfg.get("textColor") or cfg.get("text_color") or tpl.text_color or "#ffffff",
-                    }
-                else:
-                    sl["custom_colors"] = {
-                        "accent": tpl.accent_color or "#FF5C00",
-                        "color1": tpl.bg_color1 or "#0a0a0a",
-                        "color2": tpl.bg_color2 or "#1a0a00",
-                        "text_color": tpl.text_color or "#ffffff",
-                    }
+    # Resolve template styling
+    tpl_name = (body.template_name if body and body.template_name else None) or "الافتراضي"
+    tpl_deck: List[Dict[str, Any]] = []
+
+    # 1. Direct deck from request body
+    if body and body.slides_deck:
+        tpl_deck = body.slides_deck
+    elif body and body.slides_json:
+        try:
+            tpl_deck = json.loads(body.slides_json)
+        except Exception:
+            pass
+
+    # 2. Database lookup if template_id is provided and deck not yet set
+    if template_id and not tpl_deck:
+        try:
+            tid = int(template_id)
+            tpl = db.query(VisualTemplate).filter(VisualTemplate.id == tid).first()
+            if tpl:
+                tpl_name = tpl.name or tpl_name
+                if getattr(tpl, "slides_json", None):
+                    try:
+                        tpl_deck = json.loads(tpl.slides_json)
+                    except Exception:
+                        pass
+                if not tpl_deck:
+                    tpl_deck = [{
+                        "accent": getattr(tpl, "accent_color", None) or "#FF5C00",
+                        "color1": getattr(tpl, "bg_color1", None) or "#0a0a0a",
+                        "color2": getattr(tpl, "bg_color2", None) or "#1a0a00",
+                        "text_color": getattr(tpl, "text_color", None) or "#ffffff",
+                    }]
+        except Exception as tpl_err:
+            logger.warning(f"Could not load visual template {template_id} from DB: {tpl_err}")
+
+    # 3. Direct custom_colors from request body
+    if body and body.custom_colors and not tpl_deck:
+        tpl_deck = [body.custom_colors]
+
+    # Apply template colors to each slide
+    if tpl_deck:
+        for i, sl in enumerate(slides):
+            cfg = tpl_deck[i % len(tpl_deck)]
+            sl["custom_colors"] = {
+                "accent": cfg.get("accentColor") or cfg.get("accent_color") or cfg.get("accent") or "#FF5C00",
+                "color1": cfg.get("color1") or cfg.get("bg_color1") or "#0a0a0a",
+                "color2": cfg.get("color2") or cfg.get("bg_color2") or "#1a0a00",
+                "text_color": cfg.get("textColor") or cfg.get("text_color") or "#ffffff",
+            }
 
     # Submit background render
     _render_status[content_item_id] = "queued"

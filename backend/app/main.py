@@ -40,10 +40,18 @@ async def lifespan(app: FastAPI):
         try:
             from sqlalchemy import text as _t
             with engine.connect() as _c:
-                _c.execute(_t('ALTER TABLE visual_templates ADD COLUMN IF NOT EXISTS slides_json TEXT;'))
-                _c.commit()
-        except Exception:
-            pass
+                if _is_sqlite:
+                    cols_info = _c.execute(_t("PRAGMA table_info(visual_templates)")).fetchall()
+                    col_names = [col[1] for col in cols_info]
+                    if "slides_json" not in col_names:
+                        _c.execute(_t("ALTER TABLE visual_templates ADD COLUMN slides_json TEXT;"))
+                        _c.commit()
+                        print("[Startup] Added slides_json column to visual_templates (SQLite).")
+                else:
+                    _c.execute(_t('ALTER TABLE visual_templates ADD COLUMN IF NOT EXISTS slides_json TEXT;'))
+                    _c.commit()
+        except Exception as col_err:
+            print(f"[Startup] DB migration warning for slides_json: {col_err}")
     except Exception as _e:
         print(f"[Startup] DB create_all warning: {_e}")
 

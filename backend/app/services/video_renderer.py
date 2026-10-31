@@ -809,10 +809,17 @@ def content_item_to_slides(
                                  "headline": line[:150], "detail": ""}))
 
     elif content_type == "REEL":
-        raw_slides = generated_content.get("slides", [])
+        raw_slides = generated_content.get("slides", []) if isinstance(generated_content, dict) else []
         for i, s in enumerate(raw_slides):
-            text = s.get("text", "")
-            note = s.get("note", "") or ""
+            if isinstance(s, dict):
+                text = s.get("text") or s.get("heading") or s.get("title") or ""
+                note = s.get("note") or s.get("body") or s.get("detail") or ""
+            elif isinstance(s, str):
+                text = s
+                note = ""
+            else:
+                text = str(s or "")
+                note = ""
             is_first = (i == 0)
             is_last  = (i == len(raw_slides) - 1)
             slides.append(base({
@@ -820,9 +827,9 @@ def content_item_to_slides(
                 "is_cta": is_last,
                 "category": "ابدأ" if is_first else ("شاركنا رأيك" if is_last else ""),
                 "label": "" if (is_first or is_last) else str(i),
-                "headline": text[:150],
-                "detail": note[:80] if note else "",
-                "bars": _extract_bars_from_text(text + " " + note) if (note and not is_last) else [],
+                "headline": str(text)[:150],
+                "detail": str(note)[:80] if note else "",
+                "bars": _extract_bars_from_text(str(text) + " " + str(note)) if (note and not is_last) else [],
             }))
 
     if not slides:

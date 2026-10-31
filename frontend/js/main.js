@@ -3489,7 +3489,7 @@ function _ensureVideoTemplatePickerModal() {
                     </div>
                 </div>
                 <div style="display:flex; gap:10px;">
-                    <button type="button" onclick="confirmVideoRenderWithTemplate(_pendingVideoContentId, null, 'الافتراضي')" class="btn ghost" style="padding:8px 16px; font-size:12.5px; cursor:pointer;">
+                    <button type="button" onclick="confirmVideoRenderWithTemplate(_pendingVideoContentId, null, 'الافتراضي', null)" class="btn ghost" style="padding:8px 16px; font-size:12.5px; cursor:pointer;">
                         تطبيق القالب الافتراضي ⚡
                     </button>
                     <button type="button" onclick="closeVideoTemplatePickerModal()" class="btn ghost" style="padding:8px 18px; font-size:13px; cursor:pointer;">إلغاء</button>
@@ -3598,8 +3598,9 @@ async function openVideoTemplatePicker(contentId) {
         }
     });
 
+    window._currentVideoTemplates = allTemplates;
     let html = '';
-    allTemplates.forEach(tpl => {
+    allTemplates.forEach((tpl, idx) => {
         const accent = tpl.accent_color || tpl.accentColor || '#FF5C00';
         const bg1 = tpl.bg_color1 || tpl.color1 || '#0a0a0a';
         const bg2 = tpl.bg_color2 || tpl.color2 || '#240a00';
@@ -3611,17 +3612,14 @@ async function openVideoTemplatePicker(contentId) {
         }
         const slideCount = slideDeck.length || 1;
 
-        const swatchesHtml = slideDeck.map((s, idx) => {
+        const swatchesHtml = slideDeck.map((s, sIdx) => {
             const dotBg = s.bgType === 'solid' ? (s.color1 || bg1) : `linear-gradient(135deg, ${s.color1 || bg1}, ${s.color2 || bg2})`;
             const dotAccent = s.accentColor || accent;
-            return `<span title="${s.title || 'شريحة ' + (idx + 1)}" style="width:14px;height:14px;border-radius:50%;background:${dotBg};border:1.5px solid ${dotAccent};display:inline-block;box-shadow:0 0 6px ${dotAccent}80;"></span>`;
+            return `<span title="${s.title || 'شريحة ' + (sIdx + 1)}" style="width:14px;height:14px;border-radius:50%;background:${dotBg};border:1.5px solid ${dotAccent};display:inline-block;box-shadow:0 0 6px ${dotAccent}80;"></span>`;
         }).join('');
 
-        const safeName = (tpl.name || 'قالب').replace(/'/g, "\\'");
-        const tplParam = tpl.id ? tpl.id : 'null';
-
         html += `
-        <div onclick="confirmVideoRenderWithTemplate(${contentId}, ${tplParam}, '${safeName}')"
+        <div onclick="confirmVideoRenderWithTemplateIndex(${contentId}, ${idx})"
              style="cursor:pointer;background:var(--panel-2, #1e1e2e);border:2px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,0.3);transition:all 0.25s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;position:relative;"
              onmouseover="this.style.transform='translateY(-5px)';this.style.boxShadow='0 16px 36px rgba(0,0,0,0.5)';this.style.borderColor='${accent}'"
              onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 10px 28px rgba(0,0,0,0.3)';this.style.borderColor='rgba(255,255,255,0.08)'">
@@ -3671,12 +3669,18 @@ function closeVideoTemplatePickerModal() {
     }, 300);
 }
 
-function confirmVideoRenderWithTemplate(contentId, templateId, templateName) {
+function confirmVideoRenderWithTemplateIndex(contentId, templateIdx) {
     closeVideoTemplatePickerModal();
-    executeVideoRender(contentId, templateId, templateName);
+    const tpl = (window._currentVideoTemplates && window._currentVideoTemplates[templateIdx]) ? window._currentVideoTemplates[templateIdx] : null;
+    executeVideoRender(contentId, tpl ? tpl.id : null, tpl ? tpl.name : 'الافتراضي', tpl);
 }
 
-async function executeVideoRender(id, templateId, templateName) {
+function confirmVideoRenderWithTemplate(contentId, templateId, templateName, templateObj) {
+    closeVideoTemplatePickerModal();
+    executeVideoRender(contentId, templateId, templateName, templateObj);
+}
+
+async function executeVideoRender(id, templateId, templateName, templateObj) {
     const btn = document.getElementById('vid-btn-' + id);
     const statusEl = document.getElementById('vid-status-' + id);
     if (!btn || !statusEl) return;
@@ -3690,15 +3694,43 @@ async function executeVideoRender(id, templateId, templateName) {
     const token = localStorage.getItem('cm_token') || localStorage.getItem('access_token') || '';
     try {
         let url = `${API_BASE}/video/${id}/render`;
-        if (templateId) url += `?template_id=${templateId}`;
+        if (templateId && !isNaN(Number(templateId))) {
+            url += `?template_id=${templateId}`;
+        }
+
+        const bodyPayload = {
+            template_id: templateId,
+            template_name: templateName || 'الافتراضي',
+            slides_json: templateObj ? (templateObj.slides_json || (templateObj.slides ? JSON.stringify(templateObj.slides) : null)) : null,
+            custom_colors: templateObj ? {
+                accent: templateObj.accent_color || templateObj.accentColor || '#FF5C00',
+                color1: templateObj.bg_color1 || templateObj.color1 || '#0a0a0a',
+                color2: templateObj.bg_color2 || templateObj.color2 || '#1a0a00',
+                text_color: templateObj.text_color || templateObj.textColor || '#ffffff'
+            } : null,
+            show_ministry_logo: true
+        };
 
         const res = await fetch(url, {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token }
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(bodyPayload)
         });
+
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            showToast('❌ ' + (err.detail || 'فشل بدء التحويل'), 'error');
+            let errorMsg = 'فشل بدء التحويل';
+            if (typeof err.detail === 'string') {
+                errorMsg = err.detail;
+            } else if (Array.isArray(err.detail) && err.detail.length > 0) {
+                errorMsg = err.detail.map(e => e.msg || e).join(', ');
+            } else if (err.message) {
+                errorMsg = err.message;
+            }
+            showToast('❌ ' + errorMsg, 'error');
             btn.disabled = false;
             btn.innerText = '🎬 تحويل لفيديو سلايدشو';
             statusEl.style.display = 'none';
@@ -5156,6 +5188,7 @@ window.nextVtSlide = nextVtSlide;
 window.openVideoTemplatePicker = openVideoTemplatePicker;
 window.closeVideoTemplatePickerModal = closeVideoTemplatePickerModal;
 window.confirmVideoRenderWithTemplate = confirmVideoRenderWithTemplate;
+window.confirmVideoRenderWithTemplateIndex = confirmVideoRenderWithTemplateIndex;
 window.executeVideoRender = executeVideoRender;
 window.renderVideoSlideshow = renderVideoSlideshow;
 window.setManualMode = setManualMode;
