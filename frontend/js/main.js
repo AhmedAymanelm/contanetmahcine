@@ -2166,20 +2166,19 @@ function renderPreview(platformId, gen, item) {
                             ${s.note ? `<div style="font-size:12px;color:#888;margin-top:6px;border-top:1px solid #222;padding-top:6px;">${esc(s.note)}</div>` : ''}
                         </div>`);
 
-                    const slideCards = isClient ? contentCards : [ministryIdentCard, ...contentCards, ministryIdentCard];
-                    ].join('');
+                    const slideCards = (isClient ? contentCards : [ministryIdentCard, ...contentCards, ministryIdentCard]).join('');
 
                     area.innerHTML = `
                     <div style="max-width:460px;margin:0 auto;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                            <div style="font-size:12px;color:#FF5C00;font-weight:700;">🎬 ريلز — ${slides.length + 2} شريحة (شاملة شرائح الوزارة)</div>
-                            ${ministryBadgeHtml}
+                            <div style="font-size:12px;color:#FF5C00;font-weight:700;">🎬 ريلز — ${isClient ? slides.length : (slides.length + 2)} شريحة ${isClient ? '(هوية العميل)' : '(شاملة شرائح الوزارة)'}</div>
+                            ${badge}
                         </div>
                         ${renderingBanner}
                         <div style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;padding-right:4px;">
                             ${slideCards || '<div style="color:var(--muted);text-align:center;padding:20px;">لا توجد شرائح</div>'}
                         </div>
-                        <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;">🦅 شريحة افتتاحية + ${slides.length} شريحة محتوى + شريحة ختامية · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو</div>
+                        <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;">${isClient ? '👤 ' + slides.length + ' شريحة محتوى بهوية العميل · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو' : '🦅 شريحة افتتاحية + ' + slides.length + ' شريحة محتوى + شريحة ختامية · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو'}</div>
                     </div>`;
                 }
             })
