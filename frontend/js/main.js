@@ -1539,7 +1539,7 @@ if (generatingData.length > 0) setTimeout(fetchReviewContent, 15000); // Poll ev
                                 font-weight:700;transition:all .2s;"
                                 onmouseover="this.style.background='linear-gradient(135deg,rgba(255,92,0,0.28),rgba(255,140,66,0.2))'"
                                 onmouseout="this.style.background='linear-gradient(135deg,rgba(255,92,0,0.18),rgba(255,140,66,0.12))'"
-                                onclick="renderVideoSlideshow(${item.id})">
+                                onclick="openVideoTemplatePicker(${item.id})">
                                 🎬 تحويل لفيديو سلايدشو
                             </button>
                             <div id="vid-status-${item.id}" style="display:none;margin-top:6px;font-size:11.5px;color:var(--muted);text-align:center;"></div>
@@ -3419,23 +3419,71 @@ function closeNewsModal() {
 
 let _pendingVideoContentId = null;
 
+function _ensureVideoTemplatePickerModal() {
+    let modal = document.getElementById('video-template-picker-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'video-template-picker-modal';
+        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); z-index:99999; align-items:center; justify-content:center; opacity:0; transition: opacity 0.3s;';
+        modal.innerHTML = `
+        <div style="background:var(--panel, #181926); width:92%; max-width:960px; max-height:88vh; border-radius:24px; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.7); overflow:hidden; transform: scale(0.95); transition: transform 0.3s; border:1px solid rgba(255,255,255,0.1);" id="video-template-picker-content">
+            <!-- Header -->
+            <div style="padding:22px 28px; border-bottom:1px solid var(--line, rgba(255,255,255,0.1)); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,rgba(255,92,0,0.12),rgba(124,58,237,0.06));">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#FF5C00,#e11d48); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 18px rgba(255,92,0,0.4);">🎬</div>
+                    <div>
+                        <h2 style="margin:0; font-size:20px; font-weight:800; color:#fff;">اختر قالب الريلز المناسب للفيديو</h2>
+                        <span style="color:var(--muted, #94a3b8); font-size:13px;">اختر من القوالب التي صممتها بالألوان والشرائح ليتم تطبيقها على ريلز هذا الخبر</span>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <a href="#page-visual-designer" onclick="closeVideoTemplatePickerModal(); go(document.querySelector('[data-page=page-visual-designer]')); if(window.loadVisualTemplates) loadVisualTemplates();" class="btn ghost" style="padding:7px 14px; font-size:12px; font-weight:700; border-color:rgba(255,92,0,0.4); color:#FF5C00; cursor:pointer; text-decoration:none;">
+                        + تصميم قالب جديد ↗
+                    </a>
+                    <button type="button" onclick="closeVideoTemplatePickerModal()" style="background:none; border:none; color:var(--muted, #94a3b8); font-size:24px; cursor:pointer; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#fff'" onmouseout="this.style.background='none'; this.style.color='var(--muted, #94a3b8)'">×</button>
+                </div>
+            </div>
+
+            <!-- Templates Grid (Scrollable) -->
+            <div style="padding:24px 28px; overflow-y:auto; flex:1;">
+                <div id="video-template-picker-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:20px;">
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:16px 28px; border-top:1px solid var(--line, rgba(255,255,255,0.1)); background:var(--panel-2, #1e1e2e); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="font-size:12px; color:var(--muted, #94a3b8);">
+                    💡 يتم استخدام ألوان وتصميم القالب المختار في رندرة شرائح الفيديو
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" onclick="confirmVideoRenderWithTemplate(_pendingVideoContentId, null, 'الافتراضي')" class="btn ghost" style="padding:8px 16px; font-size:12.5px; cursor:pointer;">
+                        تطبيق القالب الافتراضي ⚡
+                    </button>
+                    <button type="button" onclick="closeVideoTemplatePickerModal()" class="btn ghost" style="padding:8px 18px; font-size:13px; cursor:pointer;">إلغاء</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+    }
+    return modal;
+}
+
 function renderVideoSlideshow(id) {
     openVideoTemplatePicker(id);
 }
 
 async function openVideoTemplatePicker(contentId) {
     _pendingVideoContentId = contentId;
-    const modal = document.getElementById('video-template-picker-modal');
+    const modal = _ensureVideoTemplatePickerModal();
     const grid = document.getElementById('video-template-picker-grid');
     const content = document.getElementById('video-template-picker-content');
-    if (!modal || !grid) {
-        executeVideoRender(contentId, null, 'الافتراضي');
-        return;
-    }
 
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--muted);font-size:14px;">⏳ جاري تحميل قوالب الفيديو المحفوظة...</div>';
+    if (grid) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--muted);font-size:14px;">⏳ جاري تحميل قوالب الفيديو المحفوظة...</div>';
+    }
     document.body.style.overflow = 'hidden';
     modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
     setTimeout(() => {
         modal.style.opacity = '1';
         if (content) content.style.transform = 'scale(1)';
@@ -3458,48 +3506,67 @@ async function openVideoTemplatePicker(contentId) {
     try {
         const localTemplates = JSON.parse(localStorage.getItem('visual_templates') || '[]');
         localTemplates.forEach(lt => {
-            if (!templates.some(t => t.id === lt.id || t.name === lt.name)) {
+            if (!templates.some(t => (t.id && t.id === lt.id) || t.name === lt.name)) {
                 templates.push(lt);
             }
         });
     } catch(e) {}
 
-    // Fallback templates if none found
-    if (!templates || !templates.length) {
-        templates = [
-            {
-                id: 1,
-                name: 'زايد تيك - البرتقالي الناري (ZayedTech Flame)',
-                template_type: 'REEL',
-                bg_color1: '#0a0a0a',
-                bg_color2: '#240a00',
-                accent_color: '#FF5C00',
-                text_color: '#ffffff',
-                slides_json: JSON.stringify([
-                    { title: 'الخطاف', accentColor: '#FF5C00', color1: '#0a0a0a', color2: '#240a00' },
-                    { title: 'المحتوى', accentColor: '#8B5CF6', color1: '#070514', color2: '#1a0f3c' },
-                    { title: 'الختام', accentColor: '#F59E0B', color1: '#0c0a02', color2: '#261d06' }
-                ])
-            },
-            {
-                id: 2,
-                name: 'سايبر نيون البنفسجي (Cyber Violet)',
-                template_type: 'REEL',
-                bg_color1: '#070514',
-                bg_color2: '#1a0f3c',
-                accent_color: '#8B5CF6',
-                text_color: '#ffffff',
-                slides_json: JSON.stringify([
-                    { title: 'الافتتاحية', accentColor: '#8B5CF6', color1: '#070514', color2: '#1a0f3c' },
-                    { title: 'الشرح', accentColor: '#38BDF8', color1: '#020c1b', color2: '#0b1f3a' },
-                    { title: 'المتابعة', accentColor: '#10B981', color1: '#041712', color2: '#0e382c' }
-                ])
-            }
-        ];
-    }
+    // System presets so user always has options
+    const systemPresets = [
+        {
+            id: null,
+            name: 'زايد تيك - البرتقالي الناري (ZayedTech Flame)',
+            template_type: 'REEL',
+            bg_color1: '#0a0a0a',
+            bg_color2: '#240a00',
+            accent_color: '#FF5C00',
+            text_color: '#ffffff',
+            slides_json: JSON.stringify([
+                { title: 'الخطاف', accentColor: '#FF5C00', color1: '#0a0a0a', color2: '#240a00' },
+                { title: 'المحتوى', accentColor: '#8B5CF6', color1: '#070514', color2: '#1a0f3c' },
+                { title: 'الختام', accentColor: '#F59E0B', color1: '#0c0a02', color2: '#261d06' }
+            ])
+        },
+        {
+            id: null,
+            name: 'سايبر نيون البنفسجي (Cyber Violet)',
+            template_type: 'REEL',
+            bg_color1: '#070514',
+            bg_color2: '#1a0f3c',
+            accent_color: '#8B5CF6',
+            text_color: '#ffffff',
+            slides_json: JSON.stringify([
+                { title: 'الافتتاحية', accentColor: '#8B5CF6', color1: '#070514', color2: '#1a0f3c' },
+                { title: 'الشرح', accentColor: '#38BDF8', color1: '#020c1b', color2: '#0b1f3a' },
+                { title: 'المتابعة', accentColor: '#10B981', color1: '#041712', color2: '#0e382c' }
+            ])
+        },
+        {
+            id: null,
+            name: 'زمردي أعمال فاخر (Emerald Business)',
+            template_type: 'REEL',
+            bg_color1: '#041712',
+            bg_color2: '#0e382c',
+            accent_color: '#10B981',
+            text_color: '#ffffff',
+            slides_json: JSON.stringify([
+                { title: 'الافتتاحية', accentColor: '#10B981', color1: '#041712', color2: '#0e382c' },
+                { title: 'النقاط', accentColor: '#34D399', color1: '#07241c', color2: '#134e3f' },
+                { title: 'المتابعة', accentColor: '#10B981', color1: '#041712', color2: '#0e382c' }
+            ])
+        }
+    ];
+
+    const allTemplates = [...templates];
+    systemPresets.forEach(sp => {
+        if (!allTemplates.some(t => t.name === sp.name)) {
+            allTemplates.push(sp);
+        }
+    });
 
     let html = '';
-    templates.forEach(tpl => {
+    allTemplates.forEach(tpl => {
         const accent = tpl.accent_color || tpl.accentColor || '#FF5C00';
         const bg1 = tpl.bg_color1 || tpl.color1 || '#0a0a0a';
         const bg2 = tpl.bg_color2 || tpl.color2 || '#240a00';
@@ -3518,18 +3585,19 @@ async function openVideoTemplatePicker(contentId) {
         }).join('');
 
         const safeName = (tpl.name || 'قالب').replace(/'/g, "\\'");
+        const tplParam = tpl.id ? tpl.id : 'null';
 
         html += `
-        <div onclick="confirmVideoRenderWithTemplate(${contentId}, ${tpl.id || 'null'}, '${safeName}')"
-             style="cursor:pointer;background:var(--panel-2);border:2px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,0.3);transition:all 0.25s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;position:relative;"
+        <div onclick="confirmVideoRenderWithTemplate(${contentId}, ${tplParam}, '${safeName}')"
+             style="cursor:pointer;background:var(--panel-2, #1e1e2e);border:2px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,0.3);transition:all 0.25s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;position:relative;"
              onmouseover="this.style.transform='translateY(-5px)';this.style.boxShadow='0 16px 36px rgba(0,0,0,0.5)';this.style.borderColor='${accent}'"
              onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 10px 28px rgba(0,0,0,0.3)';this.style.borderColor='rgba(255,255,255,0.08)'">
 
             <!-- Card Banner -->
             <div style="height:120px;background:${bg};position:relative;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
                 <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;">
-                    <span style="background:rgba(255,92,0,0.2);color:#FF5C00;border:1px solid rgba(255,92,0,0.35);font-size:10px;font-weight:800;padding:2px 8px;border-radius:12px;">🎬 ريلز</span>
-                    <span style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">${slideCount} شرائح 🎨</span>
+                    <span style="background:rgba(255,92,0,0.25);color:#FF5C00;border:1px solid rgba(255,92,0,0.4);font-size:10px;font-weight:800;padding:2px 8px;border-radius:12px;">🎬 ريلز</span>
+                    <span style="background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.25);font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">${slideCount} شرائح 🎨</span>
                 </div>
                 <div style="font-size:15px;font-weight:900;color:${tpl.text_color || '#fff'};text-align:center;direction:rtl;line-height:1.35;text-shadow:0 2px 10px rgba(0,0,0,0.85);max-width:85%;">
                     ${tpl.name}
@@ -3540,10 +3608,10 @@ async function openVideoTemplatePicker(contentId) {
             </div>
 
             <!-- Card Body & Button -->
-            <div style="padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--panel-2);flex:1;justify-content:space-between;">
+            <div style="padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--panel-2, #1e1e2e);flex:1;justify-content:space-between;">
                 <div>
-                    <div style="font-size:14px;font-weight:800;color:var(--text);">${tpl.name}</div>
-                    <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">تدرج لوني متناسق مع حركات وشرائح مخصصة</div>
+                    <div style="font-size:14px;font-weight:800;color:var(--text, #fff);">${tpl.name}</div>
+                    <div style="font-size:11.5px;color:var(--muted, #94a3b8);margin-top:4px;">تدرج لوني متناسق مع حركات وشرائح مخصصة</div>
                 </div>
                 <button type="button" class="btn" style="width:100%;background:linear-gradient(135deg,${accent},#e11d48);color:#fff;border:none;padding:10px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px ${accent}40;">
                     <span>🚀</span> استخدام هذا القالب وتحويل الفيديو
@@ -3553,7 +3621,9 @@ async function openVideoTemplatePicker(contentId) {
         `;
     });
 
-    grid.innerHTML = html;
+    if (grid) {
+        grid.innerHTML = html;
+    }
 }
 
 function closeVideoTemplatePickerModal() {
