@@ -639,6 +639,7 @@ function buildReelSlideCard(slide, idx) {
                     <div class="mini-label-em"><code>visual_type</code> الإخراج البصري</div>
                     <select class="mini-ta" data-reel-slide="${idx}" data-field="visual_type" style="padding:6px 10px;background:#1a1a24;color:#fff;border:1px solid #333;border-radius:6px;width:100%;font-size:12px;">
                         <option value="TEXT_ONLY" ${vt === 'TEXT_ONLY' ? 'selected' : ''}>نص سينمائي صافي (TEXT_ONLY)</option>
+                        <option value="TECH_SPEC" ${vt === 'TECH_SPEC' ? 'selected' : ''}>مواصفات عتاد / هاتف (TECH_SPEC)</option>
                         <option value="PERCENTAGE_BAR" ${vt === 'PERCENTAGE_BAR' ? 'selected' : ''}>شريط نسبة مئوية (PERCENTAGE_BAR)</option>
                         <option value="FINANCIAL_METRIC" ${vt === 'FINANCIAL_METRIC' ? 'selected' : ''}>مؤشر نمو مالي (FINANCIAL_METRIC)</option>
                         <option value="COMPARISON" ${vt === 'COMPARISON' ? 'selected' : ''}>مقارنة إحصائية (COMPARISON)</option>
@@ -2170,7 +2171,9 @@ function renderPreview(platformId, gen, item) {
 
                     const getVisualTypeBadge = (vt) => {
                         vt = (vt || 'TEXT_ONLY').toUpperCase();
-                        if (vt === 'PERCENTAGE_BAR') {
+                        if (vt === 'TECH_SPEC') {
+                            return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(0,229,255,0.12);color:#00E5FF;border:1px solid rgba(0,229,255,0.3);font-weight:700;">مواصفات عتاد / هاتف</span>';
+                        } else if (vt === 'PERCENTAGE_BAR') {
                             return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(0,229,255,0.12);color:#00E5FF;border:1px solid rgba(0,229,255,0.3);font-weight:700;">شريط نسبة 0-100%</span>';
                         } else if (vt === 'FINANCIAL_METRIC') {
                             return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(255,183,0,0.12);color:#FFB700;border:1px solid rgba(255,183,0,0.3);font-weight:700;">مؤشر مالي وأعمدة نمو</span>';
@@ -2215,6 +2218,7 @@ function renderPreview(platformId, gen, item) {
                 const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
                 const getVisualTypeBadge = (vt) => {
                     vt = (vt || 'TEXT_ONLY').toUpperCase();
+                    if (vt === 'TECH_SPEC') return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(0,229,255,0.12);color:#00E5FF;font-weight:700;">مواصفات عتاد / هاتف</span>';
                     if (vt === 'PERCENTAGE_BAR') return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(0,229,255,0.12);color:#00E5FF;font-weight:700;">شريط نسبة 0-100%</span>';
                     if (vt === 'FINANCIAL_METRIC') return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(255,183,0,0.12);color:#FFB700;font-weight:700;">مؤشر مالي وأعمدة نمو</span>';
                     if (vt === 'COMPARISON') return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(168,85,247,0.12);color:#C084FC;font-weight:700;">مقارنة إحصائية</span>';

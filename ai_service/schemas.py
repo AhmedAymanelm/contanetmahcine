@@ -34,6 +34,7 @@ class ReelSlide(BaseModel):
         default="TEXT_ONLY",
         description=(
             "The visual presentation chosen for this slide: "
+            "'TECH_SPEC' (use for smartphone, hardware, device, and tech specifications, e.g. 50 ميجابكسل, 120 هرتز, 5000 مللي أمبير, 256 جيجابايت, 4 نانومتر), "
             "'PERCENTAGE_BAR' (use when slide highlights a percentage out of 100, e.g. 45%, 84%), "
             "'FINANCIAL_METRIC' (use for money, market cap, large numbers, billions/trillions, e.g. 37 مليار, 3 تريليون), "
             "'COMPARISON' (use when comparing 2-3 stats or competitors), "

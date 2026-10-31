@@ -174,34 +174,42 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
     label_text = stat_text.replace(num_str, "").strip() if num_str else stat_text
     label_text = re.sub(r'^[،,:\-–]\s*', '', label_text).strip()
 
-    if force_type == "PERCENTAGE_BAR":
-        is_percentage = True
-    elif force_type == "FINANCIAL_METRIC":
+    combined_lower = (stat_text + " " + headline).lower()
+
+    # Determine metric classification
+    is_percentage = (force_type == "PERCENTAGE_BAR") or bool(re.search(r'[%٪]', stat_text + " " + num_str))
+    is_tech_spec = (force_type == "TECH_SPEC") or bool(re.search(
+        r'ميجابكسل|بكسل|هرتز|رام|جيجابايت|تيرابايت|مللي أمبير|واط|نانومتر|بوصة|إطار|عدسة|كاميرا|معالج|شاشة|بطارية|موبايل|هاتف|سماعة|سنابدراجون|أوليد|أمبوليد|fps|hz|mp|gb|tb|mah|nm|ghz|mhz|watt|snapdragon|oled|amoled',
+        combined_lower
+    ))
+    is_financial = (force_type == "FINANCIAL_METRIC") or bool(re.search(
+        r'مليار|تريليون|مليون دولار|دولار|درهم|ريال|جنيه|إنفاق|إيراد|أرباح|أرباحاً|استثمار|رأسمالي|قيمة سوقية|عائد',
+        combined_lower
+    ))
+
+    if force_type == "FINANCIAL_METRIC":
+        is_tech_spec = False
         is_percentage = False
-    else:
-        is_percentage = bool(re.search(r'[%٪]', stat_text + " " + num_str))
+    elif force_type == "TECH_SPEC":
+        is_percentage = False
+        is_financial = False
+    elif force_type == "PERCENTAGE_BAR":
+        is_tech_spec = False
+        is_financial = False
+
+    svg_id = abs(hash(stat_text)) % 100000
+    visual_graphic_html = ""
 
     if is_percentage:
         if pct_val is None:
             clean_digits = re.search(r'[\d.]+', num_str)
-            if clean_digits:
-                pct_val = min(100.0, float(clean_digits.group(0)))
-            else:
-                pct_val = 50.0
-    else:
-        # Strictly reset pct_val to None if not a percentage so 0-100% bar is never shown for numbers
-        pct_val = None
+            pct_val = min(100.0, float(clean_digits.group(0))) if clean_digits else 50.0
 
-    is_upward = bool(re.search(r'نمو|زيادة|ارتفاع|قفزة|مضاعفة|صعود|تريليون|مليار|ربح|أرباح|قياسي|تفوق', stat_text + " " + headline))
-    badge_text = "مؤشر قياسي" if is_upward else "إحصائية موثقة"
-    badge_color = "#35D399" if is_upward else slide_accent
-    pulse_dot = f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{badge_color};box-shadow:0 0 10px {badge_color};margin-left:8px;"></span>'
+        is_upward = bool(re.search(r'نمو|زيادة|ارتفاع|قفزة|مضاعفة|صعود|ربح|أرباح|قياسي|تفوق', combined_lower))
+        badge_text = "مؤشر قياسي" if is_upward else "إحصائية موثقة"
+        badge_color = "#35D399" if is_upward else slide_accent
+        header_title = label_text or "معدل الإنجاز"
 
-    # Graphic representation based on data type
-    visual_graphic_html = ""
-    svg_id = abs(hash(stat_text)) % 100000
-
-    if is_percentage and pct_val is not None and pct_val > 0:
         # ── PERCENTAGE PROGRESS BAR (Strict LTR: starts at 0% on left and expands to right) ──
         fill_pct = min(100.0, pct_val)
         anim_fill = round(fill_pct * min(1.0, max(0.0, (reveal - 0.2) / 0.5)), 1)
@@ -250,11 +258,128 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
             f'</div>'
             f'{sparkline_svg}'
         )
-    else:
+
+    elif is_tech_spec:
+        # ── LUXURY KEYNOTE HARDWARE & TECH SPEC HUD ──
+        badge_text = "مواصفات العتاد"
+        badge_color = "#00E5FF"
+        header_title = label_text or "المواصفات التقنية"
+
+        is_camera = bool(re.search(r'ميجابكسل|بكسل|عدسة|كاميرا|mp', combined_lower))
+        is_screen = bool(re.search(r'هرتز|شاشة|بوصة|hz|oled|amoled', combined_lower))
+        is_battery = bool(re.search(r'بطارية|مللي أمبير|واط|mah|watt', combined_lower))
+
+        if is_camera:
+            visual_graphic_html = (
+                f'<div style="margin-top:24px;padding:22px 28px;background:rgba(0,0,0,0.45);'
+                f'            border:1.5px solid rgba(0,229,255,0.25);border-radius:24px;position:relative;'
+                f'            box-shadow:inset 0 0 30px rgba(0,229,255,0.08);">'
+                f'  <div style="display:flex;justify-content:space-between;align-items:center;gap:20px;">'
+                f'    <div style="display:flex;align-items:center;gap:14px;">'
+                f'      <div style="position:relative;width:56px;height:56px;border-radius:50%;border:2px solid #00E5FF;'
+                f'                  display:flex;align-items:center;justify-content:center;box-shadow:0 0 25px rgba(0,229,255,0.4);">'
+                f'        <div style="width:34px;height:34px;border-radius:50%;border:1.5px dashed rgba(255,255,255,0.5);background:rgba(0,229,255,0.15);"></div>'
+                f'        <div style="position:absolute;width:12px;height:12px;border-radius:50%;background:#ffffff;box-shadow:0 0 12px #ffffff;"></div>'
+                f'      </div>'
+                f'      <div style="position:relative;width:56px;height:56px;border-radius:50%;border:2px solid {slide_accent};'
+                f'                  display:flex;align-items:center;justify-content:center;box-shadow:0 0 25px {slide_accent}44;">'
+                f'        <div style="width:34px;height:34px;border-radius:50%;border:1.5px dashed rgba(255,255,255,0.5);background:{slide_accent}15;"></div>'
+                f'        <div style="position:absolute;width:12px;height:12px;border-radius:50%;background:#ffffff;box-shadow:0 0 12px #ffffff;"></div>'
+                f'      </div>'
+                f'      <div style="margin-right:6px;">'
+                f'        <div style="font-size:20px;font-weight:900;color:#ffffff;letter-spacing:-0.3px;">نظام تصوير احترافي مزدوج</div>'
+                f'        <div style="font-size:14px;color:rgba(255,255,255,0.55);margin-top:2px;">عدستان فائقة الدقة 50MP + 50MP</div>'
+                f'      </div>'
+                f'    </div>'
+                f'    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
+                f'      <div style="font-size:13px;font-weight:800;color:#00E5FF;padding:5px 14px;background:rgba(0,229,255,0.12);'
+                f'                  border:1px solid rgba(0,229,255,0.3);border-radius:20px;font-family:monospace;letter-spacing:1px;">DUAL SENSOR OIS</div>'
+                f'      <div style="font-size:13px;color:rgba(255,255,255,0.45);font-weight:600;">معالجة سينمائية بالذكاء الاصطناعي</div>'
+                f'    </div>'
+                f'  </div>'
+                f'</div>'
+            )
+        elif is_screen:
+            visual_graphic_html = (
+                f'<div style="margin-top:24px;padding:22px 28px;background:rgba(0,0,0,0.45);'
+                f'            border:1.5px solid rgba(0,229,255,0.25);border-radius:24px;position:relative;'
+                f'            box-shadow:inset 0 0 30px rgba(0,229,255,0.08);">'
+                f'  <div style="display:flex;justify-content:space-between;align-items:center;gap:20px;">'
+                f'    <div style="display:flex;align-items:center;gap:14px;">'
+                f'      <div style="width:52px;height:52px;border-radius:14px;border:2px solid #00E5FF;'
+                f'                  display:flex;align-items:center;justify-content:center;background:rgba(0,229,255,0.1);box-shadow:0 0 25px rgba(0,229,255,0.35);">'
+                f'        <span style="font-size:24px;font-weight:900;color:#00E5FF;font-family:monospace;">Hz</span>'
+                f'      </div>'
+                f'      <div>'
+                f'        <div style="font-size:20px;font-weight:900;color:#ffffff;">شاشة ذات تردد تكيفي فائق</div>'
+                f'        <div style="font-size:14px;color:rgba(255,255,255,0.55);margin-top:2px;">سلاسة بصرية فائقة وموفرة للطاقة</div>'
+                f'      </div>'
+                f'    </div>'
+                f'    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
+                f'      <div style="font-size:13px;font-weight:800;color:#00E5FF;padding:5px 14px;background:rgba(0,229,255,0.12);'
+                f'                  border:1px solid rgba(0,229,255,0.3);border-radius:20px;font-family:monospace;letter-spacing:1px;">ADAPTIVE SYNC</div>'
+                f'      <div style="font-size:13px;color:rgba(255,255,255,0.45);font-weight:600;">استجابة لمسية لحظية</div>'
+                f'    </div>'
+                f'  </div>'
+                f'</div>'
+            )
+        elif is_battery:
+            visual_graphic_html = (
+                f'<div style="margin-top:24px;padding:22px 28px;background:rgba(0,0,0,0.45);'
+                f'            border:1.5px solid rgba(53,211,153,0.25);border-radius:24px;position:relative;'
+                f'            box-shadow:inset 0 0 30px rgba(53,211,153,0.08);">'
+                f'  <div style="display:flex;justify-content:space-between;align-items:center;gap:20px;">'
+                f'    <div style="display:flex;align-items:center;gap:14px;">'
+                f'      <div style="width:52px;height:52px;border-radius:14px;border:2px solid #35D399;'
+                f'                  display:flex;align-items:center;justify-content:center;background:rgba(53,211,153,0.1);box-shadow:0 0 25px rgba(53,211,153,0.35);">'
+                f'        <span style="font-size:22px;font-weight:900;color:#35D399;font-family:monospace;">PWR</span>'
+                f'      </div>'
+                f'      <div>'
+                f'        <div style="font-size:20px;font-weight:900;color:#ffffff;">بطارية ضخمة وإدارة طاقة ذكية</div>'
+                f'        <div style="font-size:14px;color:rgba(255,255,255,0.55);margin-top:2px;">عمر تشغيل ممتد وشحن فائق السرعة</div>'
+                f'      </div>'
+                f'    </div>'
+                f'    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
+                f'      <div style="font-size:13px;font-weight:800;color:#35D399;padding:5px 14px;background:rgba(53,211,153,0.12);'
+                f'                  border:1px solid rgba(53,211,153,0.3);border-radius:20px;font-family:monospace;letter-spacing:1px;">FAST CHARGE</div>'
+                f'      <div style="font-size:13px;color:rgba(255,255,255,0.45);font-weight:600;">كفاءة استهلاك طاقة عالية</div>'
+                f'    </div>'
+                f'  </div>'
+                f'</div>'
+            )
+        else:
+            visual_graphic_html = (
+                f'<div style="margin-top:24px;padding:22px 28px;background:rgba(0,0,0,0.45);'
+                f'            border:1.5px solid rgba(0,229,255,0.25);border-radius:24px;position:relative;'
+                f'            box-shadow:inset 0 0 30px rgba(0,229,255,0.08);">'
+                f'  <div style="display:flex;justify-content:space-between;align-items:center;gap:20px;">'
+                f'    <div style="display:flex;align-items:center;gap:14px;">'
+                f'      <div style="width:52px;height:52px;border-radius:14px;border:2px solid #00E5FF;'
+                f'                  display:flex;align-items:center;justify-content:center;background:rgba(0,229,255,0.1);box-shadow:0 0 25px rgba(0,229,255,0.35);">'
+                f'        <span style="font-size:20px;font-weight:900;color:#00E5FF;font-family:monospace;">SPEC</span>'
+                f'      </div>'
+                f'      <div>'
+                f'        <div style="font-size:20px;font-weight:900;color:#ffffff;">مواصفات عتاد من الفئة الرائدة</div>'
+                f'        <div style="font-size:14px;color:rgba(255,255,255,0.55);margin-top:2px;">معمارية متطورة وأداء استثنائي</div>'
+                f'      </div>'
+                f'    </div>'
+                f'    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
+                f'      <div style="font-size:13px;font-weight:800;color:#00E5FF;padding:5px 14px;background:rgba(0,229,255,0.12);'
+                f'                  border:1px solid rgba(0,229,255,0.3);border-radius:20px;font-family:monospace;letter-spacing:1px;">FLAGSHIP GRADE</div>'
+                f'      <div style="font-size:13px;color:rgba(255,255,255,0.45);font-weight:600;">سرعة واستقرار فائق</div>'
+                f'    </div>'
+                f'  </div>'
+                f'</div>'
+            )
+
+    elif is_financial:
         # ── ABSOLUTE FINANCIAL VOLUME / NUMERICAL HISTOGRAM & APEX PEAK ──
-        # Vertical ascending columns indicating volume, scale, and financial momentum (NOT 0-100% bar)
+        badge_text = "مؤشر مالي"
+        badge_color = "#35D399"
+        header_title = label_text or "حجم النمو المالي"
+
         col_heights = [30, 48, 66, 84, 104, 126]
-        col_labels  = ['بداية', 'توسع', 'تسارع', 'مضاعفة', 'قفزة', 'الذروة']
+        col_labels  = ['Q1', 'Q2', 'Q3', 'Q4', 'توسع', 'الذروة']
         fill_factor = min(1.0, max(0.0, (reveal - 0.2) / 0.5))
 
         cols_html = ""
@@ -283,7 +408,21 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
             f'</div>'
         )
 
-    header_title = label_text or ("معدل الإنجاز" if is_percentage else "حجم النمو المالي")
+    else:
+        # ── GENERAL NUMERICAL FACT & STAT CARD ──
+        badge_text = "بيانات موثقة"
+        badge_color = slide_accent
+        header_title = label_text or "إحصائية موثقة"
+        visual_graphic_html = (
+            f'<div style="margin-top:22px;padding:16px 24px;background:rgba(255,255,255,0.04);'
+            f'            border:1px solid rgba(255,255,255,0.1);border-radius:20px;display:flex;'
+            f'            align-items:center;justify-content:space-between;">'
+            f'  <span style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.85);">{label_text or headline}</span>'
+            f'  <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:{slide_accent};box-shadow:0 0 14px {slide_accent};"></span>'
+            f'</div>'
+        )
+
+    pulse_dot = f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{badge_color};box-shadow:0 0 10px {badge_color};margin-left:8px;"></span>'
 
     return (
         f'<div style="margin-top:40px;transform:translateY({d_y}px);opacity:{d_op};width:100%;max-width:880px;">'
@@ -743,7 +882,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     
     if visual_type == "TEXT_ONLY":
         will_show_hud = False
-    elif visual_type in ("PERCENTAGE_BAR", "FINANCIAL_METRIC"):
+    elif visual_type in ("PERCENTAGE_BAR", "FINANCIAL_METRIC", "TECH_SPEC"):
         will_show_hud = True
     elif visual_type == "COMPARISON" and len(bars) > 1:
         will_show_hud = True
@@ -767,6 +906,10 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             )
         else:
             hud_html = ""
+    elif visual_type == "TECH_SPEC":
+        stat_text = detail or (bars[0].get("label", "") + " " + str(bars[0].get("value", ""))) if bars else headline
+        pct_val = bars[0].get("pct") if bars else None
+        hud_html = _render_hero_stat_hud(stat_text, pct_val, slide_accent, slide_accent_light, reveal, d_y, d_op, headline, force_type="TECH_SPEC")
     elif visual_type == "PERCENTAGE_BAR":
         stat_text = detail or (bars[0].get("label", "") + " " + str(bars[0].get("value", ""))) if bars else headline
         pct_val = bars[0].get("pct") if bars else None
