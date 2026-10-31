@@ -55,21 +55,53 @@ from app.models.source import Source
 class ArticleGenerateRequest(BaseModel):
     formats: List[str] = ["POST", "CAROUSEL", "VIDEO_SCRIPT"]
     carousel_platforms: List[str] = ["IG", "Li"]
+    slides: Optional[List[Dict[str, Any]]] = None
+    template_id: Optional[int] = None
 
 
 class ManualArticleRequest(BaseModel):
-    title: str
-    content: str
+    title: Optional[str] = ""
+    content: Optional[str] = ""
     source_name: str = "يدوي"
     url: str = ""
     image_url: str = ""
     category: str = ""
+    slides: Optional[List[Dict[str, Any]]] = None
 
 
 @router.post("/manual")
 async def create_manual_article(request: ManualArticleRequest, db: Session = Depends(get_db)):
     """Create a raw article manually without scraping."""
     import uuid as _uuid
+
+    title = (request.title or "").strip()
+    content = (request.content or "").strip()
+
+    # If slides are provided, construct content/title from slides if missing
+    if request.slides and isinstance(request.slides, list) and len(request.slides) > 0:
+        slide_texts = []
+        for i, s in enumerate(request.slides):
+            h = (s.get("heading") or "").strip()
+            b = (s.get("body") or "").strip()
+            parts = [f"شريحة {i+1}:"]
+            if h: parts.append(h)
+            if b: parts.append(b)
+            slide_texts.append(" - ".join(parts))
+        if not content:
+            content = "\n\n".join(slide_texts)
+        if not title:
+            first_h = (request.slides[0].get("heading") or "").strip()
+            title = first_h if first_h else (content.split("\n")[0][:80] if content else "كاروسيل يدوي")
+
+    # If only title or only content is provided, fill in the other
+    if not title and content:
+        title = content.split("\n")[0][:80].strip()
+    if not content and title:
+        content = title
+
+    if not title and not content:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="يجب إدخال عنوان أو نص أو شرائح للخبر")
 
     # Find or create the manual source
     source = db.query(Source).filter(Source.name == "يدوي").first()
@@ -88,8 +120,8 @@ async def create_manual_article(request: ManualArticleRequest, db: Session = Dep
 
     article = RawArticle(
         source_id=source.id,
-        title=request.title,
-        content=request.content,
+        title=title,
+        content=content,
         url=article_url,
         image_url=request.image_url or None,
         status="PENDING",
@@ -111,7 +143,7 @@ async def generate_article_content(article_id: int, request: ArticleGenerateRequ
     db.close()
     
     # Run in thread pool so it doesn't block FastAPI's event loop
-    _thread_pool.submit(process_article_generation, article_id, request.formats, request.carousel_platforms)
+    _thread_pool.submit(process_article_generation, article_id, request.formats, request.carousel_platforms, request.slides, request.template_id)
     logger.info(f"Generation task submitted for article {article_id} with formats {request.formats}, carousel_platforms {request.carousel_platforms}")
     return {"detail": "Generation started in the background"}
 

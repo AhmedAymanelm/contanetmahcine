@@ -11,7 +11,7 @@ from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-def process_article_generation(raw_article_id: int, formats: list = None, carousel_platforms: list = None):
+def process_article_generation(raw_article_id: int, formats: list = None, carousel_platforms: list = None, custom_slides: list = None, template_id: int = None):
     """
     Takes a RawArticle ID, sends it to Claude for generation,
     saves the results as ContentItems, and updates status.
@@ -65,12 +65,24 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
             
             # Arabic carousel for Instagram
             try:
-                ig_carousel = _gen_carousel(
-                    api_key=settings.ANTHROPIC_API_KEY,
-                    article_title=article.title,
-                    article_content=text_to_process,
-                    platforms=["IG"]
-                )
+                if custom_slides and len(custom_slides) > 0:
+                    ig_carousel = {
+                        "title": article.title or "كاروسيل مخصص",
+                        "slides": [
+                            {
+                                "heading": s.get("heading", ""),
+                                "body": s.get("body", ""),
+                                "tips_list": s.get("tips_list")
+                            } for s in custom_slides
+                        ]
+                    }
+                else:
+                    ig_carousel = _gen_carousel(
+                        api_key=settings.ANTHROPIC_API_KEY,
+                        article_title=article.title,
+                        article_content=text_to_process,
+                        platforms=["IG"]
+                    )
                 if ig_carousel and "slides" in ig_carousel:
                     ig_item = ContentItem(
                         raw_article_id=article.id,
@@ -82,7 +94,7 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
                     db.add(ig_item)
                     db.flush()
                     try:
-                        render_carousel_sync(ig_item.id, ig_carousel)
+                        render_carousel_sync(ig_item.id, ig_carousel, template_id=template_id)
                     except Exception as render_err:
                         logger.warning(f"IG Carousel rendering failed: {render_err}")
                     logger.info(f"Generated Arabic (IG) carousel for article {article.id}")
@@ -91,12 +103,24 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
             
             # English carousel for LinkedIn
             try:
-                li_carousel = _gen_carousel(
-                    api_key=settings.ANTHROPIC_API_KEY,
-                    article_title=article.title,
-                    article_content=text_to_process,
-                    platforms=["Li"]
-                )
+                if custom_slides and len(custom_slides) > 0:
+                    li_carousel = {
+                        "title": article.title or "Custom Carousel",
+                        "slides": [
+                            {
+                                "heading": s.get("heading", ""),
+                                "body": s.get("body", ""),
+                                "tips_list": s.get("tips_list")
+                            } for s in custom_slides
+                        ]
+                    }
+                else:
+                    li_carousel = _gen_carousel(
+                        api_key=settings.ANTHROPIC_API_KEY,
+                        article_title=article.title,
+                        article_content=text_to_process,
+                        platforms=["Li"]
+                    )
                 if li_carousel and "slides" in li_carousel:
                     li_item = ContentItem(
                         raw_article_id=article.id,
@@ -108,7 +132,7 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
                     db.add(li_item)
                     db.flush()
                     try:
-                        render_carousel_sync(li_item.id, li_carousel)
+                        render_carousel_sync(li_item.id, li_carousel, template_id=template_id)
                     except Exception as render_err:
                         logger.warning(f"Li Carousel rendering failed: {render_err}")
                     logger.info(f"Generated English (LinkedIn) carousel for article {article.id}")

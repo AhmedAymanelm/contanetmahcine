@@ -59,6 +59,7 @@ const PAGE_LOADERS = {
     'page-recs':            () => loadRecs(),
     'page-ai-usage':        () => { if (typeof loadAiUsage === 'function') loadAiUsage(); },
     'page-visual-designer': () => { if (typeof loadVisualTemplates === 'function') loadVisualTemplates(); },
+    'page-manual':          () => { if (typeof initManualCarouselStudio === 'function') initManualCarouselStudio(); },
 };
 
 // ── Navigate to a page ────────────────────────────────────────────────────
@@ -3712,21 +3713,368 @@ async function executeVideoRender(id, templateId, templateName) {
 
 
 // ══════════════════════════════════════════════════════════════
-//  MANUAL ARTICLE PAGE
+//  MANUAL ARTICLE & CAROUSEL SLIDER STUDIO
 // ══════════════════════════════════════════════════════════════
 
+let _manualMode = 'carousel'; // 'carousel' or 'quick'
+let _manualCurrentSlideIdx = 0;
+let _manualSlides = [
+    {
+        heading: "أكتوبر الأسود بدأ.. هل ينتهي عصر البرمجة؟",
+        body: "كيف يحول الذكاء الاصطناعي القراصنة إلى تهديد حقيقي للبنية التحتية العالمية؟"
+    },
+    {
+        heading: "القراصنة لم يعودوا بحاجة لسنوات من الخبرة",
+        body: "اليوم يستغرق الأمر دقائق فقط لإنشاء برمجيات خبيثة هجومية بالكامل دون كتابة سطر كود واحد."
+    },
+    {
+        heading: "الأرقام الصادمة تتحدث",
+        body: "أكثر من 300% زيادة في الهجمات المؤتمتة خلال الربع الأخير من هذا العام فقط."
+    },
+    {
+        heading: "ما رأيك في هذا التحول المرعب؟",
+        body: "شاركنا رأيك في التعليقات وتابع @zayedtech لكل جديد في عالم الأمن السيبراني والذكاء الاصطناعي."
+    }
+];
+
+const _MANUAL_THEMES = {
+    flame: {
+        bg: 'linear-gradient(145deg, #0a0a0a, #240a00)',
+        border: 'rgba(255, 92, 0, 0.45)',
+        pillBg: 'rgba(255, 92, 0, 0.25)',
+        pillColor: '#FF5C00',
+        headingColor: '#ffffff',
+        bodyColor: '#e2e8f0',
+        dotActive: '#FF5C00'
+    },
+    violet: {
+        bg: 'linear-gradient(145deg, #070514, #1a0f3c)',
+        border: 'rgba(139, 92, 246, 0.45)',
+        pillBg: 'rgba(139, 92, 246, 0.25)',
+        pillColor: '#a78bfa',
+        headingColor: '#ffffff',
+        bodyColor: '#e2e8f0',
+        dotActive: '#8b5cf6'
+    },
+    emerald: {
+        bg: 'linear-gradient(145deg, #041712, #0e382c)',
+        border: 'rgba(16, 185, 129, 0.45)',
+        pillBg: 'rgba(16, 185, 129, 0.25)',
+        pillColor: '#34d399',
+        headingColor: '#ffffff',
+        bodyColor: '#e2e8f0',
+        dotActive: '#10b981'
+    },
+    royal: {
+        bg: 'linear-gradient(145deg, #0c0a02, #261d06)',
+        border: 'rgba(245, 158, 11, 0.45)',
+        pillBg: 'rgba(245, 158, 11, 0.25)',
+        pillColor: '#fbbf24',
+        headingColor: '#ffffff',
+        bodyColor: '#e2e8f0',
+        dotActive: '#f59e0b'
+    },
+    crimson: {
+        bg: 'linear-gradient(145deg, #160407, #380811)',
+        border: 'rgba(225, 29, 72, 0.45)',
+        pillBg: 'rgba(225, 29, 72, 0.25)',
+        pillColor: '#fb7185',
+        headingColor: '#ffffff',
+        bodyColor: '#e2e8f0',
+        dotActive: '#e11d48'
+    }
+};
+
+function setManualMode(mode) {
+    _manualMode = mode;
+    const carModeEl = document.getElementById('manual-carousel-mode');
+    const qkModeEl = document.getElementById('manual-quick-mode');
+    const carBtn = document.getElementById('manual-mode-carousel-btn');
+    const qkBtn = document.getElementById('manual-mode-quick-btn');
+
+    if (mode === 'carousel') {
+        if (carModeEl) carModeEl.style.display = 'block';
+        if (qkModeEl) qkModeEl.style.display = 'none';
+        if (carBtn) {
+            carBtn.style.background = 'linear-gradient(135deg,#14b8a6,#0d9488)';
+            carBtn.style.color = '#fff';
+        }
+        if (qkBtn) {
+            qkBtn.style.background = 'transparent';
+            qkBtn.style.color = 'var(--muted)';
+        }
+        initManualCarouselStudio();
+    } else {
+        if (carModeEl) carModeEl.style.display = 'none';
+        if (qkModeEl) qkModeEl.style.display = 'block';
+        if (qkBtn) {
+            qkBtn.style.background = 'linear-gradient(135deg,#6366f1,#8b5cf6)';
+            qkBtn.style.color = '#fff';
+        }
+        if (carBtn) {
+            carBtn.style.background = 'transparent';
+            carBtn.style.color = 'var(--muted)';
+        }
+    }
+}
+
+function initManualCarouselStudio() {
+    // Populate themes with saved visual templates if available
+    try {
+        const select = document.getElementById('manual-carousel-theme');
+        const localTemplates = JSON.parse(localStorage.getItem('visual_templates') || '[]');
+        if (select && localTemplates.length > 0) {
+            localTemplates.forEach(t => {
+                const optVal = 'tpl_' + t.id;
+                if (!select.querySelector(`option[value="${optVal}"]`)) {
+                    const opt = document.createElement('option');
+                    opt.value = optVal;
+                    opt.innerText = `🎨 ${t.name || 'قالب مخصص'}`;
+                    select.appendChild(opt);
+
+                    _MANUAL_THEMES[optVal] = {
+                        bg: (t.bg_type === 'solid' || t.bgType === 'solid') ? (t.bg_color1 || t.color1 || '#0a0a0a') : `linear-gradient(145deg, ${t.bg_color1 || t.color1 || '#0a0a0a'}, ${t.bg_color2 || t.color2 || '#240a00'})`,
+                        border: t.accent_color || t.accentColor || '#FF5C00',
+                        pillBg: (t.accent_color || t.accentColor || '#FF5C00') + '35',
+                        pillColor: t.accent_color || t.accentColor || '#FF5C00',
+                        headingColor: t.text_color || '#ffffff',
+                        bodyColor: '#e2e8f0',
+                        dotActive: t.accent_color || t.accentColor || '#FF5C00'
+                    };
+                }
+            });
+        }
+    } catch(e) {}
+
+    renderManualSlidesDeck();
+    selectManualSlide(_manualCurrentSlideIdx);
+}
+
+function renderManualSlidesDeck() {
+    const strip = document.getElementById('manual-slides-deck-strip');
+    if (!strip) return;
+
+    let html = '';
+    _manualSlides.forEach((s, idx) => {
+        const isActive = idx === _manualCurrentSlideIdx;
+        const border = isActive ? 'border: 2px solid var(--teal); background: rgba(20,184,166,0.18);' : 'border: 1px solid var(--line); background: rgba(0,0,0,0.25);';
+        const label = idx === 0 ? 'شريحة 1 (الغلاف)' : (idx === _manualSlides.length - 1 ? `شريحة ${idx+1} (الختام)` : `شريحة ${idx+1}`);
+        const previewText = (s.heading || s.body || 'شريحة فارغة').slice(0, 22) + '...';
+
+        html += `
+        <div onclick="selectManualSlide(${idx})" style="flex-shrink:0; cursor:pointer; padding:10px 14px; border-radius:12px; min-width:130px; ${border} transition:all 0.2s;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:11.5px; font-weight:800; color:${isActive ? 'var(--teal)' : '#fff'};">${label}</span>
+                <span style="font-size:10px; color:var(--muted);">#${idx+1}</span>
+            </div>
+            <div style="font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${previewText}
+            </div>
+        </div>`;
+    });
+
+    html += `
+    <button type="button" onclick="addNewManualSlide()" style="flex-shrink:0; cursor:pointer; padding:10px 16px; border-radius:12px; border:1.5px dashed rgba(20,184,166,0.4); background:rgba(20,184,166,0.06); color:#2dd4bf; font-weight:800; font-size:12.5px; display:flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background='rgba(20,184,166,0.15)'" onmouseout="this.style.background='rgba(20,184,166,0.06)'">
+        <span>+</span> إضافة شريحة
+    </button>`;
+
+    strip.innerHTML = html;
+
+    const counter = document.getElementById('manual-slide-counter-badge');
+    if (counter) {
+        counter.innerText = `الشريحة ${_manualCurrentSlideIdx + 1} من ${_manualSlides.length}`;
+    }
+}
+
+function selectManualSlide(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= _manualSlides.length) idx = _manualSlides.length - 1;
+    _manualCurrentSlideIdx = idx;
+
+    const currentSlide = _manualSlides[idx] || { heading: '', body: '' };
+    const headingInput = document.getElementById('manual-slide-heading');
+    const bodyInput = document.getElementById('manual-slide-body');
+    const slideNum = document.getElementById('manual-editor-slide-num');
+    const slideTitle = document.getElementById('manual-editor-slide-title');
+
+    if (headingInput) headingInput.value = currentSlide.heading || '';
+    if (bodyInput) bodyInput.value = currentSlide.body || '';
+    if (slideNum) slideNum.innerText = (idx + 1);
+    if (slideTitle) {
+        const titleText = idx === 0 ? 'الشريحة الأولى (غلاف / خطاف)' : (idx === _manualSlides.length - 1 ? `الشريحة ${idx+1} (خاتمة / تفاعل)` : `الشريحة ${idx+1} (محتوى الشرح)`);
+        slideTitle.innerText = titleText;
+    }
+
+    renderManualSlidesDeck();
+    updateManualSlidePreview();
+}
+
+function addNewManualSlide() {
+    _manualSlides.push({
+        heading: '',
+        body: ''
+    });
+    _manualCurrentSlideIdx = _manualSlides.length - 1;
+    selectManualSlide(_manualCurrentSlideIdx);
+    showToast(`✨ تمت إضافة شريحة جديدة #${_manualSlides.length}`, 'info');
+}
+
+function duplicateCurrentManualSlide() {
+    const curr = _manualSlides[_manualCurrentSlideIdx];
+    const clone = { heading: curr.heading ? (curr.heading + ' (نسخة)') : '', body: curr.body || '' };
+    _manualSlides.splice(_manualCurrentSlideIdx + 1, 0, clone);
+    _manualCurrentSlideIdx++;
+    selectManualSlide(_manualCurrentSlideIdx);
+    showToast('📋 تم تكرار الشريحة بنجاح', 'info');
+}
+
+function deleteCurrentManualSlide() {
+    if (_manualSlides.length <= 1) {
+        showToast('⚠️ لا يمكن حذف الشريحة الوحيدة، يجب وجود شريحة واحدة على الأقل', 'warning');
+        return;
+    }
+    _manualSlides.splice(_manualCurrentSlideIdx, 1);
+    if (_manualCurrentSlideIdx >= _manualSlides.length) {
+        _manualCurrentSlideIdx = _manualSlides.length - 1;
+    }
+    selectManualSlide(_manualCurrentSlideIdx);
+    showToast('🗑️ تم حذف الشريحة', 'info');
+}
+
+function updateManualCurrentSlide() {
+    const headingInput = document.getElementById('manual-slide-heading');
+    const bodyInput = document.getElementById('manual-slide-body');
+    if (!_manualSlides[_manualCurrentSlideIdx]) {
+        _manualSlides[_manualCurrentSlideIdx] = { heading: '', body: '' };
+    }
+    _manualSlides[_manualCurrentSlideIdx].heading = headingInput ? headingInput.value : '';
+    _manualSlides[_manualCurrentSlideIdx].body = bodyInput ? bodyInput.value : '';
+
+    renderManualSlidesDeck();
+    updateManualSlidePreview();
+}
+
+function prevManualSlide() {
+    if (_manualCurrentSlideIdx > 0) {
+        selectManualSlide(_manualCurrentSlideIdx - 1);
+    }
+}
+
+function nextManualSlide() {
+    if (_manualCurrentSlideIdx < _manualSlides.length - 1) {
+        selectManualSlide(_manualCurrentSlideIdx + 1);
+    }
+}
+
+function updateManualSlidePreview() {
+    const canvas = document.getElementById('manual-preview-slide-canvas');
+    const headingEl = document.getElementById('manual-preview-heading');
+    const bodyEl = document.getElementById('manual-preview-body');
+    const pillEl = document.getElementById('manual-preview-pill');
+    const pagePillEl = document.getElementById('manual-preview-page-pill');
+    const dotsEl = document.getElementById('manual-preview-dots');
+    const themeSelect = document.getElementById('manual-carousel-theme');
+
+    const themeKey = themeSelect ? themeSelect.value : 'flame';
+    const th = _MANUAL_THEMES[themeKey] || _MANUAL_THEMES.flame;
+
+    const currentSlide = _manualSlides[_manualCurrentSlideIdx] || { heading: '', body: '' };
+
+    if (canvas) {
+        canvas.style.background = th.bg;
+        canvas.style.borderColor = th.border;
+    }
+    if (pillEl) {
+        pillEl.style.background = th.pillBg;
+        pillEl.style.borderColor = th.border;
+        pillEl.style.color = th.pillColor;
+    }
+    if (pagePillEl) {
+        pagePillEl.innerText = `${_manualCurrentSlideIdx + 1} / ${_manualSlides.length} 🖼️`;
+    }
+    if (headingEl) {
+        headingEl.style.color = th.headingColor;
+        headingEl.innerText = currentSlide.heading.trim() || (currentSlide.body.trim() ? '' : 'عنوان الشريحة هنا...');
+        headingEl.style.display = (currentSlide.heading.trim() || !currentSlide.body.trim()) ? 'block' : 'none';
+    }
+    if (bodyEl) {
+        bodyEl.style.color = th.bodyColor;
+        bodyEl.innerText = currentSlide.body.trim() || '';
+        bodyEl.style.display = currentSlide.body.trim() ? 'block' : 'none';
+    }
+
+    if (dotsEl) {
+        let dotsHtml = '';
+        _manualSlides.forEach((_, i) => {
+            const isAct = i === _manualCurrentSlideIdx;
+            const w = isAct ? '16px' : '6px';
+            const bg = isAct ? th.dotActive : 'rgba(255,255,255,0.25)';
+            dotsHtml += `<span onclick="selectManualSlide(${i})" style="cursor:pointer; width:${w}; height:6px; border-radius:4px; background:${bg}; transition:all 0.25s;"></span>`;
+        });
+        dotsEl.innerHTML = dotsHtml;
+    }
+}
+
 async function submitManualArticle() {
-    const title = document.getElementById('manual-title').value.trim();
-    const content = document.getElementById('manual-content').value.trim();
-    if (!title) { showToast('⚠️ أدخل عنوان الخبر', 'error'); return; }
-    if (!content) { showToast('⚠️ أدخل محتوى الخبر', 'error'); return; }
+    let title = '';
+    let content = '';
+    let customSlides = null;
+
+    if (_manualMode === 'carousel') {
+        const mainTitleInput = document.getElementById('manual-carousel-title');
+        title = mainTitleInput ? mainTitleInput.value.trim() : '';
+
+        // Validate that at least one slide has some text
+        const hasContent = _manualSlides.some(s => (s.heading && s.heading.trim()) || (s.body && s.body.trim()));
+        if (!hasContent) {
+            showToast('⚠️ يرجى كتابة عنوان أو نص في شريحة واحدة على الأقل', 'error');
+            return;
+        }
+
+        // If main carousel title is empty, use heading of first non-empty slide
+        if (!title) {
+            const firstWithHeading = _manualSlides.find(s => s.heading && s.heading.trim());
+            title = firstWithHeading ? firstWithHeading.heading.trim() : (_manualSlides[0].body ? _manualSlides[0].body.slice(0, 50) : 'كاروسيل مخصص');
+        }
+
+        // Build clean slides array
+        customSlides = _manualSlides.map(s => ({
+            heading: (s.heading || '').trim(),
+            body: (s.body || '').trim()
+        }));
+
+        // Build content text from slides for full pipeline
+        content = customSlides.map((s, idx) => {
+            const parts = [`شريحة ${idx+1}:`];
+            if (s.heading) parts.push(s.heading);
+            if (s.body) parts.push(s.body);
+            return parts.join(' - ');
+        }).join('\n\n');
+
+    } else {
+        // Quick AI Mode: title and content are optional, but at least ONE must be filled!
+        const qTitleInput = document.getElementById('manual-quick-title');
+        const qContentInput = document.getElementById('manual-quick-content');
+        title = qTitleInput ? qTitleInput.value.trim() : '';
+        content = qContentInput ? qContentInput.value.trim() : '';
+
+        if (!title && !content) {
+            showToast('⚠️ أدخل عنواناً أو نصاً للخبر أو الفكرة', 'error');
+            return;
+        }
+        if (!title) title = content.split('\n')[0].slice(0, 70);
+        if (!content) content = title;
+    }
 
     const formats = Array.from(document.querySelectorAll('#manual-formats-grid input[type=checkbox]:checked')).map(c => c.value);
-    if (formats.length === 0) { showToast('⚠️ اختر نوعاً واحداً على الأقل', 'error'); return; }
+    if (formats.length === 0) {
+        showToast('⚠️ اختر نوعاً واحداً على الأقل من أنواع المحتوى', 'error');
+        return;
+    }
 
     const btn = document.getElementById('manual-submit-btn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spin">⏳</span> جاري الإرسال...';
+    btn.innerHTML = '<span class="spin">⏳</span> جاري المعالجة والإنشاء...';
 
     const statusEl = document.getElementById('manual-status');
     statusEl.style.display = 'none';
@@ -3739,9 +4087,9 @@ async function submitManualArticle() {
             body: JSON.stringify({
                 title,
                 content,
-                category: document.getElementById('manual-category').value.trim(),
-                image_url: document.getElementById('manual-image').value.trim(),
-                url: document.getElementById('manual-url').value.trim(),
+                category: (document.getElementById('manual-category')?.value || '').trim(),
+                image_url: (document.getElementById('manual-image')?.value || '').trim(),
+                slides: customSlides,
                 source_name: 'يدوي'
             })
         });
@@ -3753,24 +4101,29 @@ async function submitManualArticle() {
 
         const article = await res.json();
 
-        // Now trigger generation
+        // Trigger generation with custom slides if available
         const genRes = await fetch(`${API_BASE}/raw-articles/${article.id}/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ formats })
+            body: JSON.stringify({
+                formats,
+                slides: customSlides
+            })
         });
 
         statusEl.style.display = 'block';
         statusEl.style.color = 'var(--teal)';
         statusEl.style.borderColor = 'rgba(20,184,166,0.3)';
         statusEl.style.background = 'rgba(20,184,166,0.08)';
-        statusEl.innerHTML = `✅ تم إرسال الخبر بنجاح! رقم المقال: <strong>#${article.id}</strong><br>
-            <span style="font-size:12px;opacity:0.8;">سيظهر المحتوى في صفحة المراجعة والموافقة خلال لحظات</span>
-            <br><br>
-            <button onclick="goId('page-review')" class="btn" style="padding:10px 20px;font-size:13px;">🔍 الذهاب للمراجعة</button>`;
+        statusEl.innerHTML = `
+            <div style="font-size:16px; font-weight:800; margin-bottom:8px;">✅ تم إنشاء الكاروسيل بنجاح! رقم المحتوى: <strong>#${article.id}</strong></div>
+            <div style="font-size:13px; color:var(--muted); margin-bottom:14px;">يتم الآن تجهيز وتوليد شرائح الكاروسيل وباقي الصيغ المطلوبة. يمكنك مراجعتها واعتمادها فوراً.</div>
+            <button type="button" onclick="go(document.querySelector('[data-page=page-review]'))" class="btn" style="padding:10px 22px; font-size:13px; font-weight:800; background:linear-gradient(135deg,#14b8a6,#0d9488); color:#fff; border:none; border-radius:10px; cursor:pointer;">
+                🔍 الذهاب لصفحة المراجعة والموافقة ↗
+            </button>
+        `;
 
-        showToast('✅ تم إرسال الخبر للمعالجة!', 'success');
-        clearManualForm();
+        showToast('✅ تم إنشاء الكاروسيل بنجاح!', 'success');
         fetchDashboardStats();
 
     } catch (e) {
@@ -3778,20 +4131,28 @@ async function submitManualArticle() {
         statusEl.style.color = '#f87171';
         statusEl.style.borderColor = 'rgba(248,113,113,0.3)';
         statusEl.style.background = 'rgba(248,113,113,0.08)';
-        statusEl.innerHTML = `❌ خطأ: ${e.message}`;
+        statusEl.innerHTML = `❌ خطأ في المعالجة: ${e.message}`;
         showToast('❌ فشل إرسال الخبر: ' + e.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>🚀</span> إرسال للمعالجة';
+        btn.innerHTML = '<span>🚀</span> إنشاء وتوليد الكاروسيل والمحتوى';
     }
 }
 
 function clearManualForm() {
-    ['manual-title','manual-content','manual-category','manual-image','manual-url'].forEach(id => {
+    _manualSlides = [
+        { heading: '', body: '' },
+        { heading: '', body: '' },
+        { heading: '', body: '' }
+    ];
+    _manualCurrentSlideIdx = 0;
+    ['manual-carousel-title', 'manual-slide-heading', 'manual-slide-body', 'manual-quick-title', 'manual-quick-content', 'manual-category', 'manual-image'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    document.getElementById('manual-status').style.display = 'none';
+    const statusEl = document.getElementById('manual-status');
+    if (statusEl) statusEl.style.display = 'none';
+    initManualCarouselStudio();
 }
 
 
@@ -4765,3 +5126,16 @@ window.closeVideoTemplatePickerModal = closeVideoTemplatePickerModal;
 window.confirmVideoRenderWithTemplate = confirmVideoRenderWithTemplate;
 window.executeVideoRender = executeVideoRender;
 window.renderVideoSlideshow = renderVideoSlideshow;
+window.setManualMode = setManualMode;
+window.initManualCarouselStudio = initManualCarouselStudio;
+window.renderManualSlidesDeck = renderManualSlidesDeck;
+window.selectManualSlide = selectManualSlide;
+window.addNewManualSlide = addNewManualSlide;
+window.duplicateCurrentManualSlide = duplicateCurrentManualSlide;
+window.deleteCurrentManualSlide = deleteCurrentManualSlide;
+window.updateManualCurrentSlide = updateManualCurrentSlide;
+window.prevManualSlide = prevManualSlide;
+window.nextManualSlide = nextManualSlide;
+window.updateManualSlidePreview = updateManualSlidePreview;
+window.submitManualArticle = submitManualArticle;
+window.clearManualForm = clearManualForm;
