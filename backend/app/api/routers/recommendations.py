@@ -81,17 +81,20 @@ async def get_recommendations(db: Session = Depends(get_db)):
     - Smart alerts
     - Suggested articles for re-publishing
     """
-    # Use naive UTC to be fully compatible with PostgreSQL & SQLite naive timestamp columns
+    # Use timezone-aware UTC datetimes — compatible with both PostgreSQL (tz-aware) and SQLite (naive, auto-cast)
+    now_tz = datetime.now(timezone.utc)
+    last_30d = now_tz - timedelta(days=30)
+    last_7d = now_tz - timedelta(days=7)
+    last_24h = now_tz - timedelta(hours=24)
+    last_48h = now_tz - timedelta(hours=48)
+    last_12h = now_tz - timedelta(hours=12)
+    # Keep naive aliases for legacy code that may use them
     now_naive = datetime.utcnow()
-    last_30d = now_naive - timedelta(days=30)
-    last_7d = now_naive - timedelta(days=7)
-    last_24h = now_naive - timedelta(hours=24)
-    last_48h = now_naive - timedelta(hours=48)
-    last_12h = now_naive - timedelta(hours=12)
 
     source_scores = []
     platform_list = []
     best_time_rec = None
+    all_published = []
     hours_dist = [{"hour": h, "count": 0} for h in range(24)]
     days_dist = [{"day": DAY_AR[d], "count": 0} for d in range(7)]
     alerts = []

@@ -2106,6 +2106,7 @@ function renderPreview(platformId, gen, item) {
     // ── REEL: show video player or slide cards ──────────────────────────────
     if (type === 'REEL') {
         const slides = (gen.slides && Array.isArray(gen.slides)) ? gen.slides : [];
+        const totalSlides = slides.length + 2; // +2 for opening & closing ministry ident slides
         const ministryBadgeHtml = `
             <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.95);padding:3px 10px;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
                 <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:16px;width:auto;object-fit:contain;" alt="شعار">
@@ -2129,29 +2130,51 @@ function renderPreview(platformId, gen, item) {
                     const renderingBanner = (statusData.status === 'rendering')
                         ? `<div style="background:rgba(255,92,0,0.12);border:1px solid rgba(255,92,0,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#FF5C00;text-align:right;">⏳ جاري إنشاء الفيديو... يمكنك مراجعة الشرائح</div>` : '';
                     const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-                    const slideCards = slides.map((s, i) => `
+
+                    // Ministry ident card (opening and closing)
+                    const ministryIdentCard = `
+                        <div style="background:linear-gradient(135deg,#140f03,#2a1f06);border-radius:12px;padding:14px 18px;border:2px solid rgba(212,175,55,0.5);direction:rtl;position:relative;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                <div style="font-size:10px;color:#FFB700;font-weight:800;letter-spacing:1px;">🦅 شريحة هوية الوزارة</div>
+                                <div style="font-size:9px;color:rgba(212,175,55,0.7);">شاشة كاملة · لوجو + نص رسمي</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:36px;width:auto;object-fit:contain;background:rgba(255,255,255,0.95);padding:4px;border-radius:6px;" alt="شعار">
+                                <div>
+                                    <div style="font-size:14px;font-weight:800;color:#FFB700;">وزارة تمكين المجتمع</div>
+                                    <div style="font-size:10px;color:rgba(255,183,0,0.7);letter-spacing:1px;">MINISTRY OF COMMUNITY EMPOWERMENT</div>
+                                </div>
+                            </div>
+                        </div>`;
+
+                    const slideCards = [
+                        // Opening ident
+                        ministryIdentCard,
+                        // Content slides
+                        ...slides.map((s, i) => `
                         <div style="background:#111;border-radius:12px;padding:14px 18px;border:1px solid #2a2a2a;direction:rtl;position:relative;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                                 <div style="font-size:10px;color:#FF5C00;font-weight:800;letter-spacing:1px;">الشريحة ${i + 1}</div>
-                                <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.9);padding:2px 7px;border-radius:8px;">
-                                    <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:12px;width:auto;" alt="شعار">
-                                    <span style="font-size:8px;font-weight:800;color:#111;">تمكين المجتمع</span>
-                                </div>
+                                <div style="font-size:9px;color:#555;">${i === 0 ? '🎬 Hook' : (i === slides.length - 1 ? '📣 CTA' : `نقطة ${i}`)}</div>
                             </div>
                             <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.4;">${esc(s.text)}</div>
                             ${s.note ? `<div style="font-size:12px;color:#888;margin-top:6px;border-top:1px solid #222;padding-top:6px;">${esc(s.note)}</div>` : ''}
-                        </div>`).join('');
+                        </div>`),
+                        // Closing ident
+                        ministryIdentCard,
+                    ].join('');
+
                     area.innerHTML = `
                     <div style="max-width:460px;margin:0 auto;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                            <div style="font-size:12px;color:#FF5C00;font-weight:700;">🎬 ريلز — ${slides.length} شريحة</div>
+                            <div style="font-size:12px;color:#FF5C00;font-weight:700;">🎬 ريلز — ${slides.length + 2} شريحة (شاملة شرائح الوزارة)</div>
                             ${ministryBadgeHtml}
                         </div>
                         ${renderingBanner}
                         <div style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;padding-right:4px;">
                             ${slideCards || '<div style="color:var(--muted);text-align:center;padding:20px;">لا توجد شرائح</div>'}
                         </div>
-                        <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;">وزارة تمكين المجتمع · @zayedtech · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو</div>
+                        <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;">🦅 شريحة افتتاحية + ${slides.length} شريحة محتوى + شريحة ختامية · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو</div>
                     </div>`;
                 }
             })

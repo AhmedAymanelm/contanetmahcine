@@ -163,6 +163,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     is_cover  = slide.get("is_cover", False)
     is_outro  = slide.get("is_outro", False)
     is_cta    = slide.get("is_cta", False)
+    is_ministry_ident = slide.get("is_ministry_ident", False)
     image_url = slide.get("image_url", "")
     show_ministry_logo = slide.get("show_ministry_logo", True)
     ministry_logo = _get_ministry_logo_b64() if show_ministry_logo else ""
@@ -197,8 +198,10 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     ]
     pi = (current - 1) % len(palette)
     slide_accent, slide_accent_light, bg_tint = palette[pi]
-    # Cover always uses orange, outro uses purple
-    if is_cover:
+    # Cover always uses orange, outro uses purple, ministry ident uses luxury gold
+    if is_ministry_ident:
+        slide_accent, slide_accent_light, bg_tint = ("#FFB700", "#FFD700", "#140f03")
+    elif is_cover:
         slide_accent, slide_accent_light, bg_tint = palette[0]
     elif is_outro:
         slide_accent, slide_accent_light, bg_tint = palette[1]
@@ -256,19 +259,80 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         + dots + '</div>'
     )
 
+    # ── DEDICATED MINISTRY EMBLEM IDENT SLIDE (Full Screen Center Stage) ──
+    if is_ministry_ident:
+        ident_logo = ministry_logo or _get_ministry_logo_b64()
+
+        # Grand scale and bloom entrance
+        ident_scale = round(0.80 + 0.22 * ent_ease, 3)
+        aura_scale  = round(0.70 + 0.35 * ent_ease, 3)
+        ident_glow  = round(0.25 + 0.50 * ent_ease, 2)
+
+        ident_content = (
+            '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
+            'justify-content:center;align-items:center;padding:80px 60px;z-index:30;">'
+
+            # Header National Pill
+            '<div style="transform:translateY(' + str(h_y) + 'px) scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';'
+            'display:inline-flex;align-items:center;gap:14px;padding:12px 36px;border-radius:100px;'
+            'background:rgba(212,175,55,0.12);border:1.5px solid rgba(212,175,55,0.45);'
+            'box-shadow:0 0 35px rgba(212,175,55,0.25);margin-bottom:50px;">'
+            '<span style="font-size:24px;">🇦🇪</span>'
+            '<span style="font-size:24px;font-weight:900;color:#FFB700;letter-spacing:3px;">دولة الإمارات العربية المتحدة</span>'
+            '</div>'
+
+            # Ambient Pulsing Aura behind logo
+            '<div style="position:absolute;width:900px;height:900px;border-radius:50%;'
+            'background:radial-gradient(circle,rgba(212,175,55,' + str(ident_glow) + ') 0%,rgba(255,92,0,0.12) 40%,transparent 70%);'
+            'transform:scale(' + str(aura_scale) + ');pointer-events:none;z-index:-1;"></div>'
+
+            # Concentric Luxury Rings
+            '<div style="position:absolute;width:740px;height:740px;border-radius:50%;'
+            'border:2px solid rgba(212,175,55,0.22);box-shadow:0 0 50px rgba(212,175,55,0.15);'
+            'transform:scale(' + str(h_scale) + ');pointer-events:none;z-index:-1;"></div>'
+            '<div style="position:absolute;width:650px;height:650px;border-radius:50%;'
+            'border:1.5px dashed rgba(212,175,55,0.35);'
+            'transform:scale(' + str(h_scale) + ');pointer-events:none;z-index:-1;"></div>'
+
+            # THE MAIN FULL EMBLEM CARD (Center of the screen)
+            '<div style="transform:scale(' + str(ident_scale) + ');opacity:' + str(h_op) + ';'
+            'background:rgba(255,255,255,0.97);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);'
+            'padding:50px 60px;border-radius:44px;'
+            'box-shadow:0 30px 90px rgba(0,0,0,0.8), 0 0 70px rgba(212,175,55,0.4);'
+            'border:3px solid rgba(212,175,55,0.55);display:flex;align-items:center;justify-content:center;'
+            'max-width:680px;width:100%;box-sizing:border-box;">'
+            '<img src="' + ident_logo + '" style="width:540px;height:auto;max-height:500px;object-fit:contain;'
+            'filter:drop-shadow(0 6px 24px rgba(0,0,0,0.22));" alt="وزارة تمكين المجتمع" />'
+            '</div>'
+
+            # Elegant Typography Subtitle below
+            '<div style="transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';'
+            'margin-top:50px;text-align:center;">'
+            '<div style="font-size:38px;font-weight:900;color:#ffffff;letter-spacing:1.5px;'
+            'text-shadow:0 4px 25px rgba(0,0,0,0.9);line-height:1.3;">'
+            + (headline or "وزارة تمكين المجتمع") + '</div>'
+            '<div style="font-size:19px;font-weight:700;color:rgba(255,183,0,0.9);letter-spacing:3px;'
+            'margin-top:10px;direction:ltr;">' + (detail or "MINISTRY OF COMMUNITY EMPOWERMENT") + '</div>'
+            '<div style="width:160px;height:4px;margin:24px auto 0;'
+            'background:linear-gradient(90deg,transparent,#FFB700,#FF5C00,transparent);border-radius:2px;"></div>'
+            '</div>'
+
+            '</div>'
+        )
+
+        return (
+            "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
+            + cairo_css + css_base + "</style></head><body>"
+            + bg_layers + top_bar + dot_bar + ident_content
+            # Footer
+            + '<div style="position:absolute;bottom:70px;left:0;right:0;text-align:center;">'
+            '<span style="font-size:22px;color:rgba(255,255,255,0.35);letter-spacing:3px;font-weight:600;">'
+            'محتوى رسمي معتمد · دولة الإمارات العربية المتحدة</span></div>'
+            + "</body></html>"
+        )
+
     # ── OUTRO ─────────────────────────────────────────────────────────────
-    if is_outro:
-        ministry_outro_badge = ""
-        if ministry_logo:
-            ministry_outro_badge = (
-                '<div style="position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center;z-index:60;'
-                'transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
-                '<div style="background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);'
-                'padding:8px 24px;border-radius:20px;box-shadow:0 8px 28px rgba(0,0,0,0.35);'
-                'display:flex;align-items:center;justify-content:center;">'
-                '<img src="' + ministry_logo + '" style="height:55px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
-                '</div></div>'
-            )
+    elif is_outro:
         overlay = ""
         if image_url:
             overlay = (
@@ -299,23 +363,12 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
-            + bg_layers + top_bar + dot_bar + ministry_outro_badge + overlay + content
+            + bg_layers + top_bar + dot_bar + overlay + content
             + "</body></html>"
         )
 
     # ── COVER ─────────────────────────────────────────────────────────────
     elif is_cover:
-        ministry_cover_badge = ""
-        if ministry_logo:
-            ministry_cover_badge = (
-                '<div style="position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center;align-items:center;'
-                'z-index:60;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
-                '<div style="background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);'
-                'padding:10px 28px;border-radius:24px;box-shadow:0 12px 35px rgba(0,0,0,0.45);'
-                'display:flex;align-items:center;justify-content:center;">'
-                '<img src="' + ministry_logo + '" style="height:68px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
-                '</div></div>'
-            )
         content = (
             '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
             'justify-content:center;align-items:center;padding:100px 80px;">'
@@ -342,7 +395,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
-            + bg_layers + top_bar + dot_bar + ministry_cover_badge + content
+            + bg_layers + top_bar + dot_bar + content
             # Footer brand
             + '<div style="position:absolute;bottom:80px;left:80px;right:80px;text-align:center;">'
             '<span style="font-size:24px;color:rgba(255,255,255,0.3);letter-spacing:4px;">'
@@ -352,17 +405,6 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
 
     # ── CTA SLIDE (last slide with author avatar) ─────────────────────────
     elif is_cta:
-        ministry_cta_badge = ""
-        if ministry_logo:
-            ministry_cta_badge = (
-                '<div style="position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center;z-index:60;'
-                'transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
-                '<div style="background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);'
-                'padding:8px 24px;border-radius:20px;box-shadow:0 8px 28px rgba(0,0,0,0.35);'
-                'display:flex;align-items:center;justify-content:center;">'
-                '<img src="' + ministry_logo + '" style="height:55px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
-                '</div></div>'
-            )
         author_img = _get_author_img_b64()
         avatar_html = ""
         if author_img:
@@ -432,21 +474,11 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
-            + bg_layers + top_bar + dot_bar + ministry_cta_badge + content
+            + bg_layers + top_bar + dot_bar + content
             + "</body></html>"
         )
 
     # ── NORMAL SLIDE ──────────────────────────────────────────────────────
-    ministry_normal_badge = ""
-    if ministry_logo:
-        ministry_normal_badge = (
-            '<div style="position:absolute;top:95px;right:75px;z-index:60;'
-            'display:flex;align-items:center;gap:10px;'
-            'background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);'
-            'padding:6px 18px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,0.35);">'
-            '<img src="' + ministry_logo + '" style="height:44px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
-            '</div>'
-        )
 
     # Font size — adaptive to text length (shorter = bigger = better)
     text_len = len(headline)
@@ -531,7 +563,6 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         + bg_layers
         + top_bar
         + dot_bar
-        + ministry_normal_badge
         + accent_line
         + num_label
         # Main content — centered
@@ -810,6 +841,19 @@ def content_item_to_slides(
 
     elif content_type == "REEL":
         raw_slides = generated_content.get("slides", []) if isinstance(generated_content, dict) else []
+
+        # ── Opening Ministry Ident Slide ──────────────────────────────────
+        opening_ident = base({
+            "is_ministry_ident": True,
+            "is_cover": False,
+            "category": "دولة الإمارات العربية المتحدة",
+            "headline": "وزارة تمكين المجتمع",
+            "detail": "MINISTRY OF COMMUNITY EMPOWERMENT",
+            "label": "",
+            "show_ministry_logo": True,
+        })
+        slides.append(opening_ident)
+
         for i, s in enumerate(raw_slides):
             if isinstance(s, dict):
                 text = s.get("text") or s.get("heading") or s.get("title") or ""
@@ -831,6 +875,18 @@ def content_item_to_slides(
                 "detail": str(note)[:80] if note else "",
                 "bars": _extract_bars_from_text(str(text) + " " + str(note)) if (note and not is_last) else [],
             }))
+
+        # ── Closing Ministry Ident Slide ─────────────────────────────────
+        closing_ident = base({
+            "is_ministry_ident": True,
+            "is_cover": False,
+            "category": "دولة الإمارات العربية المتحدة",
+            "headline": "وزارة تمكين المجتمع",
+            "detail": "MINISTRY OF COMMUNITY EMPOWERMENT",
+            "label": "",
+            "show_ministry_logo": True,
+        })
+        slides.append(closing_ident)
 
     if not slides:
         slides = [base({"category": "محتوى", "label": "", "headline": "لا يوجد محتوى", "detail": ""})]
