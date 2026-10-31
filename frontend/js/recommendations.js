@@ -31,7 +31,14 @@ async function loadRecs() {
 }
 
 function renderRecs(data) {
-  const { alerts, platform_strategy, best_posting_time, hours_dist, days_dist, source_scores, suggested_articles } = data;
+  if (!data) return;
+  const alerts = data.alerts || [];
+  const platform_strategy = data.platform_strategy || [];
+  const best_posting_time = data.best_posting_time || null;
+  const hours_dist = data.hours_dist || [];
+  const days_dist = data.days_dist || [];
+  const source_scores = data.source_scores || [];
+  const suggested_articles = data.suggested_articles || [];
 
   // ── Smart Alerts ──────────────────────────────────────────────────────
   const alertColors = { warning:'rgba(245,158,11,.12)', danger:'rgba(239,68,68,.12)', info:'rgba(99,102,241,.1)' };
