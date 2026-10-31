@@ -60,6 +60,7 @@ const PAGE_LOADERS = {
     'page-ai-usage':        () => { if (typeof loadAiUsage === 'function') loadAiUsage(); },
     'page-visual-designer': () => { if (typeof loadVisualTemplates === 'function') loadVisualTemplates(); },
     'page-manual':          () => { if (typeof initManualCarouselStudio === 'function') initManualCarouselStudio(); },
+    'page-setup-guide':     () => { if (typeof initSetupGuide === 'function') initSetupGuide(); },
 };
 
 // ── Navigate to a page ────────────────────────────────────────────────────

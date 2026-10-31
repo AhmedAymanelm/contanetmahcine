@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
+import httpx
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
 from app.services.social.linkedin_service import LinkedInService
@@ -68,6 +69,105 @@ async def publish_reel_to_instagram(
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result)
     return result
+
+
+class TestTokenRequest(BaseModel):
+    platform: str
+    access_token: str
+    account_id: Optional[str] = None
+
+
+@router.post("/test-token")
+async def test_social_token(req: TestTokenRequest):
+    """
+    Live test a token against Meta Graph API and return account metadata without saving.
+    """
+    token = req.access_token.strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="يرجى إدخال التوكن للاختبار")
+
+    platform = req.platform.lower()
+
+    if platform in ("instagram", "facebook"):
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            try:
+                # 1. Test /me
+                me_res = await client.get(
+                    "https://graph.facebook.com/v21.0/me",
+                    params={"fields": "id,name,instagram_business_account", "access_token": token}
+                )
+                me_data = me_res.json()
+                if me_res.status_code != 200:
+                    err = me_data.get("error", {})
+                    code = err.get("code", 0)
+                    msg = err.get("message", "فشل التحقق من التوكن")
+                    hint = "تأكد من نسخ التوكن كاملاً واختيار الصلاحيات المطلوبة."
+                    if code == 190:
+                        hint = "التوكن منتهي الصلاحية أو غير صالح — ولّد توكن جديد من Meta Graph API Explorer."
+                    elif code == 10:
+                        hint = "صلاحيات التطبيق غير كافية — تأكد من تفعيل صلاحيات instagram_business_basic و pages_read_engagement."
+                    return {
+                        "valid": False,
+                        "error_code": code,
+                        "message": msg,
+                        "hint": hint,
+                        "raw_error": err
+                    }
+
+                user_or_page_name = me_data.get("name", "")
+                me_id = me_data.get("id", "")
+
+                # 2. Query /me/accounts for pages
+                pages_res = await client.get(
+                    "https://graph.facebook.com/v21.0/me/accounts",
+                    params={"fields": "id,name,instagram_business_account", "access_token": token}
+                )
+                pages = []
+                auto_ig_id = None
+                if pages_res.status_code == 200:
+                    for p in pages_res.json().get("data", []):
+                        ig = p.get("instagram_business_account")
+                        pages.append({
+                            "id": p.get("id"),
+                            "name": p.get("name"),
+                            "has_instagram": bool(ig),
+                            "instagram_id": ig.get("id") if ig else None
+                        })
+                        if ig and not auto_ig_id:
+                            auto_ig_id = str(ig.get("id"))
+
+                # Also check if /me itself had instagram_business_account
+                if not auto_ig_id and me_data.get("instagram_business_account"):
+                    auto_ig_id = str(me_data["instagram_business_account"].get("id"))
+
+                target_ig_id = req.account_id or auto_ig_id
+                ig_account_details = None
+
+                if target_ig_id:
+                    ig_res = await client.get(
+                        f"https://graph.facebook.com/v21.0/{target_ig_id}",
+                        params={
+                            "fields": "id,username,name,biography,followers_count,media_count",
+                            "access_token": token
+                        }
+                    )
+                    if ig_res.status_code == 200:
+                        ig_account_details = ig_res.json()
+
+                return {
+                    "valid": True,
+                    "platform": platform,
+                    "name": user_or_page_name,
+                    "id": me_id,
+                    "pages": pages,
+                    "pages_count": len(pages),
+                    "discovered_instagram_id": target_ig_id,
+                    "instagram_details": ig_account_details
+                }
+            except Exception as e:
+                return {"valid": False, "message": f"حدث خطأ أثناء فحص التوكن: {str(e)}"}
+
+    return {"valid": False, "message": f"فحص التوكن المباشر غير مدعوم لهذه المنصة حالياً: {platform}"}
 
 
 @router.post("/instagram/publish")
