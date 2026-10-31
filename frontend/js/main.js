@@ -2444,17 +2444,25 @@ document.getElementById('btn-approve-direct').onclick = async function() {
     try {
         const selectedPlatforms = Array.from(document.querySelectorAll('.approve-platform-cb:checked')).map(cb => cb.value);
         
+        const token = localStorage.getItem('cm_token') || localStorage.getItem('access_token') || '';
         const res = await fetch(`${API_BASE}/content/${id}/approve`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": "Bearer " + token } : {})
+            },
             body: JSON.stringify({ platforms: selectedPlatforms })
         });
         if (res.ok) {
-            btn.closest('.panel').style.opacity = '0.4';
+            const card = document.getElementById('review-card-' + id);
+            if (card) {
+                card.style.opacity = '0.4';
+                card.style.pointerEvents = 'none';
+            }
             closeApproveModal();
             showToast("تم اعتماد المحتوى بنجاح", "success");
             fetchScheduledContent();
-            setTimeout(fetchReviewContent, 1000);
+            setTimeout(fetchReviewContent, 800);
             fetchDashboardStats();
             fetchAllContent();
         } else {
@@ -2465,6 +2473,7 @@ document.getElementById('btn-approve-direct').onclick = async function() {
             btn.disabled = false;
         }
     } catch (err) {
+        console.error("Error approving content:", err);
         showToast("خطأ اتصال", "error");
         btn.innerText = orig;
         btn.disabled = false;
@@ -2531,6 +2540,12 @@ document.getElementById('btn-schedule-confirm').onclick = async function() {
     }
 };
 
+// ── Auth Helper ──
+function authHeaders() {
+    const token = localStorage.getItem('cm_token') || localStorage.getItem('access_token') || '';
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 // ── Stuck Article Helpers ──
 async function retryStuckArticle(articleId) {
     try {
@@ -2569,27 +2584,42 @@ async function cancelStuckArticle(articleId) {
 }
 
 async function rejectContentItem(id, btn) {
-
-    const orig = btn.innerText;
-    btn.innerText = 'جاري...';
-    btn.disabled = true;
+    const orig = btn ? btn.innerText : 'رفض';
+    if (btn) {
+        btn.innerText = 'جاري...';
+        btn.disabled = true;
+    }
     try {
-        const res = await fetch(`${API_BASE}/content/${id}/reject`, { method: "POST" });
+        const res = await fetch(`${API_BASE}/content/${id}/reject`, {
+            method: "POST",
+            headers: { ...authHeaders() }
+        });
         if (res.ok) {
-            btn.closest('.panel').style.opacity = '0.4';
-            showToast("تم رفض المحتوى وإلغاؤه", "error"); // Red toast
-            setTimeout(fetchReviewContent, 1000);
+            const card = document.getElementById('review-card-' + id) || (btn && btn.closest ? btn.closest('[id^="review-card-"]') : null);
+            if (card) {
+                card.style.opacity = '0.35';
+                card.style.pointerEvents = 'none';
+            }
+            showToast("تم رفض المحتوى بنجاح", "error");
+            setTimeout(fetchReviewContent, 800);
             fetchDashboardStats();
             fetchAllContent();
         } else {
-            showToast("حدث خطأ", "error");
+            const errData = await res.json().catch(() => ({}));
+            const msg = errData.detail || "حدث خطأ أثناء رفض المحتوى";
+            showToast("❌ " + msg, "error");
+            if (btn) {
+                btn.innerText = orig;
+                btn.disabled = false;
+            }
+        }
+    } catch (err) {
+        console.error("Error rejecting content item:", err);
+        showToast("خطأ في الاتصال بالخادم", "error");
+        if (btn) {
             btn.innerText = orig;
             btn.disabled = false;
         }
-    } catch (err) {
-        showToast("خطأ اتصال", "error");
-        btn.innerText = orig;
-        btn.disabled = false;
     }
 }
 
