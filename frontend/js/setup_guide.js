@@ -25,33 +25,35 @@ const GUIDE_PLATFORMS = {
         steps: [
             {
                 num: 1,
-                title: "الدخول إلى Meta Graph API Explorer",
-                desc: "اذهب إلى أداة مطوري Meta الرسمية. في الزاوية العلوية اليمنى، تأكد من اختيار <b>Meta App</b> الخاص بك.",
-                tip: "إذا لم يكن لديك تطبيق، اضغط 'Create App' واختر نوع 'Business'."
+                title: "الدخول إلى شاشة إعداد Instagram API (Use Cases)",
+                desc: "في لوحة تحكم تطبيقك في Meta for Developers، ادخل على <b>Use Cases (حالات الاستخدام)</b> ثم اختر <b>Instagram Business</b> واضغط على <b>تخصيص / إعداد API</b>.",
+                tip: "هذه هي الشاشة الرسمية المباشرة المخصصة لربط حسابات إنستغرام للأعمال."
             },
             {
                 num: 2,
-                title: "إضافة الصلاحيات (User Token Scopes)",
-                desc: "في القائمة الجانبية (User or Page Token)، اضغط <b>Add a Permission</b> وأضف الصلاحيات الأربع المذكورة أدناه.",
-                hasCopyScopes: true
+                title: "معرفة معرّف الحساب (INSTAGRAM_ACCOUNT_ID)",
+                desc: "في قسم <b>'2. إنشاء رموز الوصول'</b>، ستجد اسم حسابك مضافاً، وتحته مباشرة يظهر المعرّف الرقمي الخاص بك (مثل: <code>17841449075989311</code>). انسخ هذا الرقم لاستخدامه كـ <b>INSTAGRAM_ACCOUNT_ID</b>.",
+                tip: "إذا لم يكن الحساب ظاهراً، اضغط زر 'إضافة حساب' وأدخل يوزر الإنستغرام لقبول الدعوة."
             },
             {
                 num: 3,
-                title: "توليد التوكن واختيار الصفحة (Page Token)",
-                desc: "اضغط <b>Generate Access Token</b> ووافق على ربط حسابك وصفحتك. بعد ذلك، في خانة <b>User or Page</b>، اختر <b>صفحة الفيسبوك</b> المربوطة بإنستغرام، أو اتركها على الـ User Token.",
-                tip: "توكن الصفحة المستخرج يتميز بأنه دائم (Never Expires) عند تحويله إلى Long-Lived Token!"
+                title: "توليد التوكن (Generate Access Token)",
+                desc: "بجانب اسم حسابك في نفس الجدول، اضغط على الرابط الأزرق <b>'إنشاء رمز'</b>. ستفتح لك نافذة تأكيد الصلاحيات من Meta، وبعد الموافقة سيظهر لك الرمز لنسخه مباشرة."
             },
             {
                 num: 4,
-                title: "تمديد التوكن إلى Long-Lived Token (اختياري ولكنه موصى به)",
-                desc: "للحصول على توكن لا ينتهي أو يمتد لـ 60 يوماً، اطلب الرابط التالي مع استبدال بيانات تطبيقك:",
-                codeSnippet: "GET https://graph.facebook.com/v21.0/oauth/access_token?\n  grant_type=fb_exchange_token&\n  client_id={YOUR_APP_ID}&\n  client_secret={YOUR_APP_SECRET}&\n  fb_exchange_token={SHORT_LIVED_TOKEN}"
+                title: "كيفية جعل التوكن ممتداً (Long-Lived Token لمدة 60 يوماً)",
+                desc: "التوكن المبدئي ينتهي بعد ساعة إلى ساعتين. لجعله صالحاً لمدة <b>60 يوماً</b> بدون توقف:<br>" +
+                      "1. افتح أداة Meta الرسمية: <a href='https://developers.facebook.com/tools/debug/accesstoken/' target='_blank' style='color:#38bdf8;font-weight:700;'>Access Token Debugger ↗</a><br>" +
+                      "2. الصق التوكن واضغط <b>تصحيح الأخطاء (Debug)</b>.<br>" +
+                      "3. انزل لأسفل الصفحة واضغط الزر الأزرق: <b>Extend Access Token (توسيع رمز الوصول)</b>.<br>" +
+                      "4. سينتج لك توكن ممتد يظهر تحته <i>Expires: 60 days</i>. هذا هو التوكن المعتمد للنظام!",
+                tip: "يمكن أيضاً استخدام Page Access Token المستخرج من صفحة فيسبوك المربوطة ليكون التوكن 'Never Expires' (دائماً مدى الحياة)!"
             },
             {
                 num: 5,
-                title: "معرفة معرّف الحساب (INSTAGRAM_ACCOUNT_ID)",
-                desc: "نظامنا يكتشف المعرّف <b>تلقائياً</b> بمجرد إدخال التوكن! ولكن إذا أردت استخراجه يدوياً، اكتب في الـ Explorer:",
-                codeSnippet: "GET me/accounts?fields=id,name,instagram_business_account"
+                title: "تأكيد صلاحية النشر التلقائي (Content Publish)",
+                desc: "لتتمكن أداة Content Machine من نشر الريلز والبوستات تلقائياً، تأكد من تفعيل صلاحية <code>instagram_business_content_publish</code> عبر الضغط على <b>Add all required permissions</b> في المربع رقم (1) أو من تبويب الصلاحيات."
             }
         ],
         faq: [
@@ -60,8 +62,8 @@ const GUIDE_PLATFORMS = {
                 a: "تأكد من أن حساب إنستغرام محول إلى حساب احترافي (Professional/Business) وليس شخصياً (Personal)، وأنه مربوط بصفحة فيسبوك تملك فيها صلاحية الإدارة (Admin)."
             },
             {
-                q: "كم مدة صلاحية التوكن؟",
-                a: "توكن الـ Explorer الافتراضي ينتهي بعد ساعة إلى ساعتين. لذلك يجب استخدام Long-Lived Token (الخطوة 4) أو استخدام Page Access Token الذي لا ينتهي."
+                q: "كم مدة صلاحية التوكن وكيف أجعله ممتداً؟",
+                a: "التوكن الابتدائي ينتهي بعد 60 إلى 120 دقيقة. لتوسيعه إلى 60 يوماً، افتح أداة Access Token Debugger في الخطوة رقم (4) واضغط زر 'Extend Access Token'، أو استخدم توكن صفحة الفيسبوك المربوطة ليكون دائماً مدى الحياة (Never Expires)."
             }
         ]
     },
