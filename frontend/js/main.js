@@ -3002,7 +3002,11 @@ async function fetchPlatformStatus() {
         if (res.ok) {
             const data = await res.json();
             instaConnected = data.connected;
-            instaDesc = instaConnected ? `حساب أعمال مربوط (@${data.username || data.instagram_account_id})` : 'فشل الاتصال';
+            if (instaConnected) {
+                instaDesc = `@${data.username || data.instagram_account_id} · ${data.followers ? data.followers.toLocaleString() + ' متابع' : 'حساب أعمال'}`;
+            } else {
+                instaDesc = data.error || 'فشل الاتصال — تحقق من التوكن والـ Account ID';
+            }
         }
     } catch (e) {
         console.error("Failed to fetch Instagram status", e);

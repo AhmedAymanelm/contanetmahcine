@@ -110,14 +110,33 @@ function openApiModal(platformKey, keysJsonEncoded) {
             <input type="text" id="input_${k}" placeholder="${v ? v : 'أدخل المفتاح هنا...'}" style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.2); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:monospace; font-size:0.85rem;" autocomplete="off">
         </div>`;
     }
+
+    // Add Instagram-specific help guide
+    const instagramHelp = platformKey === 'instagram' ? `
+        <div style="background:rgba(225,29,72,0.08);border:1px solid rgba(225,29,72,0.25);border-radius:10px;padding:14px;margin-bottom:16px;font-size:0.82rem;line-height:1.7;color:#f9a8d4;">
+            <div style="font-weight:800;font-size:0.88rem;margin-bottom:8px;color:#fb7185;">📋 كيفية الحصول على بيانات Instagram Business</div>
+            <b>1. INSTAGRAM_ACCESS_TOKEN</b> — Long-Lived Page Access Token:<br>
+            → اذهب إلى <a href="https://developers.facebook.com/tools/explorer/" target="_blank" style="color:#fb7185;">Graph API Explorer</a><br>
+            → اختر تطبيقك → Generate Access Token<br>
+            → ضمّن الصلاحيات: <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;">instagram_business_basic, instagram_business_content_publish, pages_read_engagement, pages_show_list</code><br>
+            → حوّله لـ Long-Lived Token عبر: <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;">GET /oauth/access_token?grant_type=fb_exchange_token</code><br><br>
+            <b>2. INSTAGRAM_ACCOUNT_ID</b> — Instagram Business Account ID:<br>
+            → بعد الحصول على التوكن، اتصفح:<br>
+            <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;font-size:0.78rem;">GET /me/accounts?access_token=TOKEN</code><br>
+            → من الـ response، خذ الـ <b>id</b> بتاع الصفحة<br>
+            → ثم: <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;font-size:0.78rem;">GET /{page-id}?fields=instagram_business_account&access_token=TOKEN</code><br>
+            → الـ <b>instagram_business_account.id</b> هو اللي تحطه هنا
+        </div>` : '';
     
     modal.innerHTML = `
-    <div style="background:var(--panel); width:90%; max-width:500px; border-radius:16px; border:1px solid var(--line); padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.4); transform:scale(0.95); transition:transform 0.2s;" id="api-modal-content">
+    <div style="background:var(--panel); width:90%; max-width:540px; max-height:90vh; overflow-y:auto; border-radius:16px; border:1px solid var(--line); padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.4); transform:scale(0.95); transition:transform 0.2s;" id="api-modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h3 style="margin:0;">إعدادات ${meta.title}</h3>
             <button onclick="closeApiModal()" style="background:none; border:none; color:var(--muted); font-size:1.5rem; cursor:pointer;">×</button>
         </div>
         
+        ${instagramHelp || ''}
+
         <div style="margin-bottom:24px;">
             ${inputsHtml}
             <p style="font-size:0.75rem; color:var(--muted); margin-top:8px;">ملاحظة: لترك المفتاح القديم كما هو، اترك الخانة فارغة.</p>

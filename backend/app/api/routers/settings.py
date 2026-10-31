@@ -64,6 +64,18 @@ async def get_platforms(db: Session = Depends(get_db)):
             "FACEBOOK_PAGE_ID": settings.FACEBOOK_PAGE_ID
         }
     }
+
+    # Instagram auto-discovery if token present but account_id missing
+    if settings.INSTAGRAM_ACCESS_TOKEN and not settings.INSTAGRAM_ACCOUNT_ID:
+        try:
+            from app.services.social.instagram import InstagramService
+            svc = InstagramService()
+            discovered = await svc._auto_discover_and_save_account_id()
+            if discovered:
+                _update_setting(db, "INSTAGRAM_ACCOUNT_ID", discovered)
+        except Exception:
+            pass
+
     instagram = {
         "connected": bool(settings.INSTAGRAM_ACCESS_TOKEN and settings.INSTAGRAM_ACCOUNT_ID),
         "paused": settings.INSTAGRAM_PAUSED,
@@ -130,6 +142,18 @@ async def save_platform_keys(platform: str, keys: Dict[str, str], db: Session = 
         # Only update if a value is provided and not masked
         if value and not value.startswith("*") and not value.endswith("*"):
             _update_setting(db, key, value)
+
+    # Auto-discover Instagram Account ID if only token was provided
+    if platform == "instagram" and settings.INSTAGRAM_ACCESS_TOKEN and not settings.INSTAGRAM_ACCOUNT_ID:
+        try:
+            from app.services.social.instagram import InstagramService
+            svc = InstagramService()
+            discovered = await svc._auto_discover_and_save_account_id()
+            if discovered:
+                _update_setting(db, "INSTAGRAM_ACCOUNT_ID", discovered)
+        except Exception:
+            pass
+
     return {"message": "Keys updated successfully"}
 
 @router.delete("/platforms/{platform}")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from app.services.social.instagram import InstagramService
 from app.services.social.facebook import FacebookService
 from app.services.social.linkedin_service import LinkedInService
@@ -39,9 +39,36 @@ async def get_linkedin_status(db: Session = Depends(get_db)):
 @router.get("/instagram/status")
 async def get_instagram_status(service: InstagramService = Depends(get_instagram_service)):
     """
-    Check the connectivity status of the configured Instagram account.
+    Check the connectivity status of the configured Instagram Business account.
+    Uses graph.facebook.com/v21.0 — the correct endpoint for Business Content Publishing API.
     """
     return await service.check_status()
+
+
+class InstagramReelPublishRequest(BaseModel):
+    video_url: str
+    caption: str
+    thumbnail_url: Optional[str] = None
+
+
+@router.post("/instagram/publish-reel")
+async def publish_reel_to_instagram(
+    request: InstagramReelPublishRequest,
+    service: InstagramService = Depends(get_instagram_service)
+):
+    """
+    Publish a video as an Instagram Reel.
+    The video_url must be publicly accessible (e.g., the Railway static URL).
+    """
+    result = await service.publish_reel(
+        video_url=request.video_url,
+        caption=request.caption,
+        thumbnail_url=request.thumbnail_url,
+    )
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result)
+    return result
+
 
 @router.post("/instagram/publish")
 async def publish_to_instagram(
@@ -56,13 +83,13 @@ async def publish_to_instagram(
         image_url=request.image_url,
         caption=request.caption
     )
-    
+
     if not result.get("success"):
         raise HTTPException(
             status_code=400,
             detail=result
         )
-        
+
     return result
 
 @router.get("/snapchat/status")
