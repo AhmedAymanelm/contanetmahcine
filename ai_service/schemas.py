@@ -28,8 +28,19 @@ class VideoScript(BaseModel):
 
 # ── REEL: Video-ready slides — each slide = one screen in the final video ────
 class ReelSlide(BaseModel):
-    text: str = Field(..., description="The MAIN text displayed on screen. Bold, punchy, 2-15 words max. This is the ONLY thing the viewer reads.")
-    note: Optional[str] = Field(None, description="Optional small subtitle or stat shown below the main text (max 10 words). Use for numbers, percentages, or a single supporting fact.")
+    text: str = Field(..., description="The MAIN text displayed on screen. Bold, punchy, 3-8 words max. This is the main hook or statement.")
+    note: Optional[str] = Field(None, description="Optional small subtitle, number, percentage, or supporting stat (max 10 words).")
+    visual_type: Optional[str] = Field(
+        default="TEXT_ONLY",
+        description=(
+            "The visual presentation chosen for this slide: "
+            "'PERCENTAGE_BAR' (use when slide highlights a percentage out of 100, e.g. 45%, 84%), "
+            "'FINANCIAL_METRIC' (use for money, market cap, large numbers, billions/trillions, e.g. 37 مليار, 3 تريليون), "
+            "'COMPARISON' (use when comparing 2-3 stats or competitors), "
+            "'HIGHLIGHT_BADGE' (use for a bold key takeaway or status badge without charts), "
+            "'TEXT_ONLY' (clean, dramatic cinematic text with no charts or bars — best for hooks and impact statements)"
+        )
+    )
 
 class ReelContent(BaseModel):
     slides: List[ReelSlide] = Field(..., min_length=5, max_length=9, description="5 to 9 slides. Each slide is ONE screen. First slide = hook. Last slide = CTA.")

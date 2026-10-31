@@ -154,7 +154,7 @@ def _render_multi_bar_dashboard(bars: List[Dict], slide_accent: str, reveal: flo
         f'              border:1.5px solid rgba(255,255,255,0.14);border-radius:32px;padding:32px 42px;'
         f'              box-shadow:0 25px 60px rgba(0,0,0,0.6),0 0 50px {slide_accent}25;backdrop-filter:blur(25px);">'
         f'    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.08);">'
-        f'      <span style="font-size:24px;font-weight:800;color:rgba(255,255,255,0.6);letter-spacing:1px;">📊 مؤشرات وبيانات مقارنة</span>'
+        f'      <span style="font-size:24px;font-weight:800;color:rgba(255,255,255,0.6);letter-spacing:1px;">مؤشرات وبيانات مقارنة</span>'
         f'      <span style="display:inline-flex;align-items:center;gap:8px;font-size:18px;font-weight:800;color:{slide_accent};background:{slide_accent}18;padding:5px 16px;border-radius:20px;border:1px solid {slide_accent}33;">'
         f'        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{slide_accent};box-shadow:0 0 8px {slide_accent};"></span>بيانات مباشرة'
         f'      </span>'
@@ -166,7 +166,7 @@ def _render_multi_bar_dashboard(bars: List[Dict], slide_accent: str, reveal: flo
 
 
 # ── Hero Single Stat HUD ──────────────────────────────────────────────────────
-def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent: str, slide_accent_light: str, reveal: float, d_y: float, d_op: float, headline: str = "") -> str:
+def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent: str, slide_accent_light: str, reveal: float, d_y: float, d_op: float, headline: str = "", force_type: Optional[str] = None) -> str:
     import re
     # Extract numbers or percentages
     num_match = re.search(r'([+\-▲▼↗]?\s*[\d,.]+\s*(?:%|٪|x|X|k|K|M|B|تريليون|مليار|مليون)?)', stat_text)
@@ -174,21 +174,28 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
     label_text = stat_text.replace(num_str, "").strip() if num_str else stat_text
     label_text = re.sub(r'^[،,:\-–]\s*', '', label_text).strip()
 
-    is_percentage = bool(re.search(r'[%٪]', stat_text + " " + num_str))
+    if force_type == "PERCENTAGE_BAR":
+        is_percentage = True
+    elif force_type == "FINANCIAL_METRIC":
+        is_percentage = False
+    else:
+        is_percentage = bool(re.search(r'[%٪]', stat_text + " " + num_str))
 
     if is_percentage:
         if pct_val is None:
             clean_digits = re.search(r'[\d.]+', num_str)
             if clean_digits:
                 pct_val = min(100.0, float(clean_digits.group(0)))
+            else:
+                pct_val = 50.0
     else:
         # Strictly reset pct_val to None if not a percentage so 0-100% bar is never shown for numbers
         pct_val = None
 
     is_upward = bool(re.search(r'نمو|زيادة|ارتفاع|قفزة|مضاعفة|صعود|تريليون|مليار|ربح|أرباح|قياسي|تفوق', stat_text + " " + headline))
-    badge_icon = "📈" if is_upward else "⚡"
     badge_text = "مؤشر قياسي" if is_upward else "إحصائية موثقة"
     badge_color = "#35D399" if is_upward else slide_accent
+    pulse_dot = f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{badge_color};box-shadow:0 0 10px {badge_color};margin-left:8px;"></span>'
 
     # Graphic representation based on data type
     visual_graphic_html = ""
@@ -247,7 +254,7 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
         # ── ABSOLUTE FINANCIAL VOLUME / NUMERICAL HISTOGRAM & APEX PEAK ──
         # Vertical ascending columns indicating volume, scale, and financial momentum (NOT 0-100% bar)
         col_heights = [30, 48, 66, 84, 104, 126]
-        col_labels  = ['بداية', 'توسع', 'تسارع', 'مضاعفة', 'قفزة', 'الذروة ⚡']
+        col_labels  = ['بداية', 'توسع', 'تسارع', 'مضاعفة', 'قفزة', 'الذروة']
         fill_factor = min(1.0, max(0.0, (reveal - 0.2) / 0.5))
 
         cols_html = ""
@@ -287,7 +294,7 @@ def _render_hero_stat_hud(stat_text: str, pct_val: Optional[float], slide_accent
         f'    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
         f'      <span style="font-size:30px;font-weight:800;color:rgba(255,255,255,0.9);letter-spacing:-0.5px;">{header_title}</span>'
         f'      <span style="display:inline-flex;align-items:center;gap:8px;background:{badge_color}18;border:1.5px solid {badge_color}44;color:{badge_color};font-size:22px;padding:6px 18px;border-radius:50px;font-weight:800;">'
-        f'        {badge_icon} {badge_text}'
+        f'        {pulse_dot} {badge_text}'
         f'      </span>'
         f'    </div>'
         f'    <div style="display:flex;align-items:baseline;gap:16px;margin:6px 0;">'
@@ -440,7 +447,12 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             'display:inline-flex;align-items:center;gap:14px;padding:12px 36px;border-radius:100px;'
             'background:rgba(212,175,55,0.12);border:1.5px solid rgba(212,175,55,0.45);'
             'box-shadow:0 0 35px rgba(212,175,55,0.25);margin-bottom:36px;">'
-            '<span style="font-size:24px;">🇦🇪</span>'
+            '<svg width="28" height="20" viewBox="0 0 28 20" style="border-radius:3px;box-shadow:0 0 6px rgba(0,0,0,0.5);flex-shrink:0;">'
+            '<rect width="28" height="6.67" y="0" fill="#00732f"/>'
+            '<rect width="28" height="6.67" y="6.67" fill="#ffffff"/>'
+            '<rect width="28" height="6.67" y="13.33" fill="#000000"/>'
+            '<rect width="8" height="20" x="0" y="0" fill="#ff0000"/>'
+            '</svg>'
             '<span style="font-size:24px;font-weight:900;color:#FFB700;letter-spacing:3px;">دولة الإمارات العربية المتحدة</span>'
             '</div>'
 
@@ -602,7 +614,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
                 '</div>'
             )
 
-            detail_text = detail or "اكتبوا آراءكم ومقترحاتكم في التعليقات 👇"
+            detail_text = detail or "اكتبوا آراءكم ومقترحاتكم في التعليقات"
             detail_html = (
                 '<div style="padding:12px 32px;border-radius:12px;'
                 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
@@ -667,7 +679,7 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
                 '</div>'
             )
 
-            detail_text = detail or "اكتب رأيك في التعليقات 👇"
+            detail_text = detail or "اكتب رأيك في التعليقات"
             detail_html = (
                 '<div style="margin-top:24px;padding:12px 32px;border-radius:12px;'
                 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
@@ -723,29 +735,73 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     else:
         fs = 56
 
-    # Adaptive font size — capped slightly when an epic HUD is displayed
+    visual_type = (slide.get("visual_type") or "").strip().upper()
+
+    # Determine whether an epic HUD is displayed
     import re as _re
     has_num_in_detail = bool(detail and _re.search(r'\d', detail))
-    has_hud_data = has_num_in_detail or len(bars) >= 1
-    if has_hud_data:
+    
+    if visual_type == "TEXT_ONLY":
+        will_show_hud = False
+    elif visual_type in ("PERCENTAGE_BAR", "FINANCIAL_METRIC"):
+        will_show_hud = True
+    elif visual_type == "COMPARISON" and len(bars) > 1:
+        will_show_hud = True
+    elif visual_type == "HIGHLIGHT_BADGE":
+        will_show_hud = False
+    else:
+        will_show_hud = has_num_in_detail or len(bars) >= 1
+
+    if will_show_hud:
         fs = min(fs, 76)
 
-    # ── Unified Epic Data HUD ─────────────────────────────────────────────────
+    # ── AI Visual Director & Unified Epic Data HUD ────────────────────────────
     hud_html = ""
-    if len(bars) > 1:
-        hud_html = _render_multi_bar_dashboard(bars, slide_accent, reveal, d_y, d_op)
-    elif has_hud_data:
-        stat_text = detail or (bars[0].get("label", "") + " " + str(bars[0].get("value", "")))
+    if visual_type == "TEXT_ONLY":
+        # Pure cinematic text slide. If detail exists, show it as a clean subtle subtitle
+        if detail and not (is_cover or is_cta or is_outro or is_ministry_ident):
+            hud_html = (
+                '<div style="margin-top:36px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';text-align:center;">'
+                '<span style="font-size:32px;font-weight:600;color:rgba(255,255,255,0.75);letter-spacing:0.5px;">' + detail + '</span>'
+                '</div>'
+            )
+        else:
+            hud_html = ""
+    elif visual_type == "PERCENTAGE_BAR":
+        stat_text = detail or (bars[0].get("label", "") + " " + str(bars[0].get("value", ""))) if bars else headline
         pct_val = bars[0].get("pct") if bars else None
-        hud_html = _render_hero_stat_hud(stat_text, pct_val, slide_accent, slide_accent_light, reveal, d_y, d_op, headline)
-    elif detail:
+        hud_html = _render_hero_stat_hud(stat_text, pct_val, slide_accent, slide_accent_light, reveal, d_y, d_op, headline, force_type="PERCENTAGE_BAR")
+    elif visual_type == "FINANCIAL_METRIC":
+        stat_text = detail or (bars[0].get("label", "") + " " + str(bars[0].get("value", ""))) if bars else headline
+        pct_val = bars[0].get("pct") if bars else None
+        hud_html = _render_hero_stat_hud(stat_text, pct_val, slide_accent, slide_accent_light, reveal, d_y, d_op, headline, force_type="FINANCIAL_METRIC")
+    elif visual_type == "COMPARISON" and len(bars) > 1:
+        hud_html = _render_multi_bar_dashboard(bars, slide_accent, reveal, d_y, d_op)
+    elif visual_type == "HIGHLIGHT_BADGE":
+        badge_content = detail or headline
         hud_html = (
             '<div style="margin-top:44px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';text-align:center;">'
-            '<div style="padding:14px 36px;border-radius:16px;background:rgba(255,255,255,0.06);'
-            'border:1.5px solid rgba(255,255,255,0.12);display:inline-block;box-shadow:0 10px 30px rgba(0,0,0,0.3);">'
-            '<span style="font-size:30px;font-weight:600;color:rgba(255,255,255,0.85);line-height:1.4;">' + detail + '</span>'
+            '<div style="padding:16px 42px;border-radius:24px;background:rgba(255,255,255,0.07);'
+            'border:1.5px solid ' + slide_accent + '44;display:inline-block;box-shadow:0 12px 36px rgba(0,0,0,0.4), 0 0 30px ' + slide_accent + '22;">'
+            '<span style="font-size:32px;font-weight:700;color:rgba(255,255,255,0.95);line-height:1.4;">' + badge_content + '</span>'
             '</div></div>'
         )
+    else:
+        # Fallback to smart heuristic if visual_type not explicitly given
+        if len(bars) > 1:
+            hud_html = _render_multi_bar_dashboard(bars, slide_accent, reveal, d_y, d_op)
+        elif will_show_hud:
+            stat_text = detail or (bars[0].get("label", "") + " " + str(bars[0].get("value", "")))
+            pct_val = bars[0].get("pct") if bars else None
+            hud_html = _render_hero_stat_hud(stat_text, pct_val, slide_accent, slide_accent_light, reveal, d_y, d_op, headline)
+        elif detail:
+            hud_html = (
+                '<div style="margin-top:44px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';text-align:center;">'
+                '<div style="padding:14px 36px;border-radius:16px;background:rgba(255,255,255,0.06);'
+                'border:1.5px solid rgba(255,255,255,0.12);display:inline-block;box-shadow:0 10px 30px rgba(0,0,0,0.3);">'
+                '<span style="font-size:30px;font-weight:600;color:rgba(255,255,255,0.85);line-height:1.4;">' + detail + '</span>'
+                '</div></div>'
+            )
 
     # Category pill
     cat_html = ""
@@ -1048,7 +1104,7 @@ def content_item_to_slides(
                 "category": "شاركنا رأيك",
                 "label": "",
                 "headline": cta[:150],
-                "detail": "اكتب رأيك في التعليقات 👇",
+                "detail": "اكتب رأيك في التعليقات",
             }))
 
     elif content_type == "CAROUSEL":
@@ -1068,7 +1124,7 @@ def content_item_to_slides(
                     "category": "شاركنا رأيك",
                     "label": "",
                     "headline": heading[:150] or "شاركنا رأيك",
-                    "detail": body[:80] or detail[:80] or "اكتب رأيك في التعليقات 👇",
+                    "detail": body[:80] or detail[:80] or "اكتب رأيك في التعليقات",
                 }))
             else:
                 merged = heading + (" — " + detail if detail else "")
@@ -1097,6 +1153,7 @@ def content_item_to_slides(
                 "headline": "وزارة تمكين المجتمع",
                 "detail": "MINISTRY OF COMMUNITY EMPOWERMENT",
                 "label": "",
+                "visual_type": "TEXT_ONLY",
                 "show_ministry_logo": True,
             })
             slides.append(opening_ident)
@@ -1105,14 +1162,22 @@ def content_item_to_slides(
             if isinstance(s, dict):
                 text = s.get("text") or s.get("heading") or s.get("title") or ""
                 note = s.get("note") or s.get("body") or s.get("detail") or ""
+                visual_type = (s.get("visual_type") or "").strip().upper()
             elif isinstance(s, str):
                 text = s
                 note = ""
+                visual_type = ""
             else:
                 text = str(s or "")
                 note = ""
+                visual_type = ""
             is_first = (i == 0)
             is_last  = (i == len(raw_slides) - 1)
+
+            # Enforce clean text for first (Hook) and last (CTA) slides if unspecified
+            if is_first or is_last:
+                visual_type = visual_type or "TEXT_ONLY"
+
             slides.append(base({
                 "is_cover": is_first,
                 "is_cta": is_last,
@@ -1120,6 +1185,7 @@ def content_item_to_slides(
                 "label": "",
                 "headline": str(text)[:150],
                 "detail": str(note)[:80] if note else "",
+                "visual_type": visual_type,
                 "bars": _extract_bars_from_text(str(text) + " " + str(note)) if (note and not is_last) else [],
             }))
 

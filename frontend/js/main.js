@@ -620,6 +620,7 @@ function buildReelSlidesPanel(data) {
 function buildReelSlideCard(slide, idx) {
     const text = slide.text || '';
     const note = slide.note || '';
+    const vt = (slide.visual_type || 'TEXT_ONLY').toUpperCase();
     return `
     <div class="slide-card-em" data-reel-slide-idx="${idx}">
         <div class="slide-card-em-head">
@@ -633,9 +634,21 @@ function buildReelSlideCard(slide, idx) {
                 <div class="mini-label-em"><code>text</code> نص الشريحة <span style="color:#FF5C00;font-size:10px;">(3-8 كلمات)</span></div>
                 <textarea class="mini-ta" rows="2" data-reel-slide="${idx}" data-field="text" style="font-size:16px;font-weight:700;">${text}</textarea>
             </div>
-            <div>
-                <div class="mini-label-em"><code>note</code> ملاحظة المخرج (اختياري)</div>
-                <textarea class="mini-ta" rows="1" data-reel-slide="${idx}" data-field="note">${note}</textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                    <div class="mini-label-em"><code>visual_type</code> الإخراج البصري</div>
+                    <select class="mini-ta" data-reel-slide="${idx}" data-field="visual_type" style="padding:6px 10px;background:#1a1a24;color:#fff;border:1px solid #333;border-radius:6px;width:100%;font-size:12px;">
+                        <option value="TEXT_ONLY" ${vt === 'TEXT_ONLY' ? 'selected' : ''}>نص سينمائي صافي (TEXT_ONLY)</option>
+                        <option value="PERCENTAGE_BAR" ${vt === 'PERCENTAGE_BAR' ? 'selected' : ''}>شريط نسبة مئوية (PERCENTAGE_BAR)</option>
+                        <option value="FINANCIAL_METRIC" ${vt === 'FINANCIAL_METRIC' ? 'selected' : ''}>مؤشر نمو مالي (FINANCIAL_METRIC)</option>
+                        <option value="COMPARISON" ${vt === 'COMPARISON' ? 'selected' : ''}>مقارنة إحصائية (COMPARISON)</option>
+                        <option value="HIGHLIGHT_BADGE" ${vt === 'HIGHLIGHT_BADGE' ? 'selected' : ''}>شارة تمييز زجاجية (HIGHLIGHT_BADGE)</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="mini-label-em"><code>note</code> إحصائية أو تفصيل</div>
+                    <input type="text" class="mini-ta" data-reel-slide="${idx}" data-field="note" value="${note}" style="padding:6px 10px;width:100%;font-size:12px;background:#1a1a24;border:1px solid #333;border-radius:6px;color:#fff;">
+                </div>
             </div>
         </div>
     </div>`;
@@ -656,7 +669,7 @@ function emRemoveReelSlide(idx) {
 function emAddReelSlide() {
     const container = document.getElementById('em-reel-slides-container');
     const idx = container.querySelectorAll('.slide-card-em[data-reel-slide-idx]').length;
-    container.insertAdjacentHTML('beforeend', buildReelSlideCard({ text:'', note:'' }, idx));
+    container.insertAdjacentHTML('beforeend', buildReelSlideCard({ text:'', note:'', visual_type:'TEXT_ONLY' }, idx));
 }
 
 function buildReelPanel(data) {
@@ -743,10 +756,12 @@ if(document.getElementById('save-edit-btn')) {
                 const reelSlides = [];
                 reelSlidesContainer.querySelectorAll('.slide-card-em[data-reel-slide-idx]').forEach(card => {
                     const textTA = card.querySelector('textarea[data-field="text"]');
-                    const noteTA = card.querySelector('textarea[data-field="note"]');
+                    const noteTA = card.querySelector('textarea[data-field="note"]') || card.querySelector('input[data-field="note"]');
+                    const vtSel  = card.querySelector('select[data-field="visual_type"]');
                     reelSlides.push({
                         text: textTA ? textTA.value : '',
-                        note: noteTA ? noteTA.value : ''
+                        note: noteTA ? noteTA.value : '',
+                        visual_type: vtSel ? vtSel.value : 'TEXT_ONLY'
                     });
                 });
                 if (reelSlides.length > 0) newContent.slides = reelSlides;
@@ -2156,10 +2171,27 @@ function renderPreview(platformId, gen, item) {
                             </div>
                         </div>`;
 
+                    const getVisualTypeBadge = (vt) => {
+                        vt = (vt || 'TEXT_ONLY').toUpperCase();
+                        if (vt === 'PERCENTAGE_BAR') {
+                            return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(0,229,255,0.12);color:#00E5FF;border:1px solid rgba(0,229,255,0.3);font-weight:700;">شريط نسبة 0-100%</span>';
+                        } else if (vt === 'FINANCIAL_METRIC') {
+                            return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(255,183,0,0.12);color:#FFB700;border:1px solid rgba(255,183,0,0.3);font-weight:700;">مؤشر مالي وأعمدة نمو</span>';
+                        } else if (vt === 'COMPARISON') {
+                            return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(168,85,247,0.12);color:#C084FC;border:1px solid rgba(168,85,247,0.3);font-weight:700;">مقارنة إحصائية</span>';
+                        } else if (vt === 'HIGHLIGHT_BADGE') {
+                            return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(53,211,153,0.12);color:#35D399;border:1px solid rgba(53,211,153,0.3);font-weight:700;">شارة تمييز زجاجية</span>';
+                        }
+                        return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.12);font-weight:600;">نص سينمائي صافي</span>';
+                    };
+
                     const contentCards = slides.map((s, i) => `
                         <div style="background:#111;border-radius:12px;padding:14px 18px;border:1px solid #2a2a2a;direction:rtl;position:relative;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                                <div style="font-size:10px;color:#FF5C00;font-weight:800;letter-spacing:1px;">الشريحة ${i + 1}</div>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <div style="font-size:10px;color:#FF5C00;font-weight:800;letter-spacing:1px;">الشريحة ${i + 1}</div>
+                                    ${getVisualTypeBadge(s.visual_type)}
+                                </div>
                                 <div style="font-size:9px;color:#555;">${i === 0 ? '🎬 Hook' : (i === slides.length - 1 ? '📣 CTA' : `نقطة ${i}`)}</div>
                             </div>
                             <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.4;">${esc(s.text)}</div>
@@ -2178,16 +2210,27 @@ function renderPreview(platformId, gen, item) {
                         <div style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;padding-right:4px;">
                             ${slideCards || '<div style="color:var(--muted);text-align:center;padding:20px;">لا توجد شرائح</div>'}
                         </div>
-                        <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;">${isClient ? '👤 ' + slides.length + ' شريحة محتوى بهوية العميل · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو' : '🦅 شريحة افتتاحية + ' + slides.length + ' شريحة محتوى + شريحة ختامية · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو'}</div>
+                        <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center;">${isClient ? '👤 ' + slides.length + ' شريحة محتوى بهوية العميل · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو' : '🦅 شريحة افتتاحية + ' + slides.length + ' شريحة محتوى · اضغط "تحويل لفيديو سلايدشو" لإنشاء الفيديو'}</div>
                     </div>`;
                 }
             })
             .catch(() => {
                 const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const getVisualTypeBadge = (vt) => {
+                    vt = (vt || 'TEXT_ONLY').toUpperCase();
+                    if (vt === 'PERCENTAGE_BAR') return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(0,229,255,0.12);color:#00E5FF;font-weight:700;">شريط نسبة 0-100%</span>';
+                    if (vt === 'FINANCIAL_METRIC') return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(255,183,0,0.12);color:#FFB700;font-weight:700;">مؤشر مالي وأعمدة نمو</span>';
+                    if (vt === 'COMPARISON') return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(168,85,247,0.12);color:#C084FC;font-weight:700;">مقارنة إحصائية</span>';
+                    if (vt === 'HIGHLIGHT_BADGE') return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(53,211,153,0.12);color:#35D399;font-weight:700;">شارة تمييز زجاجية</span>';
+                    return '<span style="font-size:9.5px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);font-weight:600;">نص سينمائي صافي</span>';
+                };
                 const slideCards = slides.map((s, i) => `
                     <div style="background:#111;border-radius:12px;padding:14px 18px;border:1px solid #2a2a2a;direction:rtl;position:relative;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                            <div style="font-size:10px;color:#FF5C00;font-weight:800;letter-spacing:1px;">الشريحة ${i + 1}</div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div style="font-size:10px;color:#FF5C00;font-weight:800;letter-spacing:1px;">الشريحة ${i + 1}</div>
+                                ${getVisualTypeBadge(s.visual_type)}
+                            </div>
                             <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.9);padding:2px 7px;border-radius:8px;">
                                 <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:12px;width:auto;" alt="شعار">
                                 <span style="font-size:8px;font-weight:800;color:#111;">تمكين المجتمع</span>
