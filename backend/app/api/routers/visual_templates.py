@@ -63,11 +63,72 @@ class VisualTemplateResponse(BaseModel):
         from_attributes = True
 
 
+DEFAULT_TEMPLATES = [
+    {
+        "name": "زايد تيك - البرتقالي الناري (ZayedTech Flame)",
+        "template_type": "REEL",
+        "bg_type": "gradient",
+        "bg_color1": "#0a0a0a",
+        "bg_color2": "#240a00",
+        "text_color": "#ffffff",
+        "accent_color": "#FF5C00",
+        "font_size": 42,
+        "font_weight": "900",
+        "animation": "slideUp",
+        "text_align": "center",
+    },
+    {
+        "name": "سايبر نيون البنفسجي (Cyber Violet)",
+        "template_type": "REEL",
+        "bg_type": "gradient",
+        "bg_color1": "#070514",
+        "bg_color2": "#1a0f3c",
+        "text_color": "#ffffff",
+        "accent_color": "#8B5CF6",
+        "font_size": 40,
+        "font_weight": "900",
+        "animation": "scaleIn",
+        "text_align": "center",
+    },
+    {
+        "name": "كاروسيل إنستغرام الزمردي (Emerald Carousel)",
+        "template_type": "CAROUSEL",
+        "bg_type": "gradient",
+        "bg_color1": "#041712",
+        "bg_color2": "#0e382c",
+        "text_color": "#f8fafc",
+        "accent_color": "#10B981",
+        "font_size": 38,
+        "font_weight": "800",
+        "animation": "fadeIn",
+        "text_align": "right",
+    },
+    {
+        "name": "كاروسيل جولد الملكي (Royal Gold)",
+        "template_type": "CAROUSEL",
+        "bg_type": "gradient",
+        "bg_color1": "#0c0a02",
+        "bg_color2": "#261d06",
+        "text_color": "#ffffff",
+        "accent_color": "#F59E0B",
+        "font_size": 40,
+        "font_weight": "900",
+        "animation": "slideLeft",
+        "text_align": "center",
+    },
+]
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=List[VisualTemplateResponse])
 async def list_visual_templates(db: Session = Depends(get_db)):
-    """List all visual templates."""
+    """List all visual templates (auto-seeds defaults if empty)."""
+    count = db.query(VisualTemplate).count()
+    if count == 0:
+        for tpl_data in DEFAULT_TEMPLATES:
+            db.add(VisualTemplate(**tpl_data))
+        db.commit()
     return db.query(VisualTemplate).order_by(VisualTemplate.id).all()
 
 
@@ -103,3 +164,4 @@ async def delete_visual_template(template_id: int, db: Session = Depends(get_db)
     db.delete(template)
     db.commit()
     return {"detail": "Visual template deleted"}
+

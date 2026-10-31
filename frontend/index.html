@@ -319,165 +319,308 @@
       </section>
 
       <!-- ================= VISUAL TEMPLATE DESIGNER ================= -->
-      <section class="page" id="page-visual-designer">
-        <div class="topline">
-          <div>
-            <h1>🖌️ مصمم القوالب المرئي</h1>
-            <p>صمّم قوالب الريلز والكاروسيل بالألوان والحركات واحفظها للاستخدام لاحقاً</p>
-          </div>
-          <button onclick="saveVisualTemplate()" class="btn" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);padding:12px 24px;font-weight:700;">
-            💾 حفظ القالب
-          </button>
-        </div>
+      <section class="page" id="page-visual-designer" style="padding-bottom:80px;">
 
-        <div style="display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start;">
-
-          <!-- ── Controls Panel ── -->
-          <div style="display:flex;flex-direction:column;gap:16px;">
-
-            <!-- Template Info -->
-            <div class="panel" style="border-radius:16px;padding:20px;">
-              <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;">اسم القالب</div>
-              <input id="vt-name" type="text" value="قالب جديد" style="width:100%;padding:12px;background:rgba(0,0,0,0.2);border:1.5px solid var(--line);color:var(--text);border-radius:10px;font-size:14px;font-family:inherit;" onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='var(--line)'">
-              <div style="display:flex;gap:8px;margin-top:12px;">
-                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;border:2px solid transparent;transition:all 0.2s;" id="vt-type-reel" onclick="setVtType('REEL')" style="background:rgba(255,92,0,0.15);border-color:#FF5C00;color:#FF5C00;">
-                  🎬 ريلز
-                </label>
-                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;border:2px solid transparent;transition:all 0.2s;" id="vt-type-carousel" onclick="setVtType('CAROUSEL')">
-                  🖼️ كاروسيل
-                </label>
+        <!-- Top Studio Bar -->
+        <div style="background:linear-gradient(135deg,rgba(124,58,237,0.18),rgba(255,92,0,0.08),rgba(20,184,166,0.05));border:1px solid rgba(167,139,250,0.25);border-radius:24px;padding:24px 32px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;box-shadow:0 12px 36px rgba(0,0,0,0.3);">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#FF5C00,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 8px 24px rgba(255,92,0,0.4);">🎨</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="margin:0;font-size:24px;font-weight:900;letter-spacing:-0.5px;">ستوديو تصميم القوالب</h1>
+                <span style="background:rgba(255,92,0,0.2);color:#FF5C00;border:1px solid rgba(255,92,0,0.4);font-size:11px;font-weight:800;padding:2px 10px;border-radius:20px;">PRO STUDIO</span>
               </div>
-            </div>
-
-            <!-- Background -->
-            <div class="panel" style="border-radius:16px;padding:20px;">
-              <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:14px;">🎨 الخلفية</div>
-              <div style="display:flex;gap:8px;margin-bottom:16px;">
-                <button onclick="setVtBg('gradient')" id="vt-bg-gradient" class="btn" style="flex:1;padding:8px;font-size:12px;font-weight:700;">تدرج</button>
-                <button onclick="setVtBg('solid')" id="vt-bg-solid" class="btn ghost" style="flex:1;padding:8px;font-size:12px;">سادة</button>
-                <button onclick="setVtBg('dark')" id="vt-bg-dark" class="btn ghost" style="flex:1;padding:8px;font-size:12px;">داكن</button>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="vt-gradient-controls">
-                <div>
-                  <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">اللون الأول</div>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="color" id="vt-color1" value="#0a0a0a" oninput="updateVtPreview()" style="width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;background:none;">
-                    <input type="text" id="vt-color1-hex" value="#0a0a0a" oninput="syncColorPicker('vt-color1','vt-color1-hex')" style="flex:1;padding:8px;background:rgba(0,0,0,0.2);border:1px solid var(--line);color:var(--text);border-radius:8px;font-size:12px;font-family:monospace;">
-                  </div>
-                </div>
-                <div>
-                  <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">اللون الثاني</div>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="color" id="vt-color2" value="#1a0500" oninput="updateVtPreview()" style="width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;background:none;">
-                    <input type="text" id="vt-color2-hex" value="#1a0500" oninput="syncColorPicker('vt-color2','vt-color2-hex')" style="flex:1;padding:8px;background:rgba(0,0,0,0.2);border:1px solid var(--line);color:var(--text);border-radius:8px;font-size:12px;font-family:monospace;">
-                  </div>
-                </div>
-              </div>
-              <!-- Quick presets -->
-              <div style="margin-top:14px;">
-                <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">ألوان جاهزة</div>
-                <div style="display:flex;flex-wrap:wrap;gap:8px;" id="vt-color-presets">
-                  <!-- injected by JS -->
-                </div>
-              </div>
-            </div>
-
-            <!-- Text & Accent Colors -->
-            <div class="panel" style="border-radius:16px;padding:20px;">
-              <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:14px;">✍️ ألوان النصوص</div>
-              <div style="display:flex;flex-direction:column;gap:12px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;">
-                  <span style="font-size:13px;">لون النص الرئيسي</span>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="color" id="vt-text-color" value="#ffffff" oninput="updateVtPreview()" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;background:none;">
-                    <span id="vt-text-color-label" style="font-size:12px;color:var(--muted);font-family:monospace;">#ffffff</span>
-                  </div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;">
-                  <span style="font-size:13px;">لون التمييز (Accent)</span>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="color" id="vt-accent-color" value="#FF5C00" oninput="updateVtPreview()" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;background:none;">
-                    <span id="vt-accent-color-label" style="font-size:12px;color:var(--muted);font-family:monospace;">#FF5C00</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Font & Animation -->
-            <div class="panel" style="border-radius:16px;padding:20px;">
-              <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:14px;">⚙️ الخط والحركة</div>
-              <div style="display:flex;flex-direction:column;gap:14px;">
-                <div>
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">حجم الخط: <span id="vt-font-size-val">42</span>px</div>
-                  <input type="range" id="vt-font-size" min="24" max="72" value="42" oninput="updateVtPreview();document.getElementById('vt-font-size-val').textContent=this.value" style="width:100%;accent-color:#a78bfa;">
-                </div>
-                <div>
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">محاذاة النص</div>
-                  <div style="display:flex;gap:8px;">
-                    <button onclick="setVtAlign('center')" id="vt-align-center" class="btn" style="flex:1;padding:8px;font-size:13px;">⬛ وسط</button>
-                    <button onclick="setVtAlign('right')" id="vt-align-right" class="btn ghost" style="flex:1;padding:8px;font-size:13px;">⬛ يمين</button>
-                    <button onclick="setVtAlign('left')" id="vt-align-left" class="btn ghost" style="flex:1;padding:8px;font-size:13px;">⬛ يسار</button>
-                  </div>
-                </div>
-                <div>
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">نوع الحركة (Animation)</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="vt-animation-grid">
-                    <!-- injected by JS -->
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Sample text for preview -->
-            <div class="panel" style="border-radius:16px;padding:20px;">
-              <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;">📝 نص تجريبي للمعاينة</div>
-              <textarea id="vt-sample-text" rows="3" oninput="updateVtPreview()" style="width:100%;padding:10px;background:rgba(0,0,0,0.2);border:1px solid var(--line);color:var(--text);border-radius:10px;font-size:13px;font-family:inherit;">غوغل خسرت نصف تريليون دولار في يوم واحد</textarea>
+              <p style="margin:4px 0 0;font-size:13px;color:var(--muted);">صمّم هوية شرائح الريلز والكاروسيل، عاينها تفاعلياً، واحفظها للاستخدام التلقائي</p>
             </div>
           </div>
-
-          <!-- ── Live Preview ── -->
-          <div style="position:sticky;top:20px;">
-            <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;">👁️ معاينة مباشرة</div>
-
-            <!-- Phone mockup -->
-            <div style="display:flex;justify-content:center;">
-              <div style="width:280px;background:#111;border-radius:40px;padding:14px;box-shadow:0 30px 80px rgba(0,0,0,0.8),0 0 0 1px rgba(255,255,255,0.1);position:relative;">
-                <!-- Camera notch -->
-                <div style="width:80px;height:20px;background:#000;border-radius:10px;margin:0 auto 12px;"></div>
-                <!-- Screen -->
-                <div id="vt-preview-screen" style="width:252px;height:448px;border-radius:24px;overflow:hidden;position:relative;background:linear-gradient(160deg,#0a0a0a,#1a0500);display:flex;align-items:center;justify-content:center;flex-direction:column;transition:all 0.3s;">
-                  <!-- Accent bar -->
-                  <div id="vt-preview-accent-bar" style="position:absolute;top:0;left:0;right:0;height:3px;background:#FF5C00;"></div>
-                  <!-- Category pill -->
-                  <div id="vt-preview-category" style="position:absolute;top:16px;right:16px;background:rgba(255,92,0,0.2);border:1px solid rgba(255,92,0,0.4);color:#FF5C00;font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;">ريلز</div>
-                  <!-- Slide number -->
-                  <div id="vt-preview-number" style="position:absolute;top:16px;left:16px;font-size:10px;color:rgba(255,255,255,0.3);font-family:monospace;">1 |</div>
-                  <!-- Main text -->
-                  <div id="vt-preview-text" style="font-size:22px;font-weight:900;color:#fff;text-align:center;padding:20px;line-height:1.3;direction:rtl;">غوغل خسرت نصف تريليون دولار في يوم واحد</div>
-                  <!-- Bottom dot progress -->
-                  <div style="position:absolute;bottom:20px;display:flex;gap:5px;">
-                    <div id="vt-preview-dot" style="width:20px;height:4px;border-radius:2px;background:#FF5C00;"></div>
-                    <div style="width:6px;height:4px;border-radius:2px;background:rgba(255,255,255,0.2);"></div>
-                    <div style="width:6px;height:4px;border-radius:2px;background:rgba(255,255,255,0.2);"></div>
-                  </div>
-                </div>
-                <!-- Home bar -->
-                <div style="width:100px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px;margin:12px auto 0;"></div>
-              </div>
-            </div>
-
-            <!-- Saved templates -->
-            <div style="margin-top:28px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-                <div style="font-size:14px;font-weight:700;color:var(--text);">💾 القوالب المحفوظة</div>
-                <span id="vt-saved-count" style="font-size:12px;color:var(--muted);">0 قالب</span>
-              </div>
-              <div id="vt-saved-templates" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-height:320px;overflow-y:auto;">
-                <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;grid-column:1/-1;">لا توجد قوالب محفوظة بعد</div>
-              </div>
-            </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button onclick="playVtAnimation()" class="btn ghost" style="padding:11px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;border-color:rgba(167,139,250,0.4);color:#c4b5fd;">
+              <span>▶️</span> تجربة الحركة
+            </button>
+            <button onclick="resetVtDesigner()" class="btn ghost" style="padding:11px 16px;font-size:13px;font-weight:700;">
+              ↺ إعادة ضبط
+            </button>
+            <button onclick="saveVisualTemplate()" style="padding:12px 28px;font-size:14px;font-weight:800;border:none;cursor:pointer;border-radius:12px;background:linear-gradient(135deg,#FF5C00,#e11d48);color:#fff;box-shadow:0 6px 24px rgba(255,92,0,0.45);transition:all 0.2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 30px rgba(255,92,0,0.6)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 6px 24px rgba(255,92,0,0.45)'">
+              <span>💾</span> حفظ القالب
+            </button>
           </div>
         </div>
+
+        <!-- Main Workspace Grid: Controls (Right in RTL) & Interactive Canvas (Left in RTL) -->
+        <div style="display:grid;grid-template-columns:1fr 440px;gap:28px;align-items:start;">
+
+          <!-- ── CONTROLS PANEL (1fr) ── -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <!-- 1. Template Identity & Format Switcher -->
+            <div class="panel" style="border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.08);background:linear-gradient(145deg,var(--panel),var(--panel-2));">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">1. هوية القالب ونوعه</div>
+                <div style="font-size:11px;color:var(--teal);background:rgba(20,184,166,0.12);padding:3px 10px;border-radius:20px;font-weight:700;">تلقائي الحفظ</div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:center;">
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">اسم القالب المخصص</label>
+                  <input id="vt-name" type="text" value="قالب زايد تيك المميز" style="width:100%;padding:12px 16px;background:rgba(0,0,0,0.3);border:1.5px solid rgba(255,255,255,0.12);color:var(--text);border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;transition:all 0.2s;" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+                </div>
+
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">نوع التصميم</label>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <button id="vt-type-reel" onclick="setVtType('REEL')" type="button" style="padding:12px 8px;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;border:2px solid #FF5C00;background:rgba(255,92,0,0.15);color:#FF5C00;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">
+                      <span>🎬</span> ريلز (9:16)
+                    </button>
+                    <button id="vt-type-carousel" onclick="setVtType('CAROUSEL')" type="button" style="padding:12px 8px;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;border:2px solid var(--line);background:rgba(0,0,0,0.2);color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">
+                      <span>🖼️</span> كاروسيل (4:5)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Ready Presets (Visual Palettes) -->
+            <div class="panel" style="border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.08);background:linear-gradient(145deg,var(--panel),var(--panel-2));">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">2. اختر ثيم فوري جاهز (Presets)</div>
+                <span style="font-size:11px;color:var(--muted);">اضغط لتطبيق التناسق الكامل</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="vt-color-presets">
+                <!-- Injected by JS -->
+              </div>
+            </div>
+
+            <!-- 3. Background Customizer -->
+            <div class="panel" style="border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.08);background:linear-gradient(145deg,var(--panel),var(--panel-2));">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">3. تخصيص الخلفية والألوان</div>
+                <div style="display:flex;gap:6px;">
+                  <button onclick="setVtBg('gradient')" id="vt-bg-gradient" type="button" style="padding:7px 14px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid #FF5C00;background:rgba(255,92,0,0.15);color:#FF5C00;transition:all 0.2s;">تدرج لوني</button>
+                  <button onclick="setVtBg('solid')" id="vt-bg-solid" type="button" style="padding:7px 14px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--muted);transition:all 0.2s;">لون سادة</button>
+                  <button onclick="setVtBg('dark')" id="vt-bg-dark" type="button" style="padding:7px 14px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--muted);transition:all 0.2s;">أسود فحم</button>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <!-- Color 1 -->
+                <div style="background:rgba(0,0,0,0.25);border-radius:14px;padding:14px 18px;border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px;">لون الخلفية الأساسي</div>
+                    <input type="text" id="vt-color1-hex" value="#0a0a0a" oninput="syncColorPicker('vt-color1','vt-color1-hex')" style="background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:14px;font-weight:700;outline:none;width:80px;">
+                  </div>
+                  <input type="color" id="vt-color1" value="#0a0a0a" oninput="updateVtPreview()" style="width:40px;height:40px;border:none;border-radius:10px;cursor:pointer;background:none;padding:0;">
+                </div>
+
+                <!-- Color 2 -->
+                <div id="vt-color2-container" style="background:rgba(0,0,0,0.25);border-radius:14px;padding:14px 18px;border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px;">لون التدرج الثانوي</div>
+                    <input type="text" id="vt-color2-hex" value="#240a00" oninput="syncColorPicker('vt-color2','vt-color2-hex')" style="background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:14px;font-weight:700;outline:none;width:80px;">
+                  </div>
+                  <input type="color" id="vt-color2" value="#240a00" oninput="updateVtPreview()" style="width:40px;height:40px;border:none;border-radius:10px;cursor:pointer;background:none;padding:0;">
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Typography & Accent -->
+            <div class="panel" style="border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.08);background:linear-gradient(145deg,var(--panel),var(--panel-2));">
+              <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:18px;">4. النصوص والتمييز (Typography & Accent)</div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                <!-- Primary Text Color -->
+                <div style="background:rgba(0,0,0,0.25);border-radius:14px;padding:14px 18px;border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px;">لون النص الرئيسي</div>
+                    <span id="vt-text-color-label" style="font-family:var(--mono);font-size:14px;font-weight:700;color:#fff;">#ffffff</span>
+                  </div>
+                  <input type="color" id="vt-text-color" value="#ffffff" oninput="updateVtPreview()" style="width:40px;height:40px;border:none;border-radius:10px;cursor:pointer;background:none;padding:0;">
+                </div>
+
+                <!-- Accent Color -->
+                <div style="background:rgba(0,0,0,0.25);border-radius:14px;padding:14px 18px;border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px;">لون التمييز (Accent Pill & Dots)</div>
+                    <span id="vt-accent-color-label" style="font-family:var(--mono);font-size:14px;font-weight:700;color:#FF5C00;">#FF5C00</span>
+                  </div>
+                  <input type="color" id="vt-accent-color" value="#FF5C00" oninput="updateVtPreview()" style="width:40px;height:40px;border:none;border-radius:10px;cursor:pointer;background:none;padding:0;">
+                </div>
+              </div>
+
+              <!-- Sliders & Layout -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center;">
+                <!-- Font size slider -->
+                <div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:12px;font-weight:700;">حجم الخط الرئيسي</span>
+                    <span style="font-size:13px;font-weight:800;color:#FF5C00;"><span id="vt-font-size-val">42</span>px</span>
+                  </div>
+                  <input type="range" id="vt-font-size" min="26" max="64" value="42" oninput="updateVtPreview();document.getElementById('vt-font-size-val').textContent=this.value" style="width:100%;height:6px;accent-color:#FF5C00;cursor:pointer;">
+                </div>
+
+                <!-- Alignment -->
+                <div>
+                  <div style="font-size:12px;font-weight:700;margin-bottom:8px;">محاذاة النص</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                    <button onclick="setVtAlign('right')" id="vt-align-right" type="button" style="padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:rgba(0,0,0,0.2);color:var(--muted);transition:all 0.2s;">يمين ⇥</button>
+                    <button onclick="setVtAlign('center')" id="vt-align-center" type="button" style="padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #FF5C00;background:rgba(255,92,0,0.15);color:#FF5C00;transition:all 0.2s;">وسط ☰</button>
+                    <button onclick="setVtAlign('left')" id="vt-align-left" type="button" style="padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:rgba(0,0,0,0.2);color:var(--muted);transition:all 0.2s;">⇤ يسار</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Animations & Effects -->
+            <div class="panel" style="border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.08);background:linear-gradient(145deg,var(--panel),var(--panel-2));">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">5. حركات الدخول (Animation)</div>
+                <span style="font-size:11px;color:var(--muted);">تطبَّق في رندرة الفيديو</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="vt-animation-grid">
+                <!-- Injected by JS -->
+              </div>
+            </div>
+
+            <!-- 6. Sample Content Input -->
+            <div class="panel" style="border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.08);background:linear-gradient(145deg,var(--panel),var(--panel-2));">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">6. نص تجريبي للمعاينة الحية</div>
+                <button type="button" onclick="loadSampleTextPreset()" class="btn ghost" style="padding:4px 10px;font-size:11px;">تغيير النص 🎲</button>
+              </div>
+              <textarea id="vt-sample-text" rows="2" oninput="updateVtPreview()" placeholder="اكتب نصاً تجريبياً هنا..." style="width:100%;padding:14px 16px;background:rgba(0,0,0,0.25);border:1.5px solid rgba(255,255,255,0.1);color:var(--text);border-radius:12px;font-size:15px;font-family:inherit;resize:none;line-height:1.6;transition:all 0.2s;" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">غوغل خسرت نصف تريليون دولار في يوم واحد — أسوأ يوم في تاريخ الشركة!</textarea>
+            </div>
+
+          </div>
+
+          <!-- ── INTERACTIVE PREVIEW STAGE (440px sticky on left in RTL) ── -->
+          <div style="position:sticky;top:20px;display:flex;flex-direction:column;gap:20px;">
+
+            <!-- Preview Card Container -->
+            <div style="background:linear-gradient(180deg,#141820,#0d1015);border:1px solid rgba(255,255,255,0.1);border-radius:28px;padding:24px 20px;box-shadow:0 30px 70px rgba(0,0,0,0.6);position:relative;overflow:hidden;">
+
+              <!-- Top Stage Navigation -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#10B981;box-shadow:0 0 10px #10B981;"></span>
+                  <span style="font-size:12px;font-weight:800;color:#fff;" id="vt-stage-title">معاينة ريلز مباشر (9:16)</span>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button type="button" onclick="setVtSlideView('hook')" id="vt-slide-tab-hook" style="padding:4px 10px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid #FF5C00;background:rgba(255,92,0,0.2);color:#FF5C00;">الخطاف</button>
+                  <button type="button" onclick="setVtSlideView('body')" id="vt-slide-tab-body" style="padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--muted);">المحتوى</button>
+                  <button type="button" onclick="setVtSlideView('cta')" id="vt-slide-tab-cta" style="padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--muted);">الختام (CTA)</button>
+                </div>
+              </div>
+
+              <!-- Real Mockup Frame (Switches between Reel & Carousel) -->
+              <div style="display:flex;justify-content:center;position:relative;min-height:510px;align-items:center;">
+
+                <!-- Ambient Glow behind Mockup -->
+                <div id="vt-phone-glow" style="position:absolute;width:280px;height:420px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,92,0,0.25),transparent 70%);filter:blur(30px);pointer-events:none;transition:all 0.5s;"></div>
+
+                <!-- PHONE CONTAINER (9:16 REEL or 4:5 CAROUSEL) -->
+                <div id="vt-mockup-wrapper" style="width:260px;background:#050507;border-radius:36px;padding:10px;box-shadow:0 25px 60px rgba(0,0,0,0.9),0 0 0 1.5px rgba(255,255,255,0.12);position:relative;transition:all 0.4s cubic-bezier(0.16,1,0.3,1);">
+
+                  <!-- Dynamic Island (Reel mode only) -->
+                  <div id="vt-dynamic-island" style="width:68px;height:18px;background:#000;border-radius:20px;margin:2px auto 8px;display:flex;align-items:center;justify-content:center;">
+                    <div style="width:6px;height:6px;border-radius:50%;background:#093028;margin-left:auto;margin-right:8px;"></div>
+                  </div>
+
+                  <!-- SCREEN CANVAS -->
+                  <div id="vt-preview-screen" style="width:240px;height:426px;border-radius:26px;overflow:hidden;position:relative;background:linear-gradient(160deg,#0a0a0a,#240a00);display:flex;align-items:center;justify-content:center;flex-direction:column;transition:all 0.4s;user-select:none;">
+
+                    <!-- Top progress bar (Reel) -->
+                    <div id="vt-screen-top-progress" style="position:absolute;top:6px;left:10px;right:10px;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden;display:flex;gap:3px;">
+                      <div style="flex:1;height:100%;background:#fff;border-radius:2px;"></div>
+                      <div style="flex:1;height:100%;background:rgba(255,255,255,0.3);border-radius:2px;"></div>
+                      <div style="flex:1;height:100%;background:rgba(255,255,255,0.3);border-radius:2px;"></div>
+                    </div>
+
+                    <!-- Category Pill -->
+                    <div id="vt-preview-category" style="position:absolute;top:18px;right:14px;background:rgba(255,92,0,0.22);border:1px solid rgba(255,92,0,0.5);color:#FF5C00;font-size:9.5px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:0.3px;box-shadow:0 0 12px rgba(255,92,0,0.25);">
+                      ريلز
+                    </div>
+
+                    <!-- Slide counter -->
+                    <div id="vt-preview-number" style="position:absolute;top:18px;left:14px;font-size:9.5px;color:rgba(255,255,255,0.4);font-family:var(--mono);letter-spacing:1px;font-weight:700;">
+                      01 / 07
+                    </div>
+
+                    <!-- Side Social Actions (Mockup Instagram/TikTok) -->
+                    <div id="vt-screen-social-actions" style="position:absolute;left:10px;bottom:50px;display:flex;flex-direction:column;gap:12px;align-items:center;z-index:5;">
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                        <span style="font-size:16px;">❤️</span>
+                        <span style="font-size:9px;color:#fff;font-family:var(--mono);">12.4K</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                        <span style="font-size:16px;">💬</span>
+                        <span style="font-size:9px;color:#fff;font-family:var(--mono);">382</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                        <span style="font-size:16px;">↗️</span>
+                      </div>
+                    </div>
+
+                    <!-- MAIN SLIDE CONTENT -->
+                    <div id="vt-main-content-box" style="padding:22px 20px;text-align:center;width:100%;box-sizing:border-box;z-index:2;direction:rtl;">
+                      <div id="vt-preview-text" style="font-size:20px;font-weight:900;color:#ffffff;line-height:1.35;letter-spacing:-0.4px;transition:all 0.2s;text-shadow:0 2px 10px rgba(0,0,0,0.7);font-family:Cairo,sans-serif;">
+                        <!-- Injected text -->
+                      </div>
+                    </div>
+
+                    <!-- CTA SLIDE SPECIAL OVERLAY (Hidden by default, shown on CTA tab) -->
+                    <div id="vt-cta-overlay" style="display:none;position:absolute;inset:0;padding:24px 18px;box-sizing:border-box;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:10;direction:rtl;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);">
+                      <img src="/static/assets/author_mic.jpg" onerror="this.src='/static/assets/author_mic.jpg'" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid #FF5C00;box-shadow:0 0 20px rgba(255,92,0,0.5);margin-bottom:10px;">
+                      <div style="font-size:14px;font-weight:900;color:#fff;">د. زايد الحميري</div>
+                      <div style="font-size:11px;font-weight:700;color:#FF5C00;margin-bottom:14px;">@zayedtech</div>
+                      <div style="font-size:13px;font-weight:800;color:#f3f4f6;line-height:1.4;margin-bottom:14px;">هل توافق هذا الرأي؟ شاركنا رأيك في التعليقات!</div>
+                      <div style="background:#FF5C00;color:#fff;font-size:11px;font-weight:800;padding:6px 18px;border-radius:20px;box-shadow:0 4px 14px rgba(255,92,0,0.4);">+ متابعة للمزيد</div>
+                    </div>
+
+                    <!-- Author Footer Bar (Watermark) -->
+                    <div id="vt-screen-footer" style="position:absolute;bottom:14px;right:14px;left:14px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:11px;">🎤</span>
+                        <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.85);">د. زايد الحميري</span>
+                      </div>
+                      <span id="vt-footer-handle" style="font-size:9.5px;font-weight:700;color:#FF5C00;font-family:var(--mono);">@zayedtech</span>
+                    </div>
+
+                  </div>
+
+                  <!-- Home Indicator (Bottom) -->
+                  <div id="vt-home-bar" style="width:84px;height:4px;background:rgba(255,255,255,0.25);border-radius:2px;margin:8px auto 2px;"></div>
+                </div>
+
+              </div>
+
+              <!-- Replay & Quick Actions -->
+              <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;">
+                <button type="button" onclick="playVtAnimation()" class="btn ghost" style="padding:8px 16px;font-size:12px;font-weight:700;border-radius:10px;border-color:rgba(255,255,255,0.15);color:#fff;">
+                  🔄 تشغيل الحركة مرة أخرى
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ── SAVED TEMPLATES GALLERY (Full Width Bottom) ── -->
+        <div style="margin-top:48px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">📂</span>
+              <h2 style="margin:0;font-size:19px;font-weight:900;">مكتبة القوالب المحفوظة</h2>
+              <span id="vt-saved-count" style="font-size:12px;font-weight:800;color:var(--teal);background:rgba(20,184,166,0.15);padding:2px 10px;border-radius:20px;">4 قوالب</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);">اضغط على أي قالب لتطبيقه على المصمم فوراً</div>
+          </div>
+
+          <div id="vt-saved-templates" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:18px;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
       </section>
 
       <!-- ================= TEMPLATES ================= -->

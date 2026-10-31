@@ -54,10 +54,11 @@ window.showToast = function(message, type = 'success') {
 
 // ── Page map: which pages need auto-load on activation ──────────────────────
 const PAGE_LOADERS = {
-    'page-trends':    () => {},
-    'page-analytics': () => { loadAnalytics(); loadEngagement(); },
-    'page-recs':      () => loadRecs(),
-    'page-ai-usage':  () => { if (typeof loadAiUsage === 'function') loadAiUsage(); },
+    'page-trends':          () => {},
+    'page-analytics':       () => { loadAnalytics(); loadEngagement(); },
+    'page-recs':            () => loadRecs(),
+    'page-ai-usage':        () => { if (typeof loadAiUsage === 'function') loadAiUsage(); },
+    'page-visual-designer': () => { if (typeof loadVisualTemplates === 'function') loadVisualTemplates(); },
 };
 
 // ── Navigate to a page ────────────────────────────────────────────────────
@@ -3566,55 +3567,85 @@ function clearManualForm() {
 // ══════════════════════════════════════════════════════════════
 
 const VT_COLOR_PRESETS = [
-    { label: 'ليل نار',   c1: '#0a0a0a', c2: '#2d0800', accent: '#FF5C00' },
-    { label: 'بنفسجي',   c1: '#0d0520', c2: '#1e0a40', accent: '#a78bfa' },
-    { label: 'أزرق',     c1: '#020c1b', c2: '#0a1628', accent: '#38bdf8' },
-    { label: 'تيل',      c1: '#011514', c2: '#042f2e', accent: '#14b8a6' },
-    { label: 'ذهبي',     c1: '#0c0a00', c2: '#1a1200', accent: '#e0b563' },
-    { label: 'وردي',     c1: '#1a0010', c2: '#2d0022', accent: '#f472b6' },
-    { label: 'رمادي',    c1: '#0f0f0f', c2: '#1a1a1a', accent: '#94a3b8' },
-    { label: 'أخضر',     c1: '#001a0a', c2: '#002f14', accent: '#4ade80' },
+    { label: 'لهب زايد تيك', c1: '#0a0a0a', c2: '#240a00', accent: '#FF5C00' },
+    { label: 'سايبر بنفسجي', c1: '#070514', c2: '#1a0f3c', accent: '#8B5CF6' },
+    { label: 'زمردي أعمال',  c1: '#041712', c2: '#0e382c', accent: '#10B981' },
+    { label: 'أزرق نيون',    c1: '#020c1b', c2: '#0b1f3a', accent: '#38BDF8' },
+    { label: 'ذهبي ملكي',    c1: '#0c0a02', c2: '#261d06', accent: '#F59E0B' },
+    { label: 'قرمزي قوي',    c1: '#0d0406', c2: '#260a10', accent: '#EF4444' },
+    { label: 'مينيمال كربون', c1: '#090a0d', c2: '#161922', accent: '#14B8A6' },
+    { label: 'وردي فاقع',    c1: '#14030d', c2: '#2b061b', accent: '#EC4899' },
 ];
 
 const VT_ANIMATIONS = [
-    { id: 'slideUp',   label: '⬆️ من الأسفل' },
+    { id: 'slideUp',   label: '⬆️ صعود' },
+    { id: 'scaleIn',   label: '💫 انبثاق' },
     { id: 'fadeIn',    label: '🌅 تلاشي' },
-    { id: 'scaleIn',   label: '🔍 تكبير' },
     { id: 'slideLeft', label: '⬅️ من اليمين' },
 ];
 
 let vtState = {
-    name: 'قالب جديد',
+    name: 'قالب زايد تيك المميز',
     type: 'REEL',
     bgType: 'gradient',
     color1: '#0a0a0a',
-    color2: '#1a0500',
+    color2: '#240a00',
     textColor: '#ffffff',
     accentColor: '#FF5C00',
     fontSize: 42,
     align: 'center',
     animation: 'slideUp',
+    currentSlideView: 'hook'
 };
 
+const SAMPLE_HEADLINES = [
+    'غوغل خسرت نصف تريليون دولار في يوم واحد — أسوأ يوم في تاريخ الشركة!',
+    '3 أسرار تجعل فيديوهاتك الفيروسية تتصدر ريلز إنستغرام وتيك توك 🔥',
+    'لماذا يرفض المستثمرون 95% من الشركات الناشئة؟ الخطأ القاتل 💡',
+    'الذكاء الاصطناعي يستبدل هذه الوظائف خلال 12 شهراً فقط 🤖',
+];
+let currentSampleIndex = 0;
+
+function loadSampleTextPreset() {
+    currentSampleIndex = (currentSampleIndex + 1) % SAMPLE_HEADLINES.length;
+    const input = document.getElementById('vt-sample-text');
+    if (input) {
+        input.value = SAMPLE_HEADLINES[currentSampleIndex];
+        updateVtPreview();
+    }
+}
+
 function loadVisualTemplates() {
-    // Render color presets
+    // Render color presets as luxury cards
     const presetsEl = document.getElementById('vt-color-presets');
-    if (presetsEl && !presetsEl.children.length) {
+    if (presetsEl) {
         presetsEl.innerHTML = VT_COLOR_PRESETS.map((p, i) => `
             <div onclick="applyVtPreset(${i})" title="${p.label}" style="
-                width:32px;height:32px;border-radius:8px;cursor:pointer;
-                background:linear-gradient(135deg,${p.c1},${p.c2});
-                border:2px solid ${p.accent};
-                transition:transform 0.15s;
-            " onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></div>
+                border-radius:14px;cursor:pointer;overflow:hidden;
+                border:2px solid ${vtState.color1 === p.c1 && vtState.accentColor === p.accent ? p.accent : 'transparent'};
+                background:rgba(0,0,0,0.3);
+                transition:all 0.2s cubic-bezier(0.16,1,0.3,1);
+                box-shadow:0 6px 16px rgba(0,0,0,0.4);
+            " onmouseover="this.style.borderColor='${p.accent}';this.style.transform='translateY(-3px)'" onmouseout="if(vtState.accentColor !== '${p.accent}') this.style.borderColor='transparent';this.style.transform='translateY(0)'">
+                <div style="height:44px;background:linear-gradient(135deg,${p.c1},${p.c2});position:relative;display:flex;align-items:center;justify-content:center;">
+                    <div style="width:14px;height:14px;border-radius:50%;background:${p.accent};box-shadow:0 0 10px ${p.accent};border:2px solid rgba(255,255,255,0.8);"></div>
+                </div>
+                <div style="padding:6px 4px;text-align:center;font-size:11px;font-weight:800;color:${p.accent};background:rgba(0,0,0,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.label}</div>
+            </div>
         `).join('');
     }
 
     // Render animations
     const animGrid = document.getElementById('vt-animation-grid');
-    if (animGrid && !animGrid.children.length) {
+    if (animGrid) {
         animGrid.innerHTML = VT_ANIMATIONS.map(a => `
-            <button id="vt-anim-${a.id}" onclick="setVtAnimation('${a.id}')" class="btn ${a.id === vtState.animation ? '' : 'ghost'}" style="padding:8px;font-size:12px;font-weight:600;">${a.label}</button>
+            <button id="vt-anim-${a.id}" onclick="setVtAnimation('${a.id}')" type="button" style="
+                padding:11px 8px;font-size:12px;font-weight:800;cursor:pointer;
+                border-radius:12px;transition:all 0.2s;
+                border:1.5px solid ${a.id === vtState.animation ? '#FF5C00' : 'var(--line)'};
+                background:${a.id === vtState.animation ? 'rgba(255,92,0,0.15)' : 'rgba(0,0,0,0.2)'};
+                color:${a.id === vtState.animation ? '#FF5C00' : 'var(--muted)'};
+            ">${a.label}</button>
         `).join('');
     }
 
@@ -3632,49 +3663,169 @@ function applyVtPreset(idx) {
     vtState.color1 = p.c1;
     vtState.color2 = p.c2;
     vtState.accentColor = p.accent;
-    document.getElementById('vt-color1').value = p.c1;
-    document.getElementById('vt-color1-hex').value = p.c1;
-    document.getElementById('vt-color2').value = p.c2;
-    document.getElementById('vt-color2-hex').value = p.c2;
-    document.getElementById('vt-accent-color').value = p.accent;
-    document.getElementById('vt-accent-color-label').textContent = p.accent;
+    const c1 = document.getElementById('vt-color1');
+    const c1Hex = document.getElementById('vt-color1-hex');
+    const c2 = document.getElementById('vt-color2');
+    const c2Hex = document.getElementById('vt-color2-hex');
+    const acc = document.getElementById('vt-accent-color');
+    const accLabel = document.getElementById('vt-accent-color-label');
+
+    if (c1) c1.value = p.c1;
+    if (c1Hex) c1Hex.value = p.c1;
+    if (c2) c2.value = p.c2;
+    if (c2Hex) c2Hex.value = p.c2;
+    if (acc) acc.value = p.accent;
+    if (accLabel) accLabel.textContent = p.accent;
+
+    // Refresh preset card borders
+    const presetsEl = document.getElementById('vt-color-presets');
+    if (presetsEl) {
+        Array.from(presetsEl.children).forEach((child, i) => {
+            child.style.borderColor = i === idx ? p.accent : 'transparent';
+        });
+    }
+
     updateVtPreview();
+    playVtAnimation();
 }
 
 function syncColorPicker(pickerId, hexId) {
     const hex = document.getElementById(hexId).value;
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-        document.getElementById(pickerId).value = hex;
+        const picker = document.getElementById(pickerId);
+        if (picker) picker.value = hex;
         updateVtPreview();
     }
 }
 
 function setVtType(type, silent) {
     vtState.type = type;
-    const reel = document.getElementById('vt-type-reel');
-    const carousel = document.getElementById('vt-type-carousel');
-    if (reel && carousel) {
-        const activeStyle = 'background:rgba(255,92,0,0.15);border-color:#FF5C00;color:#FF5C00;';
-        const carouselActiveStyle = 'background:rgba(20,184,166,0.15);border-color:#14b8a6;color:#14b8a6;';
-        const inactiveStyle = 'background:rgba(0,0,0,0.1);border-color:var(--line);color:var(--muted);';
-        reel.style.cssText += type === 'REEL' ? activeStyle : inactiveStyle;
-        carousel.style.cssText += type === 'CAROUSEL' ? carouselActiveStyle : inactiveStyle;
+    const reelBtn = document.getElementById('vt-type-reel');
+    const carouselBtn = document.getElementById('vt-type-carousel');
+    const wrapper = document.getElementById('vt-mockup-wrapper');
+    const screen = document.getElementById('vt-preview-screen');
+    const island = document.getElementById('vt-dynamic-island');
+    const topProgress = document.getElementById('vt-screen-top-progress');
+    const socialActions = document.getElementById('vt-screen-social-actions');
+    const stageTitle = document.getElementById('vt-stage-title');
+
+    if (type === 'REEL') {
+        if (reelBtn) {
+            reelBtn.style.border = '2px solid #FF5C00';
+            reelBtn.style.background = 'rgba(255,92,0,0.18)';
+            reelBtn.style.color = '#FF5C00';
+        }
+        if (carouselBtn) {
+            carouselBtn.style.border = '2px solid var(--line)';
+            carouselBtn.style.background = 'rgba(0,0,0,0.2)';
+            carouselBtn.style.color = 'var(--muted)';
+        }
+        if (wrapper) wrapper.style.width = '260px';
+        if (screen) {
+            screen.style.width = '240px';
+            screen.style.height = '426px';
+            screen.style.borderRadius = '26px';
+        }
+        if (island) island.style.display = 'flex';
+        if (topProgress) topProgress.style.display = 'flex';
+        if (socialActions) socialActions.style.display = 'flex';
+        if (stageTitle) stageTitle.textContent = 'معاينة ريلز مباشر (9:16)';
+    } else {
+        if (carouselBtn) {
+            carouselBtn.style.border = '2px solid #14b8a6';
+            carouselBtn.style.background = 'rgba(20,184,166,0.18)';
+            carouselBtn.style.color = '#14b8a6';
+        }
+        if (reelBtn) {
+            reelBtn.style.border = '2px solid var(--line)';
+            reelBtn.style.background = 'rgba(0,0,0,0.2)';
+            reelBtn.style.color = 'var(--muted)';
+        }
+        if (wrapper) wrapper.style.width = '320px';
+        if (screen) {
+            screen.style.width = '300px';
+            screen.style.height = '375px'; // 4:5 Carousel aspect ratio
+            screen.style.borderRadius = '20px';
+        }
+        if (island) island.style.display = 'none';
+        if (topProgress) topProgress.style.display = 'none';
+        if (socialActions) socialActions.style.display = 'none';
+        if (stageTitle) stageTitle.textContent = 'معاينة كاروسيل إنستغرام (4:5)';
     }
+
     if (!silent) updateVtPreview();
+}
+
+function setVtSlideView(view) {
+    vtState.currentSlideView = view;
+    ['hook', 'body', 'cta'].forEach(v => {
+        const tab = document.getElementById(`vt-slide-tab-${v}`);
+        if (tab) {
+            const active = v === view;
+            tab.style.border = active ? '1px solid #FF5C00' : '1px solid var(--line)';
+            tab.style.background = active ? 'rgba(255,92,0,0.2)' : 'transparent';
+            tab.style.color = active ? '#FF5C00' : 'var(--muted)';
+        }
+    });
+
+    const ctaOverlay = document.getElementById('vt-cta-overlay');
+    const mainContent = document.getElementById('vt-main-content-box');
+    const numberEl = document.getElementById('vt-preview-number');
+
+    if (view === 'cta') {
+        if (ctaOverlay) ctaOverlay.style.display = 'flex';
+        if (mainContent) mainContent.style.opacity = '0';
+        if (numberEl) numberEl.textContent = '07 / 07';
+    } else if (view === 'body') {
+        if (ctaOverlay) ctaOverlay.style.display = 'none';
+        if (mainContent) {
+            mainContent.style.opacity = '1';
+            const textEl = document.getElementById('vt-preview-text');
+            if (textEl) textEl.textContent = 'الشركات التي لا تتبنى الذكاء الاصطناعي الآن ستخرج من السوق نهائياً خلال عامين.';
+        }
+        if (numberEl) numberEl.textContent = '03 / 07';
+        playVtAnimation();
+    } else {
+        // hook
+        if (ctaOverlay) ctaOverlay.style.display = 'none';
+        if (mainContent) {
+            mainContent.style.opacity = '1';
+            const textEl = document.getElementById('vt-preview-text');
+            const sampleInput = document.getElementById('vt-sample-text');
+            if (textEl) textEl.textContent = sampleInput ? sampleInput.value : 'نص الخطاف الرئيسي';
+        }
+        if (numberEl) numberEl.textContent = '01 / 07';
+        playVtAnimation();
+    }
 }
 
 function setVtBg(bgType) {
     vtState.bgType = bgType;
     ['gradient','solid','dark'].forEach(t => {
         const btn = document.getElementById('vt-bg-' + t);
-        if (btn) { btn.className = t === bgType ? 'btn' : 'btn ghost'; }
+        if (!btn) return;
+        const active = t === bgType;
+        btn.style.border = active ? '1.5px solid #FF5C00' : '1.5px solid var(--line)';
+        btn.style.background = active ? 'rgba(255,92,0,0.18)' : 'transparent';
+        btn.style.color = active ? '#FF5C00' : 'var(--muted)';
     });
-    if (bgType === 'dark') {
-        vtState.color1 = '#000000'; vtState.color2 = '#0a0a0a';
-        document.getElementById('vt-color1').value = '#000000';
-        document.getElementById('vt-color1-hex').value = '#000000';
-        document.getElementById('vt-color2').value = '#0a0a0a';
-        document.getElementById('vt-color2-hex').value = '#0a0a0a';
+
+    const c2Container = document.getElementById('vt-color2-container');
+    if (bgType === 'solid') {
+        if (c2Container) c2Container.style.opacity = '0.35';
+    } else if (bgType === 'dark') {
+        if (c2Container) c2Container.style.opacity = '1';
+        vtState.color1 = '#060608'; vtState.color2 = '#111218';
+        const c1 = document.getElementById('vt-color1');
+        const c1Hex = document.getElementById('vt-color1-hex');
+        const c2 = document.getElementById('vt-color2');
+        const c2Hex = document.getElementById('vt-color2-hex');
+        if (c1) c1.value = '#060608';
+        if (c1Hex) c1Hex.value = '#060608';
+        if (c2) c2.value = '#111218';
+        if (c2Hex) c2Hex.value = '#111218';
+    } else {
+        if (c2Container) c2Container.style.opacity = '1';
     }
     updateVtPreview();
 }
@@ -3683,7 +3834,11 @@ function setVtAlign(align, silent) {
     vtState.align = align;
     ['center','right','left'].forEach(a => {
         const btn = document.getElementById('vt-align-' + a);
-        if (btn) btn.className = a === align ? 'btn' : 'btn ghost';
+        if (!btn) return;
+        const active = a === align;
+        btn.style.border = active ? '1.5px solid #FF5C00' : '1.5px solid var(--line)';
+        btn.style.background = active ? 'rgba(255,92,0,0.18)' : 'rgba(0,0,0,0.2)';
+        btn.style.color = active ? '#FF5C00' : 'var(--muted)';
     });
     if (!silent) updateVtPreview();
 }
@@ -3692,98 +3847,189 @@ function setVtAnimation(anim) {
     vtState.animation = anim;
     VT_ANIMATIONS.forEach(a => {
         const btn = document.getElementById('vt-anim-' + a.id);
-        if (btn) btn.className = a.id === anim ? 'btn' : 'btn ghost';
+        if (!btn) return;
+        const active = a.id === anim;
+        btn.style.border = active ? '1.5px solid #FF5C00' : '1.5px solid var(--line)';
+        btn.style.background = active ? 'rgba(255,92,0,0.18)' : 'rgba(0,0,0,0.2)';
+        btn.style.color = active ? '#FF5C00' : 'var(--muted)';
     });
-    // Play animation preview
-    const screen = document.getElementById('vt-preview-screen');
-    const text = document.getElementById('vt-preview-text');
-    if (text) {
-        text.style.animation = 'none';
-        setTimeout(() => {
-            text.style.animation = `vt-${anim} 0.5s ease forwards`;
-        }, 50);
-    }
+    playVtAnimation();
+}
+
+function playVtAnimation() {
+    const box = document.getElementById('vt-main-content-box');
+    if (!box) return;
+    box.style.animation = 'none';
+    box.offsetHeight; /* trigger reflow */
+    box.style.animation = `vt-${vtState.animation} 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
+}
+
+function resetVtDesigner() {
+    vtState = {
+        name: 'قالب زايد تيك المميز',
+        type: 'REEL',
+        bgType: 'gradient',
+        color1: '#0a0a0a',
+        color2: '#240a00',
+        textColor: '#ffffff',
+        accentColor: '#FF5C00',
+        fontSize: 42,
+        align: 'center',
+        animation: 'slideUp',
+        currentSlideView: 'hook'
+    };
+    const nameEl = document.getElementById('vt-name');
+    const c1 = document.getElementById('vt-color1');
+    const c1Hex = document.getElementById('vt-color1-hex');
+    const c2 = document.getElementById('vt-color2');
+    const c2Hex = document.getElementById('vt-color2-hex');
+    const textC = document.getElementById('vt-text-color');
+    const accC = document.getElementById('vt-accent-color');
+    const fontS = document.getElementById('vt-font-size');
+    const fontSVal = document.getElementById('vt-font-size-val');
+
+    if (nameEl) nameEl.value = vtState.name;
+    if (c1) c1.value = vtState.color1;
+    if (c1Hex) c1Hex.value = vtState.color1;
+    if (c2) c2.value = vtState.color2;
+    if (c2Hex) c2Hex.value = vtState.color2;
+    if (textC) textC.value = vtState.textColor;
+    if (accC) accC.value = vtState.accentColor;
+    if (fontS) fontS.value = vtState.fontSize;
+    if (fontSVal) fontSVal.textContent = vtState.fontSize;
+
+    setVtType('REEL', true);
+    setVtAlign('center', true);
+    setVtAnimation('slideUp');
+    setVtBg('gradient');
+    setVtSlideView('hook');
+    updateVtPreview();
+    showToast('↺ تم إعادة ضبط المصمم', 'success');
 }
 
 function updateVtPreview() {
     const screen = document.getElementById('vt-preview-screen');
     const textEl = document.getElementById('vt-preview-text');
-    const accentBar = document.getElementById('vt-preview-accent-bar');
-    const dot = document.getElementById('vt-preview-dot');
     const catEl = document.getElementById('vt-preview-category');
+    const glow = document.getElementById('vt-phone-glow');
+    const footerHandle = document.getElementById('vt-footer-handle');
     if (!screen) return;
 
-    // Read current values
-    vtState.color1 = document.getElementById('vt-color1').value;
-    vtState.color2 = document.getElementById('vt-color2').value;
-    vtState.textColor = document.getElementById('vt-text-color').value;
-    vtState.accentColor = document.getElementById('vt-accent-color').value;
-    vtState.fontSize = document.getElementById('vt-font-size').value;
-    const sampleText = document.getElementById('vt-sample-text').value || 'نص تجريبي';
+    // Read values safely
+    const c1El = document.getElementById('vt-color1');
+    const c2El = document.getElementById('vt-color2');
+    const textCEl = document.getElementById('vt-text-color');
+    const accCEl = document.getElementById('vt-accent-color');
+    const fontSEl = document.getElementById('vt-font-size');
+    const sampleInput = document.getElementById('vt-sample-text');
 
-    // Update hex labels
-    document.getElementById('vt-text-color-label').textContent = vtState.textColor;
-    document.getElementById('vt-accent-color-label').textContent = vtState.accentColor;
-    document.getElementById('vt-color1-hex').value = vtState.color1;
-    document.getElementById('vt-color2-hex').value = vtState.color2;
+    if (c1El) vtState.color1 = c1El.value;
+    if (c2El) vtState.color2 = c2El.value;
+    if (textCEl) vtState.textColor = textCEl.value;
+    if (accCEl) vtState.accentColor = accCEl.value;
+    if (fontSEl) vtState.fontSize = parseInt(fontSEl.value) || 42;
 
+    // Update labels
+    const textCLabel = document.getElementById('vt-text-color-label');
+    const accCLabel = document.getElementById('vt-accent-color-label');
+    const c1Hex = document.getElementById('vt-color1-hex');
+    const c2Hex = document.getElementById('vt-color2-hex');
+    if (textCLabel) textCLabel.textContent = vtState.textColor;
+    if (accCLabel) accCLabel.textContent = vtState.accentColor;
+    if (c1Hex) c1Hex.value = vtState.color1;
+    if (c2Hex) c2Hex.value = vtState.color2;
+
+    // Apply Background
     const bg = vtState.bgType === 'solid'
         ? vtState.color1
         : `linear-gradient(160deg, ${vtState.color1}, ${vtState.color2})`;
-
     screen.style.background = bg;
-    if (textEl) {
+
+    // Apply Typography
+    if (textEl && vtState.currentSlideView !== 'body') {
         textEl.style.color = vtState.textColor;
-        textEl.style.fontSize = Math.round(vtState.fontSize * 0.52) + 'px';
+        textEl.style.fontSize = Math.round(vtState.fontSize * 0.48) + 'px';
         textEl.style.textAlign = vtState.align;
-        textEl.textContent = sampleText;
+        if (vtState.currentSlideView === 'hook' && sampleInput) {
+            textEl.textContent = sampleInput.value || 'نص الخطاف الرئيسي';
+        }
     }
-    if (accentBar) accentBar.style.background = vtState.accentColor;
-    if (dot) dot.style.background = vtState.accentColor;
+
+    // Apply Accent to elements
     if (catEl) {
         catEl.style.color = vtState.accentColor;
-        catEl.style.borderColor = vtState.accentColor + '66';
-        catEl.style.background = vtState.accentColor + '22';
+        catEl.style.borderColor = vtState.accentColor + '80';
+        catEl.style.background = vtState.accentColor + '25';
+        catEl.style.boxShadow = `0 0 14px ${vtState.accentColor}40`;
         catEl.textContent = vtState.type === 'REEL' ? 'ريلز' : 'كاروسيل';
+    }
+
+    if (footerHandle) {
+        footerHandle.style.color = vtState.accentColor;
+    }
+
+    // Ambient Glow
+    if (glow) {
+        glow.style.background = `radial-gradient(ellipse at center, ${vtState.accentColor}35, transparent 70%)`;
     }
 }
 
 async function saveVisualTemplate() {
-    vtState.name = document.getElementById('vt-name').value.trim() || 'قالب جديد';
-    vtState.color1 = document.getElementById('vt-color1').value;
-    vtState.color2 = document.getElementById('vt-color2').value;
-    vtState.textColor = document.getElementById('vt-text-color').value;
-    vtState.accentColor = document.getElementById('vt-accent-color').value;
-    vtState.fontSize = parseInt(document.getElementById('vt-font-size').value);
+    const nameEl = document.getElementById('vt-name');
+    vtState.name = nameEl ? nameEl.value.trim() : 'قالب مخصص';
+    if (!vtState.name) vtState.name = 'قالب جديد';
+
+    const payload = {
+        name: vtState.name,
+        template_type: vtState.type,
+        bg_type: vtState.bgType,
+        bg_color1: vtState.color1,
+        bg_color2: vtState.color2,
+        text_color: vtState.textColor,
+        accent_color: vtState.accentColor,
+        font_size: vtState.fontSize,
+        text_align: vtState.align,
+        animation: vtState.animation,
+    };
 
     try {
         const token = localStorage.getItem('cm_token');
         const res = await fetch(`${API_BASE}/visual-templates/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                name: vtState.name,
-                template_type: vtState.type,
-                bg_type: vtState.bgType,
-                bg_color1: vtState.color1,
-                bg_color2: vtState.color2,
-                text_color: vtState.textColor,
-                accent_color: vtState.accentColor,
-                font_size: vtState.fontSize,
-                text_align: vtState.align,
-                animation: vtState.animation,
-            })
+            body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error('Save failed');
-        showToast('✅ تم حفظ القالب: ' + vtState.name, 'success');
+        showToast('✅ تم حفظ القالب في قاعدة البيانات: ' + vtState.name, 'success');
         fetchSavedVisualTemplates();
     } catch (e) {
-        // If API not ready yet, save to localStorage as fallback
+        // Fallback to local storage
         const saved = JSON.parse(localStorage.getItem('visual_templates') || '[]');
-        saved.push({ ...vtState, id: Date.now() });
+        saved.push({ ...payload, id: Date.now() });
         localStorage.setItem('visual_templates', JSON.stringify(saved));
-        showToast('💾 تم الحفظ محلياً: ' + vtState.name, 'success');
-        renderSavedVtFromLocal();
+        showToast('💾 تم حفظ القالب محلياً: ' + vtState.name, 'success');
+        renderSavedVt(saved);
+    }
+}
+
+async function deleteVisualTemplate(id, e) {
+    if (e) e.stopPropagation();
+    if (!confirm('هل تريد حذف هذا القالب؟')) return;
+
+    try {
+        const token = localStorage.getItem('cm_token');
+        await fetch(`${API_BASE}/visual-templates/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        showToast('🗑️ تم حذف القالب', 'info');
+        fetchSavedVisualTemplates();
+    } catch {
+        // Remove from local storage
+        let saved = JSON.parse(localStorage.getItem('visual_templates') || '[]');
+        saved = saved.filter(t => t.id !== id);
+        localStorage.setItem('visual_templates', JSON.stringify(saved));
+        renderSavedVt(saved);
     }
 }
 
@@ -3810,70 +4056,121 @@ function renderSavedVt(templates) {
     const container = document.getElementById('vt-saved-templates');
     const countEl = document.getElementById('vt-saved-count');
     if (!container) return;
-    if (countEl) countEl.textContent = templates.length + ' قالب';
-    if (!templates.length) {
-        container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;grid-column:1/-1;">لا توجد قوالب محفوظة بعد</div>';
+    if (countEl) countEl.textContent = (templates.length || 0) + ' قوالب';
+    if (!templates || !templates.length) {
+        container.innerHTML = '<div style="text-align:center;padding:36px 10px;color:var(--muted);font-size:13px;grid-column:1/-1;border:1.5px dashed var(--line);border-radius:16px;">لا توجد قوالب محفوظة بعد — صمم واحفظ أول قالب بالأعلى!</div>';
         return;
     }
-    container.innerHTML = templates.map(t => `
+
+    container.innerHTML = templates.map(t => {
+        const isReel = (t.template_type || t.type) === 'REEL';
+        const typeBadge = isReel
+            ? '<span style="background:rgba(255,92,0,0.15);color:#FF5C00;border:1px solid rgba(255,92,0,0.3);font-size:10px;font-weight:800;padding:2px 8px;border-radius:12px;">🎬 ريلز</span>'
+            : '<span style="background:rgba(20,184,166,0.15);color:#14b8a6;border:1px solid rgba(20,184,166,0.3);font-size:10px;font-weight:800;padding:2px 8px;border-radius:12px;">🖼️ كاروسيل</span>';
+        const accent = t.accent_color || t.accentColor || '#FF5C00';
+        const bg = t.bg_type === 'solid'
+            ? (t.bg_color1 || t.color1 || '#0a0a0a')
+            : `linear-gradient(135deg, ${t.bg_color1 || t.color1 || '#0a0a0a'}, ${t.bg_color2 || t.color2 || '#1a0500'})`;
+
+        return `
         <div onclick="loadVtTemplate(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="
-            border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid transparent;
-            transition:all 0.2s;box-shadow:0 4px 12px rgba(0,0,0,0.3);
-        " onmouseover="this.style.borderColor='${t.accent_color || t.accentColor || '#FF5C00'}';this.style.transform='translateY(-2px)'"
-           onmouseout="this.style.borderColor='transparent';this.style.transform='translateY(0)'">
-            <div style="
-                height:80px;
-                background:linear-gradient(160deg,${t.bg_color1 || t.color1 || '#0a0a0a'},${t.bg_color2 || t.color2 || '#1a0500'});
-                display:flex;align-items:center;justify-content:center;
-                font-size:11px;font-weight:800;color:${t.text_color || t.textColor || '#fff'};
-                padding:8px;text-align:center;direction:rtl;
-            ">نموذج</div>
-            <div style="background:var(--panel-2);padding:8px 10px;">
-                <div style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
-                <div style="font-size:10px;color:${t.accent_color || t.accentColor || '#FF5C00'};margin-top:2px;">${t.template_type || t.type || 'REEL'}</div>
+            background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;
+            transition:all 0.25s cubic-bezier(0.16,1,0.3,1);box-shadow:0 8px 24px rgba(0,0,0,0.3);position:relative;
+        " onmouseover="this.style.borderColor='${accent}';this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 30px rgba(0,0,0,0.5)'"
+           onmouseout="this.style.borderColor='var(--line)';this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)'">
+
+            <!-- Card Banner Preview -->
+            <div style="height:110px;background:${bg};position:relative;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;">
+                <div style="position:absolute;top:10px;right:10px;">${typeBadge}</div>
+                <div style="font-size:14px;font-weight:900;color:${t.text_color || t.textColor || '#fff'};text-align:center;direction:rtl;line-height:1.3;text-shadow:0 2px 8px rgba(0,0,0,0.8);max-width:85%;">
+                    ${t.name}
+                </div>
+                <div style="position:absolute;bottom:8px;left:10px;width:12px;height:12px;border-radius:50%;background:${accent};box-shadow:0 0 10px ${accent};"></div>
+            </div>
+
+            <!-- Card Details -->
+            <div style="padding:14px 16px;background:var(--panel-2);display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);">
+                <div>
+                    <div style="font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${t.name}</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">خط ${t.font_size || 42}px · ${t.animation || 'slideUp'}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <button type="button" onclick="loadVtTemplate(${JSON.stringify(t).replace(/"/g,'&quot;')})" class="btn ghost" style="padding:6px 12px;font-size:11px;font-weight:700;border-color:${accent};color:${accent};">
+                        تطبيق ⚡
+                    </button>
+                    ${t.id ? `<button type="button" onclick="deleteVisualTemplate(${t.id}, event)" title="حذف القالب" style="background:none;border:none;color:#ef4444;font-size:14px;cursor:pointer;padding:4px 6px;">🗑️</button>` : ''}
+                </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function loadVtTemplate(t) {
-    // Load a saved template into the designer
     vtState.name = t.name;
     vtState.type = t.template_type || t.type || 'REEL';
     vtState.bgType = t.bg_type || t.bgType || 'gradient';
     vtState.color1 = t.bg_color1 || t.color1 || '#0a0a0a';
-    vtState.color2 = t.bg_color2 || t.color2 || '#1a0500';
+    vtState.color2 = t.bg_color2 || t.color2 || '#240a00';
     vtState.textColor = t.text_color || t.textColor || '#ffffff';
     vtState.accentColor = t.accent_color || t.accentColor || '#FF5C00';
     vtState.fontSize = t.font_size || t.fontSize || 42;
     vtState.align = t.text_align || t.align || 'center';
     vtState.animation = t.animation || 'slideUp';
 
-    document.getElementById('vt-name').value = vtState.name;
-    document.getElementById('vt-color1').value = vtState.color1;
-    document.getElementById('vt-color1-hex').value = vtState.color1;
-    document.getElementById('vt-color2').value = vtState.color2;
-    document.getElementById('vt-color2-hex').value = vtState.color2;
-    document.getElementById('vt-text-color').value = vtState.textColor;
-    document.getElementById('vt-accent-color').value = vtState.accentColor;
-    document.getElementById('vt-font-size').value = vtState.fontSize;
-    document.getElementById('vt-font-size-val').textContent = vtState.fontSize;
+    const nameEl = document.getElementById('vt-name');
+    const c1 = document.getElementById('vt-color1');
+    const c1Hex = document.getElementById('vt-color1-hex');
+    const c2 = document.getElementById('vt-color2');
+    const c2Hex = document.getElementById('vt-color2-hex');
+    const textC = document.getElementById('vt-text-color');
+    const accC = document.getElementById('vt-accent-color');
+    const fontS = document.getElementById('vt-font-size');
+    const fontSVal = document.getElementById('vt-font-size-val');
+
+    if (nameEl) nameEl.value = vtState.name;
+    if (c1) c1.value = vtState.color1;
+    if (c1Hex) c1Hex.value = vtState.color1;
+    if (c2) c2.value = vtState.color2;
+    if (c2Hex) c2Hex.value = vtState.color2;
+    if (textC) textC.value = vtState.textColor;
+    if (accC) accC.value = vtState.accentColor;
+    if (fontS) fontS.value = vtState.fontSize;
+    if (fontSVal) fontSVal.textContent = vtState.fontSize;
 
     setVtType(vtState.type, true);
     setVtAlign(vtState.align, true);
     setVtAnimation(vtState.animation);
+    setVtBg(vtState.bgType);
     updateVtPreview();
-    showToast('📂 تم تحميل القالب: ' + vtState.name, 'success');
+    playVtAnimation();
+    showToast('✨ تم تطبيق القالب: ' + vtState.name, 'success');
+
+    // Scroll smoothly to studio top
+    const studio = document.getElementById('page-visual-designer');
+    if (studio) studio.scrollIntoView({ behavior: 'smooth' });
 }
 
-// CSS animations injected once
+// Keyframe animations
 (function injectVtStyles() {
     const style = document.createElement('style');
     style.textContent = `
-        @keyframes vt-slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes vt-fadeIn  { from { opacity:0; } to { opacity:1; } }
-        @keyframes vt-scaleIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
-        @keyframes vt-slideLeft { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes vt-slideUp {
+            0% { opacity:0; transform:translateY(36px) scale(0.96); filter:blur(4px); }
+            100% { opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
+        }
+        @keyframes vt-scaleIn {
+            0% { opacity:0; transform:scale(0.82); filter:blur(6px); }
+            100% { opacity:1; transform:scale(1); filter:blur(0); }
+        }
+        @keyframes vt-fadeIn {
+            0% { opacity:0; }
+            100% { opacity:1; }
+        }
+        @keyframes vt-slideLeft {
+            0% { opacity:0; transform:translateX(45px); filter:blur(4px); }
+            100% { opacity:1; transform:translateX(0); filter:blur(0); }
+        }
     `;
     document.head.appendChild(style);
 })();
