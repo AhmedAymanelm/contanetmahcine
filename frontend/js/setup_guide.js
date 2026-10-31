@@ -8,8 +8,20 @@ const GUIDE_PLATFORMS = {
         icon: "📸",
         themeColor: "#E1306C",
         gradient: "linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)",
-        docsUrl: "https://developers.facebook.com/tools/explorer/",
-        quickLinkText: "فتح Meta Graph API Explorer ↗",
+        docsUrl: "https://developers.facebook.com/apps/1946684199371023/use_cases/customize/Unified-Login-API-Setup/?product_route=instagram-business",
+        quickLinkText: "فتح شاشة إنشاء الرمز في تطبيقك ↗",
+        actionButtons: [
+            {
+                text: "🚀 فتح شاشة إنشاء الرمز في تطبيقك ↗",
+                url: "https://developers.facebook.com/apps/1946684199371023/use_cases/customize/Unified-Login-API-Setup/?product_route=instagram-business",
+                style: "background:#fff; color:#0f172a;"
+            },
+            {
+                text: "⚡ أداة تمديد التوكن (Token Debugger) ↗",
+                url: "https://developers.facebook.com/tools/debug/accesstoken/",
+                style: "background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.35);"
+            }
+        ],
         requirements: [
             "حساب إنستغرام للأعمال أو منشئ محتوى (Professional / Creator Account) — ليس حساباً شخصياً.",
             "صفحة فيسبوك مرتبطة بهذا الحساب (مرتبطة من إعدادات إنستغرام أو Facebook Pages).",
@@ -415,6 +427,25 @@ function renderActiveGuidePlatform() {
         </details>
     `).join('');
 
+    // Hero Action Buttons
+    let heroButtonsHtml = '';
+    if (p.actionButtons && p.actionButtons.length) {
+        heroButtonsHtml = `<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">` +
+            p.actionButtons.map(b => `
+                <a href="${b.url}" target="_blank" rel="noopener noreferrer" 
+                    style="${b.style || 'background:#fff; color:#0f172a;'}; font-weight:800; font-size:0.86rem; padding:10px 18px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                    ${b.text}
+                </a>
+            `).join('') + `</div>`;
+    } else {
+        heroButtonsHtml = `
+            <a href="${p.docsUrl}" target="_blank" rel="noopener noreferrer" 
+                style="background:#fff; color:#0f172a; font-weight:800; font-size:0.9rem; padding:12px 22px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                ${p.quickLinkText}
+            </a>
+        `;
+    }
+
     container.innerHTML = `
         <!-- Hero Card -->
         <div style="background:${p.gradient}; border-radius:18px; padding:24px 28px; color:#fff; margin-bottom:28px; box-shadow:0 12px 30px rgba(0,0,0,0.3); display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap;">
@@ -427,10 +458,7 @@ function renderActiveGuidePlatform() {
                     دليل استخراج التوكن والمفاتيح خطوة بخطوة للربط مع نظام النشر التلقائي في Content Machine.
                 </p>
             </div>
-            <a href="${p.docsUrl}" target="_blank" rel="noopener noreferrer" 
-                style="background:#fff; color:#0f172a; font-weight:800; font-size:0.9rem; padding:12px 22px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                ${p.quickLinkText}
-            </a>
+            ${heroButtonsHtml}
         </div>
 
         <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:24px;">
