@@ -91,10 +91,10 @@ async def test_social_token(req: TestTokenRequest):
     if platform in ("instagram", "facebook"):
         async with httpx.AsyncClient(timeout=15.0) as client:
             try:
-                # 1. Test /me
+                # 1. Test /me (validates token for user or page)
                 me_res = await client.get(
                     "https://graph.facebook.com/v21.0/me",
-                    params={"fields": "id,name,instagram_business_account", "access_token": token}
+                    params={"fields": "id,name", "access_token": token}
                 )
                 me_data = me_res.json()
                 if me_res.status_code != 200:
@@ -139,7 +139,7 @@ async def test_social_token(req: TestTokenRequest):
                 user_or_page_name = me_data.get("name", "")
                 me_id = me_data.get("id", "")
 
-                # 2. Query /me/accounts for pages
+                # 2. Query /me/accounts for connected pages and their Instagram accounts
                 pages_res = await client.get(
                     "https://graph.facebook.com/v21.0/me/accounts",
                     params={"fields": "id,name,instagram_business_account", "access_token": token}
@@ -158,14 +158,11 @@ async def test_social_token(req: TestTokenRequest):
                         if ig and not auto_ig_id:
                             auto_ig_id = str(ig.get("id"))
 
-                # Also check if /me itself had instagram_business_account
-                if not auto_ig_id and me_data.get("instagram_business_account"):
-                    auto_ig_id = str(me_data["instagram_business_account"].get("id"))
-
                 target_ig_id = req.account_id or auto_ig_id
                 ig_account_details = None
 
                 if target_ig_id:
+                    # Try graph.facebook.com first
                     ig_res = await client.get(
                         f"https://graph.facebook.com/v21.0/{target_ig_id}",
                         params={
@@ -175,6 +172,17 @@ async def test_social_token(req: TestTokenRequest):
                     )
                     if ig_res.status_code == 200:
                         ig_account_details = ig_res.json()
+                    else:
+                        # Fallback to graph.instagram.com
+                        ig_direct = await client.get(
+                            f"https://graph.instagram.com/v21.0/{target_ig_id}",
+                            params={
+                                "fields": "id,username,name,account_type",
+                                "access_token": token
+                            }
+                        )
+                        if ig_direct.status_code == 200:
+                            ig_account_details = ig_direct.json()
 
                 return {
                     "valid": True,

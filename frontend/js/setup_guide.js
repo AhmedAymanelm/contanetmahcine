@@ -585,6 +585,8 @@ async function testTokenLive(platformKey) {
             const discoveredId = data.discovered_instagram_id || '';
             const pagesCount = (data.pages || []).length;
 
+            const targetAccId = discoveredId || accountIdVal || '';
+
             resultBox.innerHTML = `
                 <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.35); border-radius:10px; padding:14px; font-size:0.85rem;">
                     <div style="display:flex; align-items:center; gap:8px; color:#34d399; font-weight:800; font-size:0.95rem; margin-bottom:8px;">
@@ -592,13 +594,13 @@ async function testTokenLive(platformKey) {
                     </div>
                     <div style="color:var(--text); line-height:1.7;">
                         <div><b>المستخدم / الصفحة:</b> ${data.name || 'حساب Meta'}</div>
-                        ${discoveredId ? `<div><b>معرّف إنستغرام للأعمال:</b> <code style="color:#38bdf8;">${discoveredId}</code></div>` : ''}
+                        ${targetAccId ? `<div><b>معرّف إنستغرام للأعمال:</b> <code style="color:#38bdf8;">${targetAccId}</code></div>` : ''}
                         ${ig.username ? `<div><b>اسم المستخدم:</b> @${ig.username}</div>` : ''}
                         ${ig.followers_count !== undefined ? `<div><b>المتابعون:</b> ${ig.followers_count.toLocaleString()} متابع</div>` : ''}
                         <div><b>الصفحات المربوطة المكتشفة:</b> ${pagesCount} صفحة</div>
                     </div>
 
-                    <button onclick="applyTestedToken('${platformKey}', '${encodeURIComponent(tokenVal)}', '${encodeURIComponent(discoveredId)}')"
+                    <button onclick="applyTestedToken('${platformKey}', '${encodeURIComponent(tokenVal)}', '${encodeURIComponent(targetAccId)}')"
                         style="width:100%; margin-top:12px; background:#10b981; border:none; color:#fff; font-weight:800; padding:9px; border-radius:8px; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; justify-content:center; gap:8px;">
                         <span>💾</span> تطبيق وحفظ هذا الحساب في النظام الآن
                     </button>
@@ -667,3 +669,4 @@ async function applyTestedToken(platformKey, encodedToken, encodedAccountId) {
         alert('خطأ أثناء الحفظ: ' + e.message);
     }
 }
+
