@@ -8,7 +8,7 @@ from app.models.raw_article import RawArticle
 from app.schemas.raw_article import RawArticleResponse
 from datetime import datetime, timedelta, timezone
 from app.services.ingestion.runner import ingest_all_active_sources
-from app.services.generation.runner import process_article_generation
+from app.services.generation.runner import process_article_generation, ACTIVE_GENERATIONS
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,23 +42,31 @@ async def get_generating_articles(db: Session = Depends(get_db)):
 
     active_generating = []
     has_updates = False
+    now = datetime.utcnow()
 
     for art in articles:
-        # If content items already exist for this article, mark as GENERATED so it leaves generating state
+        # 1. If content items already exist for this article, mark as GENERATED so it leaves generating state
         items_count = db.query(ContentItem).filter(ContentItem.raw_article_id == art.id).count()
         if items_count > 0:
             art.status = "GENERATED"
+            ACTIVE_GENERATIONS.pop(art.id, None)
             has_updates = True
             continue
 
-        # If it has been stuck for more than 10 minutes with 0 items, auto-reset to PENDING
-        created_time = art.created_at.replace(tzinfo=None) if art.created_at else datetime.utcnow()
-        if (datetime.utcnow() - created_time).total_seconds() > 600:
-            art.status = "PENDING"
-            has_updates = True
-            continue
+        # 2. Check in-memory tracking of active generation tasks
+        if art.id in ACTIVE_GENERATIONS:
+            start_time = ACTIVE_GENERATIONS[art.id]
+            # Active generation allows up to 10 minutes (600s) from actual START time (never scrape time)
+            if (now - start_time).total_seconds() < 600:
+                active_generating.append(art)
+                continue
+            else:
+                logger.warning(f"Generation for article {art.id} timed out after 600s in ACTIVE_GENERATIONS")
+                ACTIVE_GENERATIONS.pop(art.id, None)
 
-        active_generating.append(art)
+        # 3. Only reset to PENDING if article is NOT actively generating and has 0 content items
+        art.status = "PENDING"
+        has_updates = True
 
     if has_updates:
         try:
@@ -168,6 +176,8 @@ async def generate_article_content(article_id: int, request: ArticleGenerateRequ
     db.commit()
     db.close()
     
+    # Track start time right before submitting to background pool
+    ACTIVE_GENERATIONS[article_id] = datetime.utcnow()
     # Run in thread pool so it doesn't block FastAPI's event loop
     _thread_pool.submit(process_article_generation, article_id, request.formats, request.carousel_platforms, request.slides, request.template_id)
     logger.info(f"Generation task submitted for article {article_id} with formats {request.formats}, carousel_platforms {request.carousel_platforms}")
@@ -208,6 +218,7 @@ async def retry_article_generation(article_id: int, request: ArticleGenerateRequ
     article.status = "APPROVED_FOR_GENERATION"
     db.commit()
     db.close()
+    ACTIVE_GENERATIONS[article_id] = datetime.utcnow()
     _thread_pool.submit(process_article_generation, article_id, request.formats, request.carousel_platforms)
     logger.info(f"Retry generation submitted for article {article_id}")
     return {"detail": "Retry started"}

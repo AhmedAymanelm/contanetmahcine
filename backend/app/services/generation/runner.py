@@ -9,13 +9,20 @@ from app.core.config import settings
 
 from app.db.session import SessionLocal
 
+from datetime import datetime
+from typing import Dict
+
 logger = logging.getLogger(__name__)
+
+# In-memory tracking of active generation tasks: {raw_article_id: start_datetime}
+ACTIVE_GENERATIONS: Dict[int, datetime] = {}
 
 def process_article_generation(raw_article_id: int, formats: list = None, carousel_platforms: list = None, custom_slides: list = None, template_id: int = None):
     """
     Takes a RawArticle ID, sends it to Claude for generation,
     saves the results as ContentItems, and updates status.
     """
+    ACTIVE_GENERATIONS[raw_article_id] = datetime.utcnow()
     if formats is None:
         formats = ["POST", "CAROUSEL", "VIDEO_SCRIPT", "REEL"]
     if carousel_platforms is None:
@@ -207,6 +214,7 @@ def process_article_generation(raw_article_id: int, formats: list = None, carous
         except:
             pass
     finally:
+        ACTIVE_GENERATIONS.pop(raw_article_id, None)
         # Guarantee article is never left in APPROVED_FOR_GENERATION
         try:
             art_check = db.query(RawArticle).filter(RawArticle.id == raw_article_id).first()

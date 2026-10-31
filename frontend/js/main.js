@@ -1041,7 +1041,13 @@ async function approveArticle(id, btn) {
                 body: JSON.stringify({ formats: formats, carousel_platforms: carouselPlatforms || ['IG', 'Li'] })
             });
             if (res.ok) {
-                btn.parentElement.parentElement.parentElement.style.opacity = '0.4';
+                const card = btn.closest('.panel') || btn.parentElement.parentElement.parentElement;
+                if (card) {
+                    card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.96)';
+                    setTimeout(() => card.remove(), 350);
+                }
                 showToast("✅ تم إرسال الخبر لكلود... سيظهر في المراجعة خلال ثوانٍ", "success");
                 setTimeout(fetchRawArticles, 2000);
                 fetchDashboardStats();
