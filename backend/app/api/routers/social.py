@@ -98,6 +98,28 @@ async def test_social_token(req: TestTokenRequest):
                 )
                 me_data = me_res.json()
                 if me_res.status_code != 200:
+                    # Fallback: check if it is an Instagram User/Tester token directly from Instagram API Setup
+                    ig_me_res = await client.get(
+                        "https://graph.instagram.com/me",
+                        params={"fields": "id,username,account_type", "access_token": token}
+                    )
+                    if ig_me_res.status_code == 200:
+                        ig_data = ig_me_res.json()
+                        return {
+                            "valid": True,
+                            "platform": platform,
+                            "name": ig_data.get("username", "Instagram User"),
+                            "id": ig_data.get("id"),
+                            "pages": [],
+                            "pages_count": 0,
+                            "discovered_instagram_id": str(ig_data.get("id")),
+                            "instagram_details": {
+                                "id": ig_data.get("id"),
+                                "username": ig_data.get("username"),
+                                "account_type": ig_data.get("account_type")
+                            }
+                        }
+
                     err = me_data.get("error", {})
                     code = err.get("code", 0)
                     msg = err.get("message", "فشل التحقق من التوكن")

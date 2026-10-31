@@ -70,6 +70,18 @@ class InstagramService:
                             account_id = str(ig["id"])
                             self._persist_account_id(account_id)
                             return account_id
+
+                # 3. Try https://graph.instagram.com/me (for tokens generated from Instagram API Setup / Testers)
+                res = await client.get(
+                    "https://graph.instagram.com/me",
+                    params={"fields": "id,username", "access_token": token}
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    if data.get("id"):
+                        account_id = str(data["id"])
+                        self._persist_account_id(account_id)
+                        return account_id
             except Exception:
                 pass
         return None
@@ -162,6 +174,19 @@ class InstagramService:
                 )
 
                 data = response.json()
+
+                # If failed on facebook endpoint, try instagram direct endpoint
+                if response.status_code != 200 or "id" not in data:
+                    ig_res = await client.get(
+                        f"https://graph.instagram.com/v21.0/{self.account_id}",
+                        params={
+                            "fields": "id,username,name,account_type",
+                            "access_token": self.access_token
+                        }
+                    )
+                    if ig_res.status_code == 200 and "id" in ig_res.json():
+                        data = ig_res.json()
+                        response = ig_res
 
                 if response.status_code == 200 and "id" in data:
                     return {
