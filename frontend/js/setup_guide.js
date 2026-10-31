@@ -5,19 +5,18 @@ const GUIDE_PLATFORMS = {
         id: "instagram",
         name: "Instagram Business",
         arabicName: "إنستغرام للأعمال",
-        icon: "📸",
         themeColor: "#E1306C",
         gradient: "linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)",
         docsUrl: "https://developers.facebook.com/apps/1946684199371023/use_cases/customize/Unified-Login-API-Setup/?product_route=instagram-business",
         quickLinkText: "فتح شاشة إنشاء الرمز في تطبيقك ↗",
         actionButtons: [
             {
-                text: "🚀 فتح شاشة إنشاء الرمز في تطبيقك ↗",
+                text: "فتح شاشة إنشاء الرمز في تطبيقك ↗",
                 url: "https://developers.facebook.com/apps/1946684199371023/use_cases/customize/Unified-Login-API-Setup/?product_route=instagram-business",
                 style: "background:#fff; color:#0f172a;"
             },
             {
-                text: "⚡ أداة تمديد التوكن (Token Debugger) ↗",
+                text: "أداة تمديد التوكن (Token Debugger) ↗",
                 url: "https://developers.facebook.com/tools/debug/accesstoken/",
                 style: "background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.35);"
             }
@@ -39,7 +38,7 @@ const GUIDE_PLATFORMS = {
                 num: 1,
                 title: "الدخول إلى شاشة إعداد Instagram API (Use Cases)",
                 desc: "في لوحة تحكم تطبيقك في Meta for Developers، ادخل على <b>Use Cases (حالات الاستخدام)</b> ثم اختر <b>Instagram Business</b> واضغط على <b>تخصيص / إعداد API</b>.",
-                tip: "هذه هي الشاشة الرسمية المباشرة المخصصة لربط حسابات إنستغرام للأعمال."
+                tip: "هذه هي الشاشة المباشرة المخصصة لربط حسابات إنستغرام للأعمال."
             },
             {
                 num: 2,
@@ -60,7 +59,7 @@ const GUIDE_PLATFORMS = {
                       "2. الصق التوكن واضغط <b>تصحيح الأخطاء (Debug)</b>.<br>" +
                       "3. انزل لأسفل الصفحة واضغط الزر الأزرق: <b>Extend Access Token (توسيع رمز الوصول)</b>.<br>" +
                       "4. سينتج لك توكن ممتد يظهر تحته <i>Expires: 60 days</i>. هذا هو التوكن المعتمد للنظام!",
-                tip: "يمكن أيضاً استخدام Page Access Token المستخرج من صفحة فيسبوك المربوطة ليكون التوكن 'Never Expires' (دائماً مدى الحياة)!"
+                tip: "يمكن أيضاً استخدام Page Access Token المستخرج من صفحة فيسبوك المربوطة ليكون التوكن دائماً مدى الحياة (Never Expires)."
             },
             {
                 num: 5,
@@ -84,43 +83,83 @@ const GUIDE_PLATFORMS = {
         id: "facebook",
         name: "Facebook Pages",
         arabicName: "صفحات فيسبوك",
-        icon: "📘",
         themeColor: "#1877F2",
         gradient: "linear-gradient(135deg, #1877F2, #0d5cb6)",
         docsUrl: "https://developers.facebook.com/tools/explorer/",
-        quickLinkText: "فتح Meta Graph API Explorer ↗",
+        quickLinkText: "فتح مستكشف Graph API ↗",
+        actionButtons: [
+            {
+                text: "فتح مستكشف Graph API ↗",
+                url: "https://developers.facebook.com/tools/explorer/",
+                style: "background:#fff; color:#0f172a;"
+            },
+            {
+                text: "أداة تمديد التوكن (Token Debugger) ↗",
+                url: "https://developers.facebook.com/tools/debug/accesstoken/",
+                style: "background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.35);"
+            }
+        ],
         requirements: [
             "صفحة فيسبوك عامة (Facebook Page) أنت مسؤول فيها (Admin).",
-            "تطبيق فيسبوك في Meta for Developers."
+            "تطبيق فيسبوك مسجل في Meta for Developers."
         ],
         scopes: [
             { name: "pages_manage_posts", desc: "نشر المنشورات والصور على الصفحة تلقائياً" },
             { name: "pages_read_engagement", desc: "قراءة تفاعل المنشورات والتعليقات والمشاركات" },
-            { name: "publish_video", desc: "نشر الفيديوهات والمقاطع على صفحة الفيسبوك" }
+            { name: "publish_video", desc: "نشر الفيديوهات والمقاطع على صفحة الفيسبوك" },
+            { name: "pages_show_list", desc: "استعراض وإظهار قائمة الصفحات المتاحة لحسابك" }
         ],
-        scopesString: "pages_manage_posts, pages_read_engagement, publish_video",
+        scopesString: "pages_manage_posts, pages_read_engagement, publish_video, pages_show_list",
         steps: [
             {
                 num: 1,
-                title: "فتح أداة Graph API Explorer",
-                desc: "اختر تطبيقك في الزاوية العلوية، ثم في قائمة الصلاحيات اختر صلاحيات الصفحات المطلوبة."
+                title: "فتح أداة مستكشف Graph API Explorer",
+                desc: "اذهب إلى مستكشف Meta Graph API Explorer، وتأكد من اختيار تطبيقك (contantmachein) في الزاوية العلوية.",
+                tip: "تأكد من تسجيل الدخول بحساب فيسبوك الذي يملك صلاحية إدارة الصفحة."
             },
             {
                 num: 2,
-                title: "اختيار الصفحة وتوليد Page Access Token",
-                desc: "في خانة <b>User or Page</b>، اختر الصفحة المحددة التي تريد النشر عليها. سينتج توكن خاص بالصفحة يبدأ غالباً بـ <code>EAA...</code>."
+                title: "تحديد صلاحيات الصفحات المطلوبة",
+                desc: "في القائمة الجانبية (الأذونات / Permissions)، اضغط إضافة إذن وتأكد من إضافة الصلاحيات الموضحة أدناه، ثم اضغط Generate Access Token.",
+                hasCopyScopes: true
             },
             {
                 num: 3,
-                title: "استخراج معرف الصفحة (FACEBOOK_PAGE_ID)",
-                desc: "معرف الصفحة يظهر مباشرة في رابط صفحتك أو يمكنك طلبه بـ:",
-                codeSnippet: "GET me?fields=id,name"
+                title: "استخراج بيانات الصفحة والتوكن المباشر عبر me/accounts",
+                desc: "في شريط الاستعلام بالأعلى، اكتب <b>me/accounts</b> واضغط زر <b>إرسال (Send)</b>.<br>" +
+                      "سيظهر لك كود JSON يحتوي على كل صفحاتك، وستجد لكل صفحة:<br>" +
+                      "• <b>name</b>: اسم الصفحة.<br>" +
+                      "• <b>id</b>: معرّف الصفحة المطلوب للنظام كـ <b>FACEBOOK_PAGE_ID</b>.<br>" +
+                      "• <b>access_token</b>: رمز الوصول الخاص بالصفحة لاستخدامه كـ <b>FACEBOOK_ACCESS_TOKEN</b>.",
+                codeSnippet: "GET me/accounts"
+            },
+            {
+                num: 4,
+                title: "طريقة جعل التوكن ممتداً (Long-Lived Token لمدة 60 يوماً)",
+                desc: "توكن الصفحة المستخرج عبر me/accounts دائم بطبيعته، ولكن لتمديد أي توكن مستخدم ليكون صالحاً لمدة <b>60 يوماً</b>:<br>" +
+                      "1. افتح أداة Meta الرسمية: <a href='https://developers.facebook.com/tools/debug/accesstoken/' target='_blank' style='color:#38bdf8;font-weight:700;'>Access Token Debugger ↗</a><br>" +
+                      "2. الصق التوكن واضغط <b>تصحيح الأخطاء (Debug)</b>.<br>" +
+                      "3. انزل لأسفل الصفحة واضغط الزر الأزرق: <b>Extend Access Token (توسيع رمز الوصول)</b>.<br>" +
+                      "4. سينتج لك توكن ممتد صالح لمدة 60 يوماً.",
+                tip: "رابط الأداة المباشر: developers.facebook.com/tools/debug/accesstoken/"
+            },
+            {
+                num: 5,
+                title: "حل مشكلة عدم ظهور الصفحة المطلوبة (data: [])",
+                desc: "إذا ظهرت القائمة فارغة عند طلب me/accounts:<br>" +
+                      "1. افتح إعدادات تطبيقات الأعمال: <a href='https://www.facebook.com/settings?tab=business_tools' target='_blank' style='color:#38bdf8;'>facebook.com/settings?tab=business_tools ↗</a><br>" +
+                      "2. اضغط 'عرض وتعديل' بجانب تطبيقك، وضع علامة صح على جميع الصفحات واضغط حفظ.<br>" +
+                      "3. تأكد أن حسابك يملك رتبة مسؤول (Admin) في الصفحة المطلوبة."
             }
         ],
         faq: [
             {
                 q: "ما الفرق بين User Token و Page Token؟",
-                a: "للنشر على الصفحات، يجب دائماً استخدام Page Token. User Token مخصص للملف الشخصي فقط ولا يسمح بنشر محتوى باسم الصفحة."
+                a: "للنشر على الصفحات، يجب دائماً استخدام Page Token الخاص بالصفحة (المستخرج عبر me/accounts). User Token مخصص للحساب الشخصي فقط ولا يسمح بالنشر باسم الصفحة."
+            },
+            {
+                q: "كيف أعرف معرّف الصفحة FACEBOOK_PAGE_ID بدون كود؟",
+                a: "افتح صفحتك على فيسبوك من المتصفح ➔ ادخل إلى قسم 'حول' (About) ➔ ستجد Page ID مسجلاً كرقم مكون من 15-16 خانة."
             }
         ]
     },
@@ -129,7 +168,6 @@ const GUIDE_PLATFORMS = {
         id: "linkedin",
         name: "LinkedIn",
         arabicName: "لينكد إن",
-        icon: "💼",
         themeColor: "#0A66C2",
         gradient: "linear-gradient(135deg, #0A66C2, #004182)",
         docsUrl: "https://www.linkedin.com/developers/apps",
@@ -165,13 +203,13 @@ const GUIDE_PLATFORMS = {
             {
                 num: 4,
                 title: "الربط بنقرة واحدة (OAuth)",
-                desc: "اضغط زر <b>ربط الحساب</b> في لوحة تحكم Content Machine وسيتم توجيهك للموافقة والربط الدائم تلقائياً!"
+                desc: "اضغط زر <b>ربط الحساب</b> في لوحة تحكم Content Machine وسيتم توجيهك للموافقة والربط الدائم تلقائياً."
             }
         ],
         faq: [
             {
                 q: "هل أحتاج لتجديد توكن لينكد إن يدوياً؟",
-                a: "لا! نظام Content Machine يحفظ التوكن ويقوم بتجديده تلقائياً عبر Refresh Token قبل انتهائه."
+                a: "لا، نظام Content Machine يحفظ التوكن ويقوم بتجديده تلقائياً عبر Refresh Token قبل انتهائه."
             }
         ]
     },
@@ -180,7 +218,6 @@ const GUIDE_PLATFORMS = {
         id: "threads",
         name: "Threads",
         arabicName: "ثريدز",
-        icon: "🧵",
         themeColor: "#000000",
         gradient: "linear-gradient(135deg, #18181b, #27272a)",
         docsUrl: "https://developers.facebook.com/apps/",
@@ -215,7 +252,7 @@ const GUIDE_PLATFORMS = {
         faq: [
             {
                 q: "هل يدعم Threads نشر الصور والنصوص معاً؟",
-                a: "نعم! يدعم Content Machine نشر المنشورات الفردية، وسلاسل الثريدز المترابطة، والمنشورات المرفقة بصور."
+                a: "نعم، يدعم Content Machine نشر المنشورات الفردية، وسلاسل الثريدز المترابطة، والمنشورات المرفقة بصور."
             }
         ]
     },
@@ -224,7 +261,6 @@ const GUIDE_PLATFORMS = {
         id: "twitter",
         name: "X (Twitter)",
         arabicName: "إكس (تويتر)",
-        icon: "🐦",
         themeColor: "#1DA1F2",
         gradient: "linear-gradient(135deg, #1d9bf0, #0c7abf)",
         docsUrl: "https://developer.x.com/en/portal/dashboard",
@@ -268,7 +304,6 @@ const GUIDE_PLATFORMS = {
         id: "tiktok",
         name: "TikTok",
         arabicName: "تيك توك",
-        icon: "🎵",
         themeColor: "#fe2c55",
         gradient: "linear-gradient(135deg, #fe2c55, #25f4ee)",
         docsUrl: "https://developers.tiktok.com/",
@@ -304,7 +339,7 @@ const GUIDE_PLATFORMS = {
         faq: [
             {
                 q: "هل يمكن نشر فيديوهات TikTok كمسودة أولاً؟",
-                a: "نعم! يدعم النظام نشر الفيديوهات كـ 'Private' أو 'Draft' أو 'Public' حسب اختيارك."
+                a: "نعم، يدعم النظام نشر الفيديوهات كـ 'Private' أو 'Draft' أو 'Public' حسب اختيارك."
             }
         ]
     }
@@ -332,7 +367,6 @@ function renderGuideNavigation() {
         html += `
             <button onclick="switchGuideTab('${key}')" 
                 style="display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:12px; font-weight:700; font-size:0.9rem; cursor:pointer; transition:all 0.2s; font-family:inherit; border:1px solid ${isActive ? 'rgba(56,189,248,0.5)' : 'var(--line)'}; background:${isActive ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.03)'}; color:${isActive ? '#38bdf8' : 'var(--muted)'};">
-                <span style="font-size:1.15rem;">${p.icon}</span>
                 <span>${p.name}</span>
             </button>
         `;
@@ -365,7 +399,7 @@ function renderActiveGuidePlatform() {
     // Requirements HTML
     const reqsHtml = p.requirements.map(r => `
         <li style="margin-bottom:8px; display:flex; align-items:flex-start; gap:8px;">
-            <span style="color:#10b981; font-weight:900;">✓</span>
+            <span style="color:#10b981; font-weight:900;">-</span>
             <span>${r}</span>
         </li>
     `).join('');
@@ -394,16 +428,16 @@ function renderActiveGuidePlatform() {
             
             ${step.tip ? `
                 <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:8px 12px; font-size:0.82rem; color:#fbbf24; margin-top:8px;">
-                    💡 <b>ملاحظة:</b> ${step.tip}
+                    <b>ملاحظة:</b> ${step.tip}
                 </div>
             ` : ''}
 
             ${step.hasCopyScopes ? `
                 <div style="margin-top:12px; padding:12px; background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.2); border-radius:10px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:0.82rem; font-weight:700; color:#38bdf8;">الصلاحيات الأربع المطلوبة:</span>
+                        <span style="font-size:0.82rem; font-weight:700; color:#38bdf8;">الصلاحيات المطلوبة:</span>
                         <button onclick="copyGuideText('${p.scopesString}', this)" style="background:#0284c7; border:none; color:#fff; font-weight:700; padding:4px 12px; border-radius:6px; font-size:0.78rem; cursor:pointer;">
-                            📋 نسخ الصلاحيات دفعة واحدة
+                            نسخ الصلاحيات دفعة واحدة
                         </button>
                     </div>
                     <code style="display:block; padding:8px; background:rgba(0,0,0,0.3); border-radius:6px; font-size:0.8rem; color:#f8fafc; word-break:break-all;">${p.scopesString}</code>
@@ -422,7 +456,7 @@ function renderActiveGuidePlatform() {
     // FAQ HTML
     const faqHtml = p.faq.map(item => `
         <details style="background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:10px; cursor:pointer;">
-            <summary style="font-weight:700; font-size:0.9rem; color:var(--text); outline:none;">❓ ${item.q}</summary>
+            <summary style="font-weight:700; font-size:0.9rem; color:var(--text); outline:none;">${item.q}</summary>
             <p style="margin:10px 0 0 0; font-size:0.85rem; line-height:1.7; color:var(--muted);">${item.a}</p>
         </details>
     `).join('');
@@ -451,7 +485,6 @@ function renderActiveGuidePlatform() {
         <div style="background:${p.gradient}; border-radius:18px; padding:24px 28px; color:#fff; margin-bottom:28px; box-shadow:0 12px 30px rgba(0,0,0,0.3); display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap;">
             <div>
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
-                    <span style="font-size:2rem;">${p.icon}</span>
                     <h2 style="margin:0; font-size:1.6rem; font-weight:900;">${p.name} — ${p.arabicName}</h2>
                 </div>
                 <p style="margin:0; opacity:0.9; font-size:0.95rem; max-width:600px; line-height:1.6;">
@@ -464,13 +497,13 @@ function renderActiveGuidePlatform() {
         <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:24px;">
             <!-- Left Column: Steps -->
             <div>
-                <h3 style="font-size:1.15rem; font-weight:800; margin:0 0 16px 0; display:flex; align-items:center; gap:8px;">
-                    <span>📝</span> خطوات الاستخراج خطوة بخطوة
+                <h3 style="font-size:1.15rem; font-weight:800; margin:0 0 16px 0;">
+                    خطوات الاستخراج خطوة بخطوة
                 </h3>
                 ${stepsHtml}
 
-                <h3 style="font-size:1.15rem; font-weight:800; margin:24px 0 14px 0; display:flex; align-items:center; gap:8px;">
-                    <span>💡</span> الأسئلة الشائعة والأخطاء وحلولها
+                <h3 style="font-size:1.15rem; font-weight:800; margin:24px 0 14px 0;">
+                    الأسئلة الشائعة وحلول المشكلات
                 </h3>
                 ${faqHtml}
             </div>
@@ -480,7 +513,6 @@ function renderActiveGuidePlatform() {
                 <!-- LIVE TOKEN TESTER BOX -->
                 <div style="background:var(--panel); border:1px solid rgba(56,189,248,0.3); border-radius:16px; padding:20px; margin-bottom:24px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                        <span style="font-size:1.4rem;">⚡</span>
                         <div>
                             <h4 style="margin:0; font-size:1rem; font-weight:800; color:#38bdf8;">فحص واختبار التوكن المباشر</h4>
                             <span style="font-size:0.75rem; color:var(--muted);">تحقق من صلاحية التوكن وبيانات الحساب فوراً قبل الحفظ</span>
@@ -496,14 +528,14 @@ function renderActiveGuidePlatform() {
                     ${p.id === 'instagram' ? `
                     <div style="margin-bottom:14px;">
                         <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--muted); margin-bottom:4px;">معرّف الحساب INSTAGRAM_ACCOUNT_ID (اختياري - نكتشفه تلقائياً)</label>
-                        <input type="text" id="tester-account-id-input" placeholder="مثال: 17841400000000" 
+                        <input type="text" id="tester-account-id-input" placeholder="مثال: 17841449075989311" 
                             style="width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:monospace; font-size:0.8rem;">
                     </div>
                     ` : ''}
 
                     <button onclick="testTokenLive('${p.id}')" id="btn-test-token"
                         style="width:100%; background:linear-gradient(135deg, #0284c7, #6366f1); border:none; color:#fff; font-weight:800; padding:10px; border-radius:8px; cursor:pointer; font-size:0.88rem; display:flex; align-items:center; justify-content:center; gap:8px;">
-                        <span>🔍</span> فحص التوكن الآن
+                        فحص التوكن الآن
                     </button>
 
                     <!-- Result Area -->
@@ -512,8 +544,8 @@ function renderActiveGuidePlatform() {
 
                 <!-- Requirements Card -->
                 <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:20px;">
-                    <h4 style="margin:0 0 12px 0; font-size:0.95rem; font-weight:800; color:var(--text); display:flex; align-items:center; gap:8px;">
-                        <span>📌</span> المتطلبات الأساسية
+                    <h4 style="margin:0 0 12px 0; font-size:0.95rem; font-weight:800; color:var(--text);">
+                        المتطلبات الأساسية
                     </h4>
                     <ul style="margin:0; padding:0; list-style:none; font-size:0.84rem; line-height:1.7; color:var(--muted);">
                         ${reqsHtml}
@@ -523,8 +555,8 @@ function renderActiveGuidePlatform() {
                 <!-- Scopes Card -->
                 <div style="background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h4 style="margin:0; font-size:0.95rem; font-weight:800; color:var(--text); display:flex; align-items:center; gap:8px;">
-                            <span>🔑</span> الصلاحيات المطلوبة (Permissions)
+                        <h4 style="margin:0; font-size:0.95rem; font-weight:800; color:var(--text);">
+                            الصلاحيات المطلوبة (Permissions)
                         </h4>
                         <button onclick="copyGuideText('${p.scopesString}', this)" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; font-weight:700; padding:3px 8px; border-radius:6px; font-size:0.75rem; cursor:pointer;">نسخ الكل</button>
                     </div>
@@ -552,7 +584,7 @@ function copyGuideText(text, btnElement) {
 
     if (btnElement) {
         const origText = btnElement.innerText;
-        btnElement.innerText = 'تم النسخ ✓';
+        btnElement.innerText = 'تم النسخ';
         btnElement.style.background = '#10b981';
         btnElement.style.color = '#fff';
         setTimeout(() => {
@@ -563,7 +595,7 @@ function copyGuideText(text, btnElement) {
     }
 
     if (window.showToast) {
-        window.showToast('📋 تم نسخ النص إلى الحافظة بنجاح');
+        window.showToast('تم نسخ النص إلى الحافظة بنجاح');
     }
 }
 
@@ -585,7 +617,7 @@ async function testTokenLive(platformKey) {
     resultBox.style.display = 'block';
     resultBox.innerHTML = `
         <div style="padding:14px; background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:8px; text-align:center; color:var(--muted); font-size:0.85rem;">
-            ⏳ جاري فحص التوكن مع خوادم Meta...
+            جاري فحص التوكن مع خوادم Meta...
         </div>
     `;
     testBtn.disabled = true;
@@ -614,36 +646,50 @@ async function testTokenLive(platformKey) {
             const ig = data.instagram_details || {};
             const discoveredId = data.discovered_instagram_id || '';
             const pagesCount = (data.pages || []).length;
-
             const targetAccId = discoveredId || accountIdVal || '';
+
+            let pagesListHtml = '';
+            if (data.pages && data.pages.length) {
+                pagesListHtml = `
+                    <div style="margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.15);">
+                        <div style="font-weight:700; margin-bottom:4px;">الصفحات المتاحة في هذا التوكن:</div>
+                        ${data.pages.map(pg => `
+                            <div style="font-size:0.8rem; background:rgba(0,0,0,0.25); padding:4px 8px; border-radius:4px; margin-bottom:3px;">
+                                • <b>${pg.name}</b> (ID: <code>${pg.id}</code>)
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
 
             resultBox.innerHTML = `
                 <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.35); border-radius:10px; padding:14px; font-size:0.85rem;">
-                    <div style="display:flex; align-items:center; gap:8px; color:#34d399; font-weight:800; font-size:0.95rem; margin-bottom:8px;">
-                        <span>✅</span> التوكن سليم وصالح تماماً!
+                    <div style="color:#34d399; font-weight:800; font-size:0.95rem; margin-bottom:8px;">
+                        [تم التحقق] التوكن سليم وصالح
                     </div>
                     <div style="color:var(--text); line-height:1.7;">
                         <div><b>المستخدم / الصفحة:</b> ${data.name || 'حساب Meta'}</div>
                         ${targetAccId ? `<div><b>معرّف إنستغرام للأعمال:</b> <code style="color:#38bdf8;">${targetAccId}</code></div>` : ''}
                         ${ig.username ? `<div><b>اسم المستخدم:</b> @${ig.username}</div>` : ''}
                         ${ig.followers_count !== undefined ? `<div><b>المتابعون:</b> ${ig.followers_count.toLocaleString()} متابع</div>` : ''}
-                        <div><b>الصفحات المربوطة المكتشفة:</b> ${pagesCount} صفحة</div>
+                        <div><b>عدد الصفحات المرتبطة:</b> ${pagesCount} صفحة</div>
+                        ${pagesListHtml}
                     </div>
 
                     <button onclick="applyTestedToken('${platformKey}', '${encodeURIComponent(tokenVal)}', '${encodeURIComponent(targetAccId)}')"
                         style="width:100%; margin-top:12px; background:#10b981; border:none; color:#fff; font-weight:800; padding:9px; border-radius:8px; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; justify-content:center; gap:8px;">
-                        <span>💾</span> تطبيق وحفظ هذا الحساب في النظام الآن
+                        تطبيق وحفظ هذا الحساب في النظام الآن
                     </button>
                 </div>
             `;
         } else {
             resultBox.innerHTML = `
                 <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.35); border-radius:10px; padding:14px; font-size:0.85rem;">
-                    <div style="display:flex; align-items:center; gap:8px; color:#f87171; font-weight:800; font-size:0.95rem; margin-bottom:6px;">
-                        <span>❌</span> فشل التحقق من التوكن
+                    <div style="color:#f87171; font-weight:800; font-size:0.95rem; margin-bottom:6px;">
+                        [فشل التحقق] التوكن غير صالح أو تنقصه صلاحيات
                     </div>
                     <div style="color:#fca5a5; margin-bottom:6px;">${data.message || 'خطأ غير محدد'}</div>
-                    ${data.hint ? `<div style="font-size:0.8rem; color:var(--muted); line-height:1.5;">💡 <b>نصيحة:</b> ${data.hint}</div>` : ''}
+                    ${data.hint ? `<div style="font-size:0.8rem; color:var(--muted); line-height:1.5;"><b>نصيحة:</b> ${data.hint}</div>` : ''}
                 </div>
             `;
         }
@@ -669,6 +715,7 @@ async function applyTestedToken(platformKey, encodedToken, encodedAccountId) {
         if (accountId) payload.INSTAGRAM_ACCOUNT_ID = accountId;
     } else if (platformKey === 'facebook') {
         payload.FACEBOOK_ACCESS_TOKEN = token;
+        if (accountId) payload.FACEBOOK_PAGE_ID = accountId;
     }
 
     try {
@@ -684,7 +731,7 @@ async function applyTestedToken(platformKey, encodedToken, encodedAccountId) {
 
         if (res.ok) {
             if (window.showToast) {
-                window.showToast(`🎉 تم حفظ وربط ${platformKey} بنجاح! سيتم تحديث الحالة فوراً.`);
+                window.showToast(`تم حفظ وربط ${platformKey} بنجاح وتحديث النظام.`);
             }
             if (typeof fetchPlatformStatus === 'function') {
                 fetchPlatformStatus();
@@ -699,4 +746,3 @@ async function applyTestedToken(platformKey, encodedToken, encodedAccountId) {
         alert('خطأ أثناء الحفظ: ' + e.message);
     }
 }
-

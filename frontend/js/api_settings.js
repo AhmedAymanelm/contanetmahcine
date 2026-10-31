@@ -63,7 +63,7 @@ function renderApiCards(containerId, platformsData) {
                             ${data.has_token ? '<span style="color:#818cf8; background:rgba(99,102,241,0.15); padding:2px 6px; border-radius:4px; font-size:0.65rem;">OAuth مسجل</span>' : ''}
                         </div>
                         <a href="javascript:void(0)" onclick="openGuideFor('${key}')" style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; color:#38bdf8; text-decoration:none; margin-top:8px; font-weight:700;">
-                            📖 كيف أستخرج التوكن؟ ↗
+                            كيف أستخرج التوكن؟ ↗
                         </a>
                     </div>
                 </div>
@@ -137,7 +137,7 @@ function openApiModal(platformKey, keysJsonEncoded) {
             <div style="display:flex; align-items:center; gap:12px;">
                 <h3 style="margin:0;">إعدادات ${meta.title}</h3>
                 <button type="button" onclick="openGuideFor('${platformKey}'); closeApiModal();" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:3px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer; font-weight:700;">
-                    📖 الدليل التفاعلي
+                    الدليل التفاعلي
                 </button>
             </div>
             <button onclick="closeApiModal()" style="background:none; border:none; color:var(--muted); font-size:1.5rem; cursor:pointer;">×</button>
