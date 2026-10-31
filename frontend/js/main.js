@@ -3490,42 +3490,71 @@ function setVideoBrandMode(mode) {
     const radM = document.getElementById('radio-brand-ministry');
     const radC = document.getElementById('radio-brand-client');
     const footerBadge = document.getElementById('video-picker-footer-brand-badge');
+    const indicator = document.getElementById('video-selected-brand-indicator');
+    const defaultBtn = document.getElementById('btn-default-render');
 
     if (mode === 'ministry') {
         if (optM) {
             optM.style.background = 'rgba(255,183,0,0.12)';
             optM.style.borderColor = '#FFB700';
+            optM.style.boxShadow = '0 4px 15px rgba(255,183,0,0.2)';
         }
         if (optC) {
             optC.style.background = 'rgba(255,255,255,0.04)';
-            optC.style.borderColor = 'rgba(255,255,255,0.1)';
+            optC.style.borderColor = 'rgba(255,255,255,0.12)';
+            optC.style.boxShadow = 'none';
         }
         if (radM) radM.checked = true;
         if (radC) radC.checked = false;
+        if (indicator) {
+            indicator.innerText = 'الهوية الحالية: وزارة تمكين المجتمع';
+            indicator.style.color = '#FFB700';
+            indicator.style.background = 'rgba(255,183,0,0.12)';
+            indicator.style.borderColor = 'rgba(255,183,0,0.3)';
+        }
         if (footerBadge) {
             footerBadge.innerHTML = `
                 <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:15px; width:auto;" alt="شعار">
                 <span style="font-size:9.5px; font-weight:800; color:#111;">هوية وزارة تمكين المجتمع مفعلة</span>`;
             footerBadge.style.background = 'rgba(255,255,255,0.92)';
         }
+        if (defaultBtn) {
+            defaultBtn.innerText = 'تطبيق القالب الافتراضي (هوية الوزارة) ⚡';
+        }
     } else {
         if (optM) {
             optM.style.background = 'rgba(255,255,255,0.04)';
-            optM.style.borderColor = 'rgba(255,255,255,0.1)';
+            optM.style.borderColor = 'rgba(255,255,255,0.12)';
+            optM.style.boxShadow = 'none';
         }
         if (optC) {
             optC.style.background = 'rgba(255,92,0,0.15)';
             optC.style.borderColor = '#FF5C00';
+            optC.style.boxShadow = '0 4px 15px rgba(255,92,0,0.25)';
         }
         if (radM) radM.checked = false;
         if (radC) radC.checked = true;
+        if (indicator) {
+            indicator.innerText = 'الهوية الحالية: العميل (د. زايد الحميري)';
+            indicator.style.color = '#FF5C00';
+            indicator.style.background = 'rgba(255,92,0,0.12)';
+            indicator.style.borderColor = 'rgba(255,92,0,0.3)';
+        }
         if (footerBadge) {
             footerBadge.innerHTML = `
                 <span style="font-size:11px;">👤</span>
                 <span style="font-size:9.5px; font-weight:800; color:#fff;">هوية العميل (د. زايد الحميري) مفعلة</span>`;
             footerBadge.style.background = 'linear-gradient(135deg,#FF5C00,#e11d48)';
         }
+        if (defaultBtn) {
+            defaultBtn.innerText = 'تطبيق القالب الافتراضي (هوية العميل) ⚡';
+        }
     }
+
+    const brandBtnName = (mode === 'client') ? 'هوية العميل' : 'هوية الوزارة';
+    document.querySelectorAll('.video-tpl-apply-btn').forEach(btn => {
+        btn.innerHTML = `<span>🚀</span> استخدام هذا القالب (${brandBtnName})`;
+    });
 }
 window.setVideoBrandMode = setVideoBrandMode;
 
@@ -3634,6 +3663,10 @@ async function openVideoTemplatePicker(contentId) {
     const grid = document.getElementById('video-template-picker-grid');
     const content = document.getElementById('video-template-picker-content');
 
+    if (typeof setVideoBrandMode === 'function') {
+        setVideoBrandMode(window._currentVideoBrandMode || 'ministry');
+    }
+
     if (grid) {
         grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--muted);font-size:14px;">⏳ جاري تحميل قوالب الفيديو المحفوظة...</div>';
     }
@@ -3741,6 +3774,7 @@ async function openVideoTemplatePicker(contentId) {
             return `<span title="${s.title || 'شريحة ' + (sIdx + 1)}" style="width:14px;height:14px;border-radius:50%;background:${dotBg};border:1.5px solid ${dotAccent};display:inline-block;box-shadow:0 0 6px ${dotAccent}80;"></span>`;
         }).join('');
 
+        const currentBrandLabel = (window._currentVideoBrandMode === 'client') ? 'هوية العميل' : 'هوية الوزارة';
         html += `
         <div onclick="confirmVideoRenderWithTemplateIndex(${contentId}, ${idx})"
              style="cursor:pointer;background:var(--panel-2, #1e1e2e);border:2px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,0.3);transition:all 0.25s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;position:relative;"
@@ -3767,8 +3801,8 @@ async function openVideoTemplatePicker(contentId) {
                     <div style="font-size:14px;font-weight:800;color:var(--text, #fff);">${tpl.name}</div>
                     <div style="font-size:11.5px;color:var(--muted, #94a3b8);margin-top:4px;">تدرج لوني متناسق مع حركات وشرائح مخصصة</div>
                 </div>
-                <button type="button" class="btn" style="width:100%;background:linear-gradient(135deg,${accent},#e11d48);color:#fff;border:none;padding:10px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px ${accent}40;">
-                    <span>🚀</span> استخدام هذا القالب وتحويل الفيديو
+                <button type="button" class="btn video-tpl-apply-btn" style="width:100%;background:linear-gradient(135deg,${accent},#e11d48);color:#fff;border:none;padding:10px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px ${accent}40;">
+                    <span>🚀</span> استخدام هذا القالب (${currentBrandLabel})
                 </button>
             </div>
         </div>

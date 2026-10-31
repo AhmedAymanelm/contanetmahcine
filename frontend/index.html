@@ -1692,39 +1692,95 @@
     </div>
 
 <!-- Video Template Picker Modal (For Reels & Video Slideshows) -->
-<div id="video-template-picker-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); z-index:9999; align-items:center; justify-content:center; opacity:0; transition: opacity 0.3s;">
-    <div style="background:var(--panel); width:90%; max-width:960px; max-height:88vh; border-radius:24px; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.7); overflow:hidden; transform: scale(0.95); transition: transform 0.3s; border:1px solid rgba(255,255,255,0.1);" id="video-template-picker-content">
+<div id="video-template-picker-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); z-index:99999; align-items:center; justify-content:center; opacity:0; transition: opacity 0.3s;">
+    <div style="background:var(--panel, #181926); width:92%; max-width:980px; max-height:88vh; border-radius:24px; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.7); overflow:hidden; transform: scale(0.95); transition: transform 0.3s; border:1px solid rgba(255,255,255,0.1);" id="video-template-picker-content">
         
         <!-- Header -->
-        <div style="padding:22px 28px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,rgba(255,92,0,0.12),rgba(124,58,237,0.06));">
+        <div style="padding:18px 28px; border-bottom:1px solid var(--line, rgba(255,255,255,0.1)); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,rgba(255,92,0,0.12),rgba(124,58,237,0.06));">
             <div style="display:flex; align-items:center; gap:14px;">
                 <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#FF5C00,#e11d48); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 18px rgba(255,92,0,0.4);">🎬</div>
                 <div>
-                    <h2 style="margin:0; font-size:20px; font-weight:800; color:#fff;">اختر قالب الريلز المناسب للفيديو</h2>
-                    <span style="color:var(--muted); font-size:13px;">اختر من القوالب التي صممتها بالألوان والشرائح ليتم تطبيقها على ريلز هذا الخبر</span>
+                    <h2 style="margin:0; font-size:20px; font-weight:800; color:#fff;">إعداد وتحويل فيديو الريلز</h2>
+                    <span style="color:var(--muted, #94a3b8); font-size:13px;">اختر هوية الفيديو أولاً ثم اختر قالب التصميم والألوان</span>
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
-                <a href="#page-visual-designer" onclick="closeVideoTemplatePickerModal(); go(document.querySelector('[data-page=page-visual-designer]')); loadVisualTemplates();" class="btn ghost" style="padding:7px 14px; font-size:12px; font-weight:700; border-color:rgba(255,92,0,0.4); color:#FF5C00;">
+                <a href="#page-visual-designer" onclick="closeVideoTemplatePickerModal(); go(document.querySelector('[data-page=page-visual-designer]')); if(window.loadVisualTemplates) loadVisualTemplates();" class="btn ghost" style="padding:7px 14px; font-size:12px; font-weight:700; border-color:rgba(255,92,0,0.4); color:#FF5C00; text-decoration:none;">
                     + تصميم قالب جديد ↗
                 </a>
-                <button onclick="closeVideoTemplatePickerModal()" style="background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#fff'" onmouseout="this.style.background='none'; this.style.color='var(--muted)'">×</button>
+                <button type="button" onclick="closeVideoTemplatePickerModal()" style="background:none; border:none; color:var(--muted, #94a3b8); font-size:24px; cursor:pointer; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#fff'" onmouseout="this.style.background='none'; this.style.color='var(--muted, #94a3b8)'">×</button>
             </div>
         </div>
 
-        <!-- Templates Grid (Scrollable) -->
-        <div style="padding:24px 28px; overflow-y:auto; flex:1;">
+        <!-- الخطوة 1: هوية الفيديو (Branding Selection Bar) -->
+        <div style="padding:16px 28px; background:rgba(255,255,255,0.02); border-bottom:1px solid var(--line, rgba(255,255,255,0.08));">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:13.5px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+                    <span style="background:linear-gradient(135deg,#FF5C00,#e11d48); color:#fff; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:900;">1</span>
+                    <span>حدد هوية الفيديو (لمن تريد إنشاء هذا الفيديو؟):</span>
+                </div>
+                <div id="video-selected-brand-indicator" style="font-size:11.5px; font-weight:700; color:#FFB700; background:rgba(255,183,0,0.12); padding:3px 12px; border-radius:12px; border:1px solid rgba(255,183,0,0.3);">
+                    الهوية الحالية: وزارة تمكين المجتمع
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <!-- بطاقة 1: وزارة تمكين المجتمع -->
+                <div id="video-brand-opt-ministry" onclick="setVideoBrandMode('ministry')"
+                     style="cursor:pointer; display:flex; align-items:center; gap:14px; padding:12px 18px; border-radius:16px; background:rgba(255,183,0,0.12); border:2.5px solid #FFB700; transition:all 0.25s; box-shadow:0 4px 15px rgba(255,183,0,0.2);">
+                    <input type="radio" id="radio-brand-ministry" name="video_brand_choice" value="ministry" checked style="accent-color:#FFB700; transform:scale(1.2); cursor:pointer; pointer-events:none;">
+                    <div style="width:46px; height:46px; border-radius:12px; background:rgba(255,255,255,0.95); display:flex; align-items:center; justify-content:center; padding:4px; box-shadow:0 4px 12px rgba(0,0,0,0.2); flex-shrink:0;">
+                        <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="max-height:38px; max-width:38px; object-fit:contain;" alt="شعار الوزارة">
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:14px; font-weight:900; color:#FFB700;">وزارة تمكين المجتمع</div>
+                        <div style="font-size:11px; color:rgba(255,255,255,0.7); margin-top:2px;">لوجو الوزارة الرسمي + شرائح Ident سينمائية كاملة + إخفاء صورة العميل</div>
+                    </div>
+                </div>
+
+                <!-- بطاقة 2: العميل د. زايد الحميري -->
+                <div id="video-brand-opt-client" onclick="setVideoBrandMode('client')"
+                     style="cursor:pointer; display:flex; align-items:center; gap:14px; padding:12px 18px; border-radius:16px; background:rgba(255,255,255,0.04); border:2.5px solid rgba(255,255,255,0.12); transition:all 0.25s;">
+                    <input type="radio" id="radio-brand-client" name="video_brand_choice" value="client" style="accent-color:#FF5C00; transform:scale(1.2); cursor:pointer; pointer-events:none;">
+                    <div style="width:46px; height:46px; border-radius:50%; overflow:hidden; border:2px solid #FF5C00; flex-shrink:0; box-shadow:0 4px 12px rgba(255,92,0,0.3);">
+                        <img src="/static/assets/author_mic.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/imge.png'" alt="صورة العميل">
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:14px; font-weight:900; color:#fff;">العميل (د. زايد الحميري)</div>
+                        <div style="font-size:11px; color:rgba(255,255,255,0.7); margin-top:2px;">الصورة الشخصية + حساب @zayedtech + زر متابعة + إخفاء هوية الوزارة</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الخطوة 2: Templates Grid (Scrollable) -->
+        <div style="padding:18px 28px; overflow-y:auto; flex:1;">
+            <div style="font-size:13px; font-weight:800; color:#fff; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                <span style="background:linear-gradient(135deg,#FF5C00,#e11d48); color:#fff; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:900;">2</span>
+                <span>اختر قالب الألوان والتصميم لبدء التحويل:</span>
+            </div>
             <div id="video-template-picker-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:20px;">
                 <!-- Injected dynamically by JS -->
             </div>
         </div>
 
         <!-- Footer -->
-        <div style="padding:16px 28px; border-top:1px solid var(--line); background:var(--panel-2); display:flex; justify-content:space-between; align-items:center;">
-            <div style="font-size:12px; color:var(--muted);">
-                💡 يتم استخدام ألوان وشرائح القالب المختار في رندرة شرائح الفيديو
+        <div style="padding:14px 28px; border-top:1px solid var(--line, rgba(255,255,255,0.1)); background:var(--panel-2, #1e1e2e); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="font-size:12px; color:var(--muted, #94a3b8);">
+                    💡 يتم تطبيق الهوية والقالب المختارين على شرائح ريلز هذا الخبر
+                </div>
+                <div id="video-picker-footer-brand-badge" style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.92); padding:3px 10px; border-radius:12px;">
+                    <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:15px; width:auto;" alt="شعار">
+                    <span style="font-size:9.5px; font-weight:800; color:#111;">هوية وزارة تمكين المجتمع مفعلة</span>
+                </div>
             </div>
-            <button onclick="closeVideoTemplatePickerModal()" class="btn ghost" style="padding:8px 18px; font-size:13px;">إلغاء</button>
+            <div style="display:flex; gap:10px;">
+                <button type="button" id="btn-default-render" onclick="confirmVideoRenderWithTemplate(_pendingVideoContentId, null, 'الافتراضي', null)" class="btn ghost" style="padding:8px 16px; font-size:12.5px; cursor:pointer;">
+                    تطبيق القالب الافتراضي ⚡
+                </button>
+                <button type="button" onclick="closeVideoTemplatePickerModal()" class="btn ghost" style="padding:8px 18px; font-size:13px; cursor:pointer;">إلغاء</button>
+            </div>
         </div>
 
     </div>
@@ -1931,7 +1987,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="js/main.js?v=20261031_15"></script>
+<script src="js/main.js?v=20261031_16"></script>
 
 <!-- ════════════════════════════════ ANALYTICS PAGE ════════════════════════════ -->
 <style>
