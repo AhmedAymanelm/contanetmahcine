@@ -37,6 +37,13 @@ async def lifespan(app: FastAPI):
     try:
         Base.metadata.create_all(bind=engine)
         print(f"[Startup] DB tables created/verified ({'SQLite' if _is_sqlite else 'PostgreSQL'}).")
+        try:
+            from sqlalchemy import text as _t
+            with engine.connect() as _c:
+                _c.execute(_t('ALTER TABLE visual_templates ADD COLUMN IF NOT EXISTS slides_json TEXT;'))
+                _c.commit()
+        except Exception:
+            pass
     except Exception as _e:
         print(f"[Startup] DB create_all warning: {_e}")
 

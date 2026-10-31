@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -25,6 +26,7 @@ class VisualTemplateCreate(BaseModel):
     animation: str = "slideUp"
     text_align: str = "center"
     thumbnail_url: Optional[str] = None
+    slides_json: Optional[str] = None
 
 
 class VisualTemplateUpdate(BaseModel):
@@ -41,6 +43,7 @@ class VisualTemplateUpdate(BaseModel):
     animation: Optional[str] = None
     text_align: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    slides_json: Optional[str] = None
 
 
 class VisualTemplateResponse(BaseModel):
@@ -58,6 +61,7 @@ class VisualTemplateResponse(BaseModel):
     animation: str
     text_align: str
     thumbnail_url: Optional[str]
+    slides_json: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -123,13 +127,35 @@ DEFAULT_TEMPLATES = [
 
 @router.get("/", response_model=List[VisualTemplateResponse])
 async def list_visual_templates(db: Session = Depends(get_db)):
-    """List all visual templates (auto-seeds defaults if empty)."""
+    """List all visual templates (auto-seeds defaults if empty and ensures multi-slide deck)."""
     count = db.query(VisualTemplate).count()
     if count == 0:
         for tpl_data in DEFAULT_TEMPLATES:
             db.add(VisualTemplate(**tpl_data))
         db.commit()
-    return db.query(VisualTemplate).order_by(VisualTemplate.id).all()
+    
+    templates = db.query(VisualTemplate).order_by(VisualTemplate.id).all()
+    # Backfill default multi-slide deck for any template without slides_json
+    updated = False
+    for tpl in templates:
+        if not tpl.slides_json:
+            p_accent = tpl.accent_color or "#FF5C00"
+            p_c1 = tpl.bg_color1 or "#0a0a0a"
+            p_c2 = tpl.bg_color2 or "#240a00"
+            default_deck = [
+                {"id": 1, "title": "شريحة 1 (الافتتاحية والخطاف)", "bgType": tpl.bg_type or "gradient", "color1": p_c1, "color2": p_c2, "textColor": tpl.text_color or "#ffffff", "accentColor": p_accent, "fontSize": tpl.font_size or 42, "align": tpl.text_align or "center", "animation": tpl.animation or "slideUp", "sampleText": "عوالم الذكاء الاصطناعي تتغير بسرعة غير مسبوقة — هل أنت مستعد؟"},
+                {"id": 2, "title": "شريحة 2 (المحتوى والشرح)", "bgType": "gradient", "color1": "#070514", "color2": "#1a0f3c", "textColor": "#ffffff", "accentColor": "#8B5CF6", "fontSize": 38, "align": "center", "animation": "scaleIn", "sampleText": "الشركات التي لا تتبنى الأتمتة الآن ستفقد قدرتها التنافسية خلال شهور."},
+                {"id": 3, "title": "شريحة 3 (الخاتمة والتفاعل)", "bgType": "gradient", "color1": "#0c0a02", "color2": "#261d06", "textColor": "#ffffff", "accentColor": "#F59E0B", "fontSize": 40, "align": "center", "animation": "fadeIn", "sampleText": "شاركنا رأيك في التعليقات، وتابع حساب @zayedtech لجديد التقنية!"}
+            ]
+            tpl.slides_json = json.dumps(default_deck, ensure_ascii=False)
+            updated = True
+    if updated:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    return templates
 
 
 @router.post("/", response_model=VisualTemplateResponse)

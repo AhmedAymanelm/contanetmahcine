@@ -31,5 +31,8 @@ class VisualTemplate(Base):
     # Preview (base64 thumbnail or URL)
     thumbnail_url = Column(String, nullable=True)
 
+    # Multi-slide configurations (JSON array of slide styles: [{bg_type, bg_color1, bg_color2, accent_color, text_color, animation, font_size, text_align, title, sample_text}, ...])
+    slides_json = Column(String, nullable=True)
+
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
