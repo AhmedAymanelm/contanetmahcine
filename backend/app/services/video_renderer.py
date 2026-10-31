@@ -65,6 +65,8 @@ def _get_ministry_logo_b64() -> str:
     import os, base64
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     candidate_paths = [
+        "/Users/ahmed/UEA AGANTIC/content-machine/frontend/ministry_logo_transparent.png",
+        str(Path(__file__).resolve().parents[3] / "frontend" / "ministry_logo_transparent.png"),
         os.path.join(base_dir, "static", "assets", "ministry_logo_transparent.png"),
         os.path.join(base_dir, "..", "backend", "static", "assets", "ministry_logo_transparent.png"),
         os.path.join(base_dir, "..", "static", "assets", "ministry_logo_transparent.png"),
@@ -165,7 +167,10 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     is_cta    = slide.get("is_cta", False)
     is_ministry_ident = slide.get("is_ministry_ident", False)
     image_url = slide.get("image_url", "")
-    show_ministry_logo = slide.get("show_ministry_logo", True)
+    brand_mode = slide.get("brand_mode")
+    if not brand_mode:
+        brand_mode = "ministry" if slide.get("show_ministry_logo", True) else "client"
+    show_ministry_logo = (brand_mode == "ministry")
     ministry_logo = _get_ministry_logo_b64() if show_ministry_logo else ""
 
     top_bar = _top_bar_html(current, total, pfill)
@@ -392,91 +397,162 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             'box-shadow:0 0 24px ' + slide_accent + '66;"></div>'
             '</div></div>'
         )
+        cover_footer_text = "وزارة تمكين المجتمع" if brand_mode == "ministry" else (author_name + " · @" + brand)
         return (
             "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
             + cairo_css + css_base + "</style></head><body>"
             + bg_layers + top_bar + dot_bar + content
             # Footer brand
             + '<div style="position:absolute;bottom:80px;left:80px;right:80px;text-align:center;">'
-            '<span style="font-size:24px;color:rgba(255,255,255,0.3);letter-spacing:4px;">'
-            + ('وزارة تمكين المجتمع · ' if show_ministry_logo else '') + (article_title or brand) + '</span></div>'
+            '<span style="font-size:24px;color:rgba(255,255,255,0.4);letter-spacing:3px;font-weight:700;">'
+            + cover_footer_text + '</span></div>'
             + "</body></html>"
         )
 
-    # ── CTA SLIDE (last slide with author avatar) ─────────────────────────
+    # ── CTA SLIDE ─────────────────────────────────────────────────────────
     elif is_cta:
-        author_img = _get_author_img_b64()
-        avatar_html = ""
-        if author_img:
-            avatar_html = (
-                '<div style="width:260px;height:260px;border-radius:50%;overflow:hidden;'
-                'border:8px solid ' + slide_accent + ';'
-                'box-shadow:0 0 50px ' + slide_accent + '55, 0 20px 60px rgba(0,0,0,0.6);'
-                'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';flex-shrink:0;">'
-                '<img src="' + author_img + '" style="width:100%;height:100%;object-fit:cover;object-position:35% 10%;" />'
+        if brand_mode == "ministry":
+            # Ministry CTA Slide — Official Institutional Branding
+            m_logo = ministry_logo or _get_ministry_logo_b64()
+            logo_html = ""
+            if m_logo:
+                logo_html = (
+                    '<div style="background:rgba(255,255,255,0.96);padding:24px 36px;border-radius:28px;'
+                    'box-shadow:0 0 50px rgba(212,175,55,0.35), 0 20px 60px rgba(0,0,0,0.6);'
+                    'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';margin-bottom:28px;">'
+                    '<img src="' + m_logo + '" style="height:110px;width:auto;object-fit:contain;" alt="وزارة تمكين المجتمع" />'
+                    '</div>'
+                )
+
+            official_title = (
+                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;">'
+                '<div style="font-size:42px;font-weight:900;color:#ffffff;letter-spacing:1px;">وزارة تمكين المجتمع</div>'
+                '<div style="font-size:20px;font-weight:700;color:#FFB700;margin-top:6px;letter-spacing:2px;direction:ltr;">MINISTRY OF COMMUNITY EMPOWERMENT</div>'
                 '</div>'
             )
 
-        author_info_html = (
-            '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;margin-top:20px;">'
-            '<div style="font-size:44px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">' + author_name + '</div>'
-            '<div style="font-size:24px;font-weight:700;color:' + slide_accent + ';margin-top:4px;letter-spacing:1px;" dir="ltr">@' + brand + '</div>'
-            '</div>'
-        )
+            category_pill = (
+                '<div style="margin-top:28px;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+                '<div style="display:inline-block;padding:8px 28px;border-radius:30px;'
+                'background:rgba(212,175,55,0.18);border:1.5px solid #FFB700;">'
+                '<span style="font-size:24px;font-weight:800;color:#FFB700;">' + (category or "شاركونا رأيكم") + '</span>'
+                '</div></div>'
+            )
 
-        category_pill = (
-            '<div style="margin-top:28px;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
-            '<div style="display:inline-block;padding:8px 28px;border-radius:30px;'
-            'background:' + slide_accent + '22;border:1.5px solid ' + slide_accent + ';">'
-            '<span style="font-size:24px;font-weight:800;color:' + slide_accent + ';">' + (category or "شاركنا رأيك") + '</span>'
-            '</div></div>'
-        )
+            headline_html = (
+                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;margin-top:20px;max-width:920px;">'
+                '<div style="font-size:56px;font-weight:900;color:#fff;line-height:1.3;letter-spacing:-1px;'
+                'text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
+                + headline[:130] + '</div>'
+                '</div>'
+            )
 
-        headline_html = (
-            '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;margin-top:20px;max-width:920px;">'
-            '<div style="font-size:60px;font-weight:900;color:#fff;line-height:1.25;letter-spacing:-1px;'
-            'text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
-            + headline[:130] + '</div>'
-            '</div>'
-        )
+            detail_text = detail or "اكتبوا آراءكم ومقترحاتكم في التعليقات 👇"
+            detail_html = (
+                '<div style="margin-top:24px;padding:12px 32px;border-radius:12px;'
+                'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
+                'transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+                '<span style="font-size:26px;font-weight:600;color:rgba(255,255,255,0.8);">'
+                + detail_text + '</span></div>'
+            )
 
-        detail_text = detail or "اكتب رأيك في التعليقات 👇"
-        detail_html = (
-            '<div style="margin-top:24px;padding:12px 32px;border-radius:12px;'
-            'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
-            'transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
-            '<span style="font-size:26px;font-weight:600;color:rgba(255,255,255,0.7);">'
-            + detail_text + '</span></div>'
-        )
+            content = (
+                '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
+                'justify-content:center;align-items:center;padding:100px 80px;">'
+                + logo_html
+                + official_title
+                + category_pill
+                + headline_html
+                + detail_html
+                + '</div>'
+            )
+            return (
+                "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
+                + cairo_css + css_base + "</style></head><body>"
+                + bg_layers + top_bar + dot_bar + content
+                + '<div style="position:absolute;bottom:70px;left:0;right:0;text-align:center;">'
+                '<span style="font-size:22px;color:rgba(255,255,255,0.4);letter-spacing:2px;font-weight:600;">'
+                'وزارة تمكين المجتمع · دولة الإمارات العربية المتحدة</span></div>'
+                + "</body></html>"
+            )
 
-        follow_btn = (
-            '<div style="margin-top:32px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
-            '<div style="display:inline-flex;align-items:center;gap:12px;'
-            'background:linear-gradient(135deg,' + slide_accent + ',' + slide_accent_light + ');'
-            'color:#fff;padding:14px 44px;border-radius:50px;'
-            'font-size:28px;font-weight:800;box-shadow:0 12px 35px ' + slide_accent + '55;">'
-            '<span>+ تابع</span>'
-            '<span dir="ltr">@' + brand + '</span>'
-            '</div></div>'
-        )
+        else:
+            # Client (Dr. Zayed) CTA Slide with avatar and personal branding
+            author_img = _get_author_img_b64()
+            avatar_html = ""
+            if author_img:
+                avatar_html = (
+                    '<div style="width:260px;height:260px;border-radius:50%;overflow:hidden;'
+                    'border:8px solid ' + slide_accent + ';'
+                    'box-shadow:0 0 50px ' + slide_accent + '55, 0 20px 60px rgba(0,0,0,0.6);'
+                    'transform:scale(' + str(h_scale) + ');opacity:' + str(h_op) + ';flex-shrink:0;">'
+                    '<img src="' + author_img + '" style="width:100%;height:100%;object-fit:cover;object-position:35% 10%;" />'
+                    '</div>'
+                )
 
-        content = (
-            '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
-            'justify-content:center;align-items:center;padding:100px 80px;">'
-            + avatar_html
-            + author_info_html
-            + category_pill
-            + headline_html
-            + detail_html
-            + follow_btn
-            + '</div>'
-        )
-        return (
-            "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
-            + cairo_css + css_base + "</style></head><body>"
-            + bg_layers + top_bar + dot_bar + content
-            + "</body></html>"
-        )
+            author_info_html = (
+                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;margin-top:20px;">'
+                '<div style="font-size:44px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">' + author_name + '</div>'
+                '<div style="font-size:24px;font-weight:700;color:' + slide_accent + ';margin-top:4px;letter-spacing:1px;" dir="ltr">@' + brand + '</div>'
+                '</div>'
+            )
+
+            category_pill = (
+                '<div style="margin-top:28px;transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';">'
+                '<div style="display:inline-block;padding:8px 28px;border-radius:30px;'
+                'background:' + slide_accent + '22;border:1.5px solid ' + slide_accent + ';">'
+                '<span style="font-size:24px;font-weight:800;color:' + slide_accent + ';">' + (category or "شاركنا رأيك") + '</span>'
+                '</div></div>'
+            )
+
+            headline_html = (
+                '<div style="transform:translateY(' + str(h_y) + 'px);opacity:' + str(h_op) + ';text-align:center;margin-top:20px;max-width:920px;">'
+                '<div style="font-size:60px;font-weight:900;color:#fff;line-height:1.25;letter-spacing:-1px;'
+                'text-shadow:0 4px 30px rgba(0,0,0,0.5);">'
+                + headline[:130] + '</div>'
+                '</div>'
+            )
+
+            detail_text = detail or "اكتب رأيك في التعليقات 👇"
+            detail_html = (
+                '<div style="margin-top:24px;padding:12px 32px;border-radius:12px;'
+                'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);'
+                'transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+                '<span style="font-size:26px;font-weight:600;color:rgba(255,255,255,0.7);">'
+                + detail_text + '</span></div>'
+            )
+
+            follow_btn = (
+                '<div style="margin-top:32px;transform:translateY(' + str(d_y) + 'px);opacity:' + str(d_op) + ';">'
+                '<div style="display:inline-flex;align-items:center;gap:12px;'
+                'background:linear-gradient(135deg,' + slide_accent + ',' + slide_accent_light + ');'
+                'color:#fff;padding:14px 44px;border-radius:50px;'
+                'font-size:28px;font-weight:800;box-shadow:0 12px 35px ' + slide_accent + '55;">'
+                '<span>+ تابع</span>'
+                '<span dir="ltr">@' + brand + '</span>'
+                '</div></div>'
+            )
+
+            content = (
+                '<div style="position:absolute;inset:0;display:flex;flex-direction:column;'
+                'justify-content:center;align-items:center;padding:100px 80px;">'
+                + avatar_html
+                + author_info_html
+                + category_pill
+                + headline_html
+                + detail_html
+                + follow_btn
+                + '</div>'
+            )
+            return (
+                "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
+                + cairo_css + css_base + "</style></head><body>"
+                + bg_layers + top_bar + dot_bar + content
+                + '<div style="position:absolute;bottom:70px;left:80px;right:80px;display:flex;justify-content:center;">'
+                '<span style="font-size:22px;color:rgba(255,255,255,0.4);letter-spacing:2px;font-weight:600;">'
+                + author_name + ' · @' + brand + '</span></div>'
+                + "</body></html>"
+            )
 
     # ── NORMAL SLIDE ──────────────────────────────────────────────────────
 
@@ -539,14 +615,15 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
             + category + '</span></div>'
         )
 
-    # Slide number — small accent label
+    # Slide number — small accent watermark label (synchronized with slide number)
     num_label = ""
-    if label:
+    display_num = slide.get("number") or (label.zfill(2) if label else "")
+    if display_num and not (is_cover or is_cta or is_outro or is_ministry_ident):
         num_label = (
             '<div style="margin-bottom:20px;opacity:0.5;">'
             '<span style="font-size:120px;font-weight:900;color:' + slide_accent + '15;'
             'position:absolute;right:80px;top:50%;transform:translateY(-80%);pointer-events:none;">'
-            + label.zfill(2) + '</span></div>'
+            + str(display_num).zfill(2) + '</span></div>'
         )
 
     # Accent vertical line decoration
@@ -556,6 +633,8 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         'background:linear-gradient(to bottom,transparent,' + slide_accent + ',' + slide_accent_light + ',transparent);'
         'opacity:0.4;"></div>'
     )
+
+    normal_footer_text = "وزارة تمكين المجتمع · دولة الإمارات العربية المتحدة" if brand_mode == "ministry" else (author_name + " · @" + brand)
 
     return (
         "<!DOCTYPE html><html lang='ar' dir='rtl'><head><meta charset='UTF-8'><style>"
@@ -587,8 +666,8 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
         # Footer
         + '<div style="position:absolute;bottom:70px;left:80px;right:80px;'
         'display:flex;justify-content:center;">'
-        '<span style="font-size:22px;color:rgba(255,255,255,0.35);letter-spacing:2px;">'
-        + ('وزارة تمكين المجتمع · ' if show_ministry_logo else '') + author_name + ' · @' + brand + '</span></div>'
+        '<span style="font-size:22px;color:rgba(255,255,255,0.4);letter-spacing:2px;font-weight:600;">'
+        + normal_footer_text + '</span></div>'
         + "</body></html>"
     )
 
@@ -684,10 +763,18 @@ async def render_video(
         CAIRO_FONT_CSS = ""
 
     total = len(slides_data)
+    content_idx = 0
     for idx, slide in enumerate(slides_data):
-        slide["number"]  = str(idx + 1).zfill(2)
         slide["total"]   = total
         slide["current"] = idx + 1
+        if slide.get("is_ministry_ident"):
+            slide["number"] = ""
+            slide["label"] = ""
+        else:
+            content_idx += 1
+            num_str = str(content_idx).zfill(2)
+            slide["number"] = num_str
+            slide["label"]  = num_str
 
     all_slide_frames = await _render_all_slides(
         slides_data, CAIRO_FONT_CSS, fps=fps, enter_sec=0.7, hold_sec=2.5
@@ -717,6 +804,22 @@ async def render_video(
         preset="fast", ffmpeg_params=["-crf", "18", "-pix_fmt", "yuv420p"],
         logger=None,
     )
+
+    # Save metadata sidecar
+    try:
+        import json as _json
+        b_mode = slides_data[0].get("brand_mode", "ministry") if slides_data else "ministry"
+        meta_file = OUTPUT_DIR / (out_filename + ".json")
+        with open(meta_file, "w", encoding="utf-8") as mf:
+            _json.dump({
+                "content_item_id": content_item_id,
+                "brand_mode": b_mode,
+                "url": "/static/video_output/" + out_filename,
+                "timestamp": timestamp,
+            }, mf)
+    except Exception:
+        pass
+
     return "/static/video_output/" + out_filename
 
 
@@ -762,6 +865,7 @@ def content_item_to_slides(
     author_name: str = "د. زايد الحميري",
     article_title: str = "",
     image_url: str = "",
+    brand_mode: str = "ministry",
 ) -> List[Dict[str, Any]]:
     slides: List[Dict[str, Any]] = []
 
@@ -771,7 +875,8 @@ def content_item_to_slides(
             "author_name": author_name,
             "article_title": article_title,
             "bars": [],
-            "show_ministry_logo": True,
+            "brand_mode": brand_mode,
+            "show_ministry_logo": (brand_mode == "ministry"),
             **extra
         }
 
@@ -842,17 +947,18 @@ def content_item_to_slides(
     elif content_type == "REEL":
         raw_slides = generated_content.get("slides", []) if isinstance(generated_content, dict) else []
 
-        # ── Opening Ministry Ident Slide ──────────────────────────────────
-        opening_ident = base({
-            "is_ministry_ident": True,
-            "is_cover": False,
-            "category": "دولة الإمارات العربية المتحدة",
-            "headline": "وزارة تمكين المجتمع",
-            "detail": "MINISTRY OF COMMUNITY EMPOWERMENT",
-            "label": "",
-            "show_ministry_logo": True,
-        })
-        slides.append(opening_ident)
+        # ── Opening Ministry Ident Slide (Only for Ministry brand mode) ───
+        if brand_mode == "ministry":
+            opening_ident = base({
+                "is_ministry_ident": True,
+                "is_cover": False,
+                "category": "دولة الإمارات العربية المتحدة",
+                "headline": "وزارة تمكين المجتمع",
+                "detail": "MINISTRY OF COMMUNITY EMPOWERMENT",
+                "label": "",
+                "show_ministry_logo": True,
+            })
+            slides.append(opening_ident)
 
         for i, s in enumerate(raw_slides):
             if isinstance(s, dict):
@@ -870,23 +976,24 @@ def content_item_to_slides(
                 "is_cover": is_first,
                 "is_cta": is_last,
                 "category": "ابدأ" if is_first else ("شاركنا رأيك" if is_last else ""),
-                "label": "" if (is_first or is_last) else str(i),
+                "label": "",
                 "headline": str(text)[:150],
                 "detail": str(note)[:80] if note else "",
                 "bars": _extract_bars_from_text(str(text) + " " + str(note)) if (note and not is_last) else [],
             }))
 
-        # ── Closing Ministry Ident Slide ─────────────────────────────────
-        closing_ident = base({
-            "is_ministry_ident": True,
-            "is_cover": False,
-            "category": "دولة الإمارات العربية المتحدة",
-            "headline": "وزارة تمكين المجتمع",
-            "detail": "MINISTRY OF COMMUNITY EMPOWERMENT",
-            "label": "",
-            "show_ministry_logo": True,
-        })
-        slides.append(closing_ident)
+        # ── Closing Ministry Ident Slide (Only for Ministry brand mode) ───
+        if brand_mode == "ministry":
+            closing_ident = base({
+                "is_ministry_ident": True,
+                "is_cover": False,
+                "category": "دولة الإمارات العربية المتحدة",
+                "headline": "وزارة تمكين المجتمع",
+                "detail": "MINISTRY OF COMMUNITY EMPOWERMENT",
+                "label": "",
+                "show_ministry_logo": True,
+            })
+            slides.append(closing_ident)
 
     if not slides:
         slides = [base({"category": "محتوى", "label": "", "headline": "لا يوجد محتوى", "detail": ""})]

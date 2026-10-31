@@ -2107,29 +2107,37 @@ function renderPreview(platformId, gen, item) {
     // ── REEL: show video player or slide cards ──────────────────────────────
     if (type === 'REEL') {
         const slides = (gen.slides && Array.isArray(gen.slides)) ? gen.slides : [];
-        const totalSlides = slides.length + 2; // +2 for opening & closing ministry ident slides
         const ministryBadgeHtml = `
             <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.95);padding:3px 10px;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
                 <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:16px;width:auto;object-fit:contain;" alt="شعار">
                 <span style="font-size:9.5px;font-weight:900;color:#111;">وزارة تمكين المجتمع</span>
             </div>`;
+        const clientBadgeHtml = `
+            <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,92,0,0.15);border:1px solid #FF5C00;padding:3px 10px;border-radius:14px;">
+                <span style="font-size:11px;">👤</span>
+                <span style="font-size:9.5px;font-weight:900;color:#FF5C00;">د. زايد الحميري · @zayedtech</span>
+            </div>`;
         fetch(`/api/video/${item.id}/status`)
             .then(r => r.ok ? r.json() : {})
             .then(statusData => {
+                const isClient = (statusData.brand_mode === 'client');
+                const badge = isClient ? clientBadgeHtml : ministryBadgeHtml;
+                const brandFooter = isClient ? 'د. زايد الحميري · @zayedtech' : 'وزارة تمكين المجتمع · دولة الإمارات العربية المتحدة';
+
                 if (statusData.status === 'done' && statusData.url) {
                     area.innerHTML = `
                     <div style="text-align:center;max-width:460px;margin:0 auto;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                             <div style="font-size:12px;color:#FF5C00;font-weight:700;">🎬 ريلز — فيديو جاهز للنشر</div>
-                            ${ministryBadgeHtml}
+                            ${badge}
                         </div>
                         <video src="${statusData.url}" controls autoplay muted loop
                             style="width:100%;max-height:520px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5);background:#000;"></video>
-                        <div style="margin-top:8px;font-size:11px;color:var(--muted);">وزارة تمكين المجتمع · @zayedtech · ${slides.length} شريحة</div>
+                        <div style="margin-top:8px;font-size:11px;color:var(--muted);">${brandFooter} · ${slides.length} شريحة</div>
                     </div>`;
                 } else {
                     const renderingBanner = (statusData.status === 'rendering')
-                        ? `<div style="background:rgba(255,92,0,0.12);border:1px solid rgba(255,92,0,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#FF5C00;text-align:right;">⏳ جاري إنشاء الفيديو... يمكنك مراجعة الشرائح</div>` : '';
+                        ? `<div style="background:rgba(255,92,0,0.12);border:1px solid rgba(255,92,0,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#FF5C00;text-align:right;">⏳ جاري إنشاء الفيديو (${isClient ? 'هوية العميل' : 'هوية الوزارة'})... يمكنك مراجعة الشرائح</div>` : '';
                     const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
                     // Ministry ident card (opening and closing)
@@ -2148,11 +2156,7 @@ function renderPreview(platformId, gen, item) {
                             </div>
                         </div>`;
 
-                    const slideCards = [
-                        // Opening ident
-                        ministryIdentCard,
-                        // Content slides
-                        ...slides.map((s, i) => `
+                    const contentCards = slides.map((s, i) => `
                         <div style="background:#111;border-radius:12px;padding:14px 18px;border:1px solid #2a2a2a;direction:rtl;position:relative;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                                 <div style="font-size:10px;color:#FF5C00;font-weight:800;letter-spacing:1px;">الشريحة ${i + 1}</div>
@@ -2160,9 +2164,9 @@ function renderPreview(platformId, gen, item) {
                             </div>
                             <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.4;">${esc(s.text)}</div>
                             ${s.note ? `<div style="font-size:12px;color:#888;margin-top:6px;border-top:1px solid #222;padding-top:6px;">${esc(s.note)}</div>` : ''}
-                        </div>`),
-                        // Closing ident
-                        ministryIdentCard,
+                        </div>`);
+
+                    const slideCards = isClient ? contentCards : [ministryIdentCard, ...contentCards, ministryIdentCard];
                     ].join('');
 
                     area.innerHTML = `
@@ -3478,6 +3482,54 @@ function closeNewsModal() {
 
 let _pendingVideoContentId = null;
 
+window._currentVideoBrandMode = 'ministry';
+
+function setVideoBrandMode(mode) {
+    window._currentVideoBrandMode = mode;
+    const optM = document.getElementById('video-brand-opt-ministry');
+    const optC = document.getElementById('video-brand-opt-client');
+    const radM = document.getElementById('radio-brand-ministry');
+    const radC = document.getElementById('radio-brand-client');
+    const footerBadge = document.getElementById('video-picker-footer-brand-badge');
+
+    if (mode === 'ministry') {
+        if (optM) {
+            optM.style.background = 'rgba(255,183,0,0.12)';
+            optM.style.borderColor = '#FFB700';
+        }
+        if (optC) {
+            optC.style.background = 'rgba(255,255,255,0.04)';
+            optC.style.borderColor = 'rgba(255,255,255,0.1)';
+        }
+        if (radM) radM.checked = true;
+        if (radC) radC.checked = false;
+        if (footerBadge) {
+            footerBadge.innerHTML = `
+                <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:15px; width:auto;" alt="شعار">
+                <span style="font-size:9.5px; font-weight:800; color:#111;">هوية وزارة تمكين المجتمع مفعلة</span>`;
+            footerBadge.style.background = 'rgba(255,255,255,0.92)';
+        }
+    } else {
+        if (optM) {
+            optM.style.background = 'rgba(255,255,255,0.04)';
+            optM.style.borderColor = 'rgba(255,255,255,0.1)';
+        }
+        if (optC) {
+            optC.style.background = 'rgba(255,92,0,0.15)';
+            optC.style.borderColor = '#FF5C00';
+        }
+        if (radM) radM.checked = false;
+        if (radC) radC.checked = true;
+        if (footerBadge) {
+            footerBadge.innerHTML = `
+                <span style="font-size:11px;">👤</span>
+                <span style="font-size:9.5px; font-weight:800; color:#fff;">هوية العميل (د. زايد الحميري) مفعلة</span>`;
+            footerBadge.style.background = 'linear-gradient(135deg,#FF5C00,#e11d48)';
+        }
+    }
+}
+window.setVideoBrandMode = setVideoBrandMode;
+
 function _ensureVideoTemplatePickerModal() {
     let modal = document.getElementById('video-template-picker-modal');
     if (!modal) {
@@ -3487,12 +3539,12 @@ function _ensureVideoTemplatePickerModal() {
         modal.innerHTML = `
         <div style="background:var(--panel, #181926); width:92%; max-width:960px; max-height:88vh; border-radius:24px; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.7); overflow:hidden; transform: scale(0.95); transition: transform 0.3s; border:1px solid rgba(255,255,255,0.1);" id="video-template-picker-content">
             <!-- Header -->
-            <div style="padding:22px 28px; border-bottom:1px solid var(--line, rgba(255,255,255,0.1)); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,rgba(255,92,0,0.12),rgba(124,58,237,0.06));">
+            <div style="padding:20px 28px; border-bottom:1px solid var(--line, rgba(255,255,255,0.1)); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,rgba(255,92,0,0.12),rgba(124,58,237,0.06));">
                 <div style="display:flex; align-items:center; gap:14px;">
                     <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#FF5C00,#e11d48); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 18px rgba(255,92,0,0.4);">🎬</div>
                     <div>
-                        <h2 style="margin:0; font-size:20px; font-weight:800; color:#fff;">اختر قالب الريلز المناسب للفيديو</h2>
-                        <span style="color:var(--muted, #94a3b8); font-size:13px;">اختر من القوالب التي صممتها بالألوان والشرائح ليتم تطبيقها على ريلز هذا الخبر</span>
+                        <h2 style="margin:0; font-size:20px; font-weight:800; color:#fff;">إعداد ورندرة فيديو الريلز</h2>
+                        <span style="color:var(--muted, #94a3b8); font-size:13px;">اختر هوية الفيديو وقالب التصميم بالألوان والشرائح المناسبة</span>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -3503,8 +3555,48 @@ function _ensureVideoTemplatePickerModal() {
                 </div>
             </div>
 
+            <!-- Brand Mode Switcher Bar -->
+            <div style="padding:14px 28px; background:rgba(255,255,255,0.02); border-bottom:1px solid var(--line, rgba(255,255,255,0.08)); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <div style="font-size:13.5px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+                        <span>🎯</span>
+                        <span>هوية الفيديو (Branding):</span>
+                    </div>
+                    <div style="font-size:11px; color:var(--muted, #94a3b8); margin-top:2px;">
+                        حدد ما إذا كان هذا الريلز للوزارة الرسمية أو الهوية الشخصية للعميل
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <!-- Option 1: Ministry -->
+                    <div id="video-brand-opt-ministry" onclick="setVideoBrandMode('ministry')"
+                         style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:8px 16px; border-radius:14px; background:rgba(255,183,0,0.12); border:2px solid #FFB700; transition:all 0.2s;">
+                        <input type="radio" id="radio-brand-ministry" name="v_brand_mode" value="ministry" checked style="accent-color:#FFB700; cursor:pointer; pointer-events:none;">
+                        <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:24px; width:auto; object-fit:contain; background:rgba(255,255,255,0.95); padding:2px 5px; border-radius:6px;" alt="شعار الوزارة">
+                        <div>
+                            <div style="font-size:12px; font-weight:800; color:#FFB700;">وزارة تمكين المجتمع</div>
+                            <div style="font-size:9.5px; color:rgba(255,255,255,0.6);">شعار وهوية الوزارة الرسمية</div>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: Client -->
+                    <div id="video-brand-opt-client" onclick="setVideoBrandMode('client')"
+                         style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:8px 16px; border-radius:14px; background:rgba(255,255,255,0.04); border:2px solid rgba(255,255,255,0.1); transition:all 0.2s;">
+                        <input type="radio" id="radio-brand-client" name="v_brand_mode" value="client" style="accent-color:#FF5C00; cursor:pointer; pointer-events:none;">
+                        <div style="width:28px; height:28px; border-radius:50%; overflow:hidden; border:2px solid #FF5C00; flex-shrink:0;">
+                            <img src="/static/assets/author_mic.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/imge.png'" alt="صورة العميل">
+                        </div>
+                        <div>
+                            <div style="font-size:12px; font-weight:800; color:#fff;">العميل (د. زايد الحميري)</div>
+                            <div style="font-size:9.5px; color:rgba(255,255,255,0.6);">الصورة الشخصية وحساب @zayedtech</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Templates Grid (Scrollable) -->
-            <div style="padding:24px 28px; overflow-y:auto; flex:1;">
+            <div style="padding:22px 28px; overflow-y:auto; flex:1;">
+                <div style="font-size:12.5px; font-weight:700; color:#94a3b8; margin-bottom:12px;">اختر قالب الألوان والتصميم:</div>
                 <div id="video-template-picker-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:20px;">
                 </div>
             </div>
@@ -3515,9 +3607,9 @@ function _ensureVideoTemplatePickerModal() {
                     <div style="font-size:12px; color:var(--muted, #94a3b8);">
                         💡 يتم استخدام ألوان وتصميم القالب المختار في رندرة شرائح الفيديو
                     </div>
-                    <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.92); padding:3px 10px; border-radius:12px;">
+                    <div id="video-picker-footer-brand-badge" style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.92); padding:3px 10px; border-radius:12px;">
                         <img src="/static/assets/ministry_logo_transparent.png" onerror="this.src='/ministry_logo_transparent.png'" style="height:15px; width:auto;" alt="شعار">
-                        <span style="font-size:9.5px; font-weight:800; color:#111;">🦅 شعار وزارة تمكين المجتمع مفعّل في الفيديو</span>
+                        <span style="font-size:9.5px; font-weight:800; color:#111;">هوية وزارة تمكين المجتمع مفعلة</span>
                     </div>
                 </div>
                 <div style="display:flex; gap:10px;">
@@ -3717,11 +3809,13 @@ async function executeVideoRender(id, templateId, templateName, templateObj) {
     const statusEl = document.getElementById('vid-status-' + id);
     if (!btn || !statusEl) return;
 
+    const currentBrand = window._currentVideoBrandMode || 'ministry';
+    const brandLabel = (currentBrand === 'client') ? 'هوية العميل (د. زايد)' : 'هوية وزارة تمكين المجتمع';
     btn.disabled = true;
     btn.innerText = '⏳ جاري التحويل...';
     statusEl.style.display = 'block';
-    const tplLabel = templateName ? `باستخدام قالب "${templateName}"` : '';
-    statusEl.innerText = `يتم إنشاء الفيديو ${tplLabel}... قد يستغرق دقيقة أو اثنتين`;
+    const tplLabel = templateName ? `بقالب "${templateName}"` : '';
+    statusEl.innerText = `يتم إنشاء الفيديو (${brandLabel} ${tplLabel})... قد يستغرق دقيقة أو اثنتين`;
 
     const token = localStorage.getItem('cm_token') || localStorage.getItem('access_token') || '';
     try {
@@ -3733,6 +3827,8 @@ async function executeVideoRender(id, templateId, templateName, templateObj) {
         const bodyPayload = {
             template_id: templateId,
             template_name: templateName || 'الافتراضي',
+            brand_mode: currentBrand,
+            show_ministry_logo: (currentBrand === 'ministry'),
             slides_json: templateObj ? (templateObj.slides_json || (templateObj.slides ? JSON.stringify(templateObj.slides) : null)) : null,
             custom_colors: templateObj ? {
                 accent: templateObj.accent_color || templateObj.accentColor || '#FF5C00',
@@ -3740,7 +3836,6 @@ async function executeVideoRender(id, templateId, templateName, templateObj) {
                 color2: templateObj.bg_color2 || templateObj.color2 || '#1a0a00',
                 text_color: templateObj.text_color || templateObj.textColor || '#ffffff'
             } : null,
-            show_ministry_logo: true
         };
 
         const res = await fetch(url, {

@@ -33,18 +33,19 @@ class VideoRenderRequest(BaseModel):
     custom_colors: Optional[Dict[str, Any]] = None
     slides_deck: Optional[List[Dict[str, Any]]] = None
     slides_json: Optional[str] = None
-    show_ministry_logo: Optional[bool] = True
+    show_ministry_logo: Optional[bool] = None
+    brand_mode: Optional[str] = "ministry"  # "ministry" or "client"
 
 
-def _do_render(content_item_id: int, slides: list, brand: str):
+def _do_render(content_item_id: int, slides: list, brand: str, brand_mode: str = "ministry"):
     """Background task: runs the render and updates status dict."""
-    _render_status[content_item_id] = "rendering"
+    _render_status[content_item_id] = {"status": "rendering", "brand_mode": brand_mode}
     try:
         url = render_video_sync(slides, content_item_id, brand=brand)
-        _render_status[content_item_id] = {"status": "done", "url": url}
-        logger.info(f"Video rendered for content item {content_item_id}: {url}")
+        _render_status[content_item_id] = {"status": "done", "url": url, "brand_mode": brand_mode}
+        logger.info(f"Video rendered for content item {content_item_id} ({brand_mode}): {url}")
     except Exception as e:
-        _render_status[content_item_id] = {"status": "error", "error": str(e)}
+        _render_status[content_item_id] = {"status": "error", "error": str(e), "brand_mode": brand_mode}
         logger.error(f"Video render failed for content item {content_item_id}: {e}")
 
 
@@ -70,6 +71,16 @@ async def render_video_endpoint(
         if body.show_ministry_logo is not None:
             show_ministry_logo = body.show_ministry_logo
 
+    brand_mode = "ministry"
+    if body and body.brand_mode:
+        brand_mode = body.brand_mode.strip().lower()
+    elif body and body.show_ministry_logo is not None:
+        brand_mode = "ministry" if body.show_ministry_logo else "client"
+    elif not show_ministry_logo:
+        brand_mode = "client"
+
+    show_ministry_logo = (brand_mode == "ministry")
+
     gen = item.generated_content
     if isinstance(gen, str):
         try:
@@ -92,6 +103,7 @@ async def render_video_endpoint(
             author_name=author_name,
             article_title="" if (item.content_type in ("REEL", "VIDEO_SCRIPT")) else art_title,
             image_url=art_img,
+            brand_mode=brand_mode,
         )
     except Exception as e:
         logger.error(f"Error extracting slides for content item {content_item_id}: {e}")
@@ -101,6 +113,7 @@ async def render_video_endpoint(
         raise HTTPException(status_code=400, detail="لا يمكن استخراج شرائح فيديو من هذا الخبر")
 
     for sl in slides:
+        sl["brand_mode"] = brand_mode
         sl["show_ministry_logo"] = show_ministry_logo
 
     # Resolve template styling
@@ -154,12 +167,14 @@ async def render_video_endpoint(
             }
 
     # Submit background render
-    _render_status[content_item_id] = "queued"
-    _thread_pool.submit(_do_render, content_item_id, slides, brand)
+    _render_status[content_item_id] = {"status": "queued", "brand_mode": brand_mode}
+    _thread_pool.submit(_do_render, content_item_id, slides, brand, brand_mode)
 
+    brand_label = "وزارة تمكين المجتمع" if brand_mode == "ministry" else "العميل (د. زايد الحميري)"
     return {
-        "detail": f"Video render started for content item {content_item_id} ({len(slides)} slides, قالب: {tpl_name})",
+        "detail": f"Video render started for content item {content_item_id} ({len(slides)} slides, هوية: {brand_label}, قالب: {tpl_name})",
         "slides_count": len(slides),
+        "brand_mode": brand_mode,
         "template_id": template_id,
         "poll_url": f"/api/video/{content_item_id}/status",
     }
@@ -169,7 +184,7 @@ async def render_video_endpoint(
 async def get_render_status(content_item_id: int):
     """
     Poll the render status for a content item.
-    Returns: queued | rendering | done (with url) | error
+    Returns: queued | rendering | done (with url, brand_mode) | error
     """
     status = _render_status.get(content_item_id)
     if status is None:
@@ -177,10 +192,20 @@ async def get_render_status(content_item_id: int):
         existing = list(VIDEO_OUTPUT_DIR.glob(f"video_{content_item_id}_*.mp4"))
         if existing:
             latest = max(existing, key=lambda p: p.stat().st_mtime)
+            brand_mode = "ministry"
+            meta_path = VIDEO_OUTPUT_DIR / (latest.name + ".json")
+            if meta_path.exists():
+                try:
+                    with open(meta_path, "r", encoding="utf-8") as mf:
+                        meta_data = json.load(mf)
+                        brand_mode = meta_data.get("brand_mode", "ministry")
+                except Exception:
+                    pass
             return {
                 "status": "done",
                 "url": f"/static/video_output/{latest.name}",
                 "content_item_id": content_item_id,
+                "brand_mode": brand_mode,
             }
         return {"status": "not_started", "content_item_id": content_item_id}
 
