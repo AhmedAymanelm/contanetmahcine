@@ -3417,7 +3417,163 @@ function closeNewsModal() {
 }
 
 
-async function renderVideoSlideshow(id) {
+let _pendingVideoContentId = null;
+
+function renderVideoSlideshow(id) {
+    openVideoTemplatePicker(id);
+}
+
+async function openVideoTemplatePicker(contentId) {
+    _pendingVideoContentId = contentId;
+    const modal = document.getElementById('video-template-picker-modal');
+    const grid = document.getElementById('video-template-picker-grid');
+    const content = document.getElementById('video-template-picker-content');
+    if (!modal || !grid) {
+        executeVideoRender(contentId, null, 'الافتراضي');
+        return;
+    }
+
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--muted);font-size:14px;">⏳ جاري تحميل قوالب الفيديو المحفوظة...</div>';
+    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.style.opacity = '1';
+        if (content) content.style.transform = 'scale(1)';
+    }, 10);
+
+    let templates = [];
+    try {
+        const token = localStorage.getItem('cm_token') || localStorage.getItem('access_token') || '';
+        const res = await fetch(`${API_BASE}/visual-templates/`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+            templates = await res.json();
+        }
+    } catch(e) {
+        console.warn('API templates fetch failed, using local fallback', e);
+    }
+
+    // Merge with localStorage templates if any
+    try {
+        const localTemplates = JSON.parse(localStorage.getItem('visual_templates') || '[]');
+        localTemplates.forEach(lt => {
+            if (!templates.some(t => t.id === lt.id || t.name === lt.name)) {
+                templates.push(lt);
+            }
+        });
+    } catch(e) {}
+
+    // Fallback templates if none found
+    if (!templates || !templates.length) {
+        templates = [
+            {
+                id: 1,
+                name: 'زايد تيك - البرتقالي الناري (ZayedTech Flame)',
+                template_type: 'REEL',
+                bg_color1: '#0a0a0a',
+                bg_color2: '#240a00',
+                accent_color: '#FF5C00',
+                text_color: '#ffffff',
+                slides_json: JSON.stringify([
+                    { title: 'الخطاف', accentColor: '#FF5C00', color1: '#0a0a0a', color2: '#240a00' },
+                    { title: 'المحتوى', accentColor: '#8B5CF6', color1: '#070514', color2: '#1a0f3c' },
+                    { title: 'الختام', accentColor: '#F59E0B', color1: '#0c0a02', color2: '#261d06' }
+                ])
+            },
+            {
+                id: 2,
+                name: 'سايبر نيون البنفسجي (Cyber Violet)',
+                template_type: 'REEL',
+                bg_color1: '#070514',
+                bg_color2: '#1a0f3c',
+                accent_color: '#8B5CF6',
+                text_color: '#ffffff',
+                slides_json: JSON.stringify([
+                    { title: 'الافتتاحية', accentColor: '#8B5CF6', color1: '#070514', color2: '#1a0f3c' },
+                    { title: 'الشرح', accentColor: '#38BDF8', color1: '#020c1b', color2: '#0b1f3a' },
+                    { title: 'المتابعة', accentColor: '#10B981', color1: '#041712', color2: '#0e382c' }
+                ])
+            }
+        ];
+    }
+
+    let html = '';
+    templates.forEach(tpl => {
+        const accent = tpl.accent_color || tpl.accentColor || '#FF5C00';
+        const bg1 = tpl.bg_color1 || tpl.color1 || '#0a0a0a';
+        const bg2 = tpl.bg_color2 || tpl.color2 || '#240a00';
+        const bg = (tpl.bg_type || tpl.bgType) === 'solid' ? bg1 : `linear-gradient(145deg, ${bg1}, ${bg2})`;
+
+        let slideDeck = [];
+        if (tpl.slides_json) {
+            try { slideDeck = JSON.parse(tpl.slides_json); } catch(e){}
+        }
+        const slideCount = slideDeck.length || 1;
+
+        const swatchesHtml = slideDeck.map((s, idx) => {
+            const dotBg = s.bgType === 'solid' ? (s.color1 || bg1) : `linear-gradient(135deg, ${s.color1 || bg1}, ${s.color2 || bg2})`;
+            const dotAccent = s.accentColor || accent;
+            return `<span title="${s.title || 'شريحة ' + (idx + 1)}" style="width:14px;height:14px;border-radius:50%;background:${dotBg};border:1.5px solid ${dotAccent};display:inline-block;box-shadow:0 0 6px ${dotAccent}80;"></span>`;
+        }).join('');
+
+        const safeName = (tpl.name || 'قالب').replace(/'/g, "\\'");
+
+        html += `
+        <div onclick="confirmVideoRenderWithTemplate(${contentId}, ${tpl.id || 'null'}, '${safeName}')"
+             style="cursor:pointer;background:var(--panel-2);border:2px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,0.3);transition:all 0.25s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;position:relative;"
+             onmouseover="this.style.transform='translateY(-5px)';this.style.boxShadow='0 16px 36px rgba(0,0,0,0.5)';this.style.borderColor='${accent}'"
+             onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 10px 28px rgba(0,0,0,0.3)';this.style.borderColor='rgba(255,255,255,0.08)'">
+
+            <!-- Card Banner -->
+            <div style="height:120px;background:${bg};position:relative;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+                <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;">
+                    <span style="background:rgba(255,92,0,0.2);color:#FF5C00;border:1px solid rgba(255,92,0,0.35);font-size:10px;font-weight:800;padding:2px 8px;border-radius:12px;">🎬 ريلز</span>
+                    <span style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">${slideCount} شرائح 🎨</span>
+                </div>
+                <div style="font-size:15px;font-weight:900;color:${tpl.text_color || '#fff'};text-align:center;direction:rtl;line-height:1.35;text-shadow:0 2px 10px rgba(0,0,0,0.85);max-width:85%;">
+                    ${tpl.name}
+                </div>
+                <div style="position:absolute;bottom:10px;left:12px;display:flex;align-items:center;gap:5px;">
+                    ${swatchesHtml || `<span style="width:14px;height:14px;border-radius:50%;background:${accent};box-shadow:0 0 10px ${accent};"></span>`}
+                </div>
+            </div>
+
+            <!-- Card Body & Button -->
+            <div style="padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--panel-2);flex:1;justify-content:space-between;">
+                <div>
+                    <div style="font-size:14px;font-weight:800;color:var(--text);">${tpl.name}</div>
+                    <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">تدرج لوني متناسق مع حركات وشرائح مخصصة</div>
+                </div>
+                <button type="button" class="btn" style="width:100%;background:linear-gradient(135deg,${accent},#e11d48);color:#fff;border:none;padding:10px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px ${accent}40;">
+                    <span>🚀</span> استخدام هذا القالب وتحويل الفيديو
+                </button>
+            </div>
+        </div>
+        `;
+    });
+
+    grid.innerHTML = html;
+}
+
+function closeVideoTemplatePickerModal() {
+    const modal = document.getElementById('video-template-picker-modal');
+    const content = document.getElementById('video-template-picker-content');
+    if (!modal) return;
+    modal.style.opacity = '0';
+    if (content) content.style.transform = 'scale(0.95)';
+    document.body.style.overflow = '';
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+}
+
+function confirmVideoRenderWithTemplate(contentId, templateId, templateName) {
+    closeVideoTemplatePickerModal();
+    executeVideoRender(contentId, templateId, templateName);
+}
+
+async function executeVideoRender(id, templateId, templateName) {
     const btn = document.getElementById('vid-btn-' + id);
     const statusEl = document.getElementById('vid-status-' + id);
     if (!btn || !statusEl) return;
@@ -3425,11 +3581,15 @@ async function renderVideoSlideshow(id) {
     btn.disabled = true;
     btn.innerText = '⏳ جاري التحويل...';
     statusEl.style.display = 'block';
-    statusEl.innerText = 'يتم إنشاء الفيديو... قد يستغرق دقيقة أو اثنتين';
+    const tplLabel = templateName ? `باستخدام قالب "${templateName}"` : '';
+    statusEl.innerText = `يتم إنشاء الفيديو ${tplLabel}... قد يستغرق دقيقة أو اثنتين`;
 
     const token = localStorage.getItem('cm_token') || localStorage.getItem('access_token') || '';
     try {
-        const res = await fetch(`${API_BASE}/video/${id}/render`, {
+        let url = `${API_BASE}/video/${id}/render`;
+        if (templateId) url += `?template_id=${templateId}`;
+
+        const res = await fetch(url, {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -3441,6 +3601,8 @@ async function renderVideoSlideshow(id) {
             statusEl.style.display = 'none';
             return;
         }
+
+        showToast(`🎬 بدأ تحويل الفيديو ${tplLabel}!`, 'info');
 
         // Poll for completion every 3 seconds
         let polls = 0;
@@ -3456,7 +3618,7 @@ async function renderVideoSlideshow(id) {
                     statusEl.innerHTML = `✅ تم! <a href="${sData.url}" target="_blank" style="color:#fb923c;font-weight:700;">تحميل الفيديو ↗</a>`;
                     btn.disabled = false;
                     btn.innerText = '🎬 تحويل لفيديو سلايدشو';
-                    showToast('✅ تم إنشاء الفيديو!', 'success');
+                    showToast('✅ تم إنشاء الفيديو بنجاح!', 'success');
                 } else if (sData.status === 'error') {
                     clearInterval(interval);
                     statusEl.innerText = '❌ فشل التحويل: ' + (sData.error || 'خطأ غير معروف');
@@ -4528,3 +4690,8 @@ window.updateActiveSlideTitle = updateActiveSlideTitle;
 window.copyCurrentSlideStyleToAll = copyCurrentSlideStyleToAll;
 window.prevVtSlide = prevVtSlide;
 window.nextVtSlide = nextVtSlide;
+window.openVideoTemplatePicker = openVideoTemplatePicker;
+window.closeVideoTemplatePickerModal = closeVideoTemplatePickerModal;
+window.confirmVideoRenderWithTemplate = confirmVideoRenderWithTemplate;
+window.executeVideoRender = executeVideoRender;
+window.renderVideoSlideshow = renderVideoSlideshow;

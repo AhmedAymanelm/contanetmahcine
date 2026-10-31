@@ -2,14 +2,17 @@
 Video API Router — render content items as slideshow MP4 videos
 """
 import concurrent.futures
+import json
 import logging
 from pathlib import Path
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.models.content_item import ContentItem
+from app.models.visual_template import VisualTemplate
 from app.services.video_renderer import render_video_sync, content_item_to_slides
 
 logger = logging.getLogger(__name__)
@@ -38,10 +41,11 @@ def _do_render(content_item_id: int, slides: list, brand: str):
 @router.post("/{content_item_id}/render")
 async def render_video_endpoint(
     content_item_id: int,
+    template_id: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
     """
-    Start rendering a content item as a slideshow video.
+    Start rendering a content item as a slideshow video with optional visual template styling.
     Returns immediately — poll /status to check progress.
     """
     item = db.query(ContentItem).filter(ContentItem.id == content_item_id).first()
@@ -50,7 +54,6 @@ async def render_video_endpoint(
 
     gen = item.generated_content
     if isinstance(gen, str):
-        import json
         try:
             gen = json.loads(gen)
         except Exception:
@@ -74,13 +77,43 @@ async def render_video_endpoint(
     if not slides:
         raise HTTPException(status_code=400, detail="No slides could be extracted from this content item")
 
+    # If visual template is selected, apply its slide styling
+    tpl_name = "الافتراضي"
+    if template_id:
+        tpl = db.query(VisualTemplate).filter(VisualTemplate.id == template_id).first()
+        if tpl:
+            tpl_name = tpl.name
+            tpl_deck = []
+            if tpl.slides_json:
+                try:
+                    tpl_deck = json.loads(tpl.slides_json)
+                except Exception:
+                    pass
+            for i, sl in enumerate(slides):
+                if tpl_deck:
+                    cfg = tpl_deck[i % len(tpl_deck)]
+                    sl["custom_colors"] = {
+                        "accent": cfg.get("accentColor") or cfg.get("accent_color") or tpl.accent_color or "#FF5C00",
+                        "color1": cfg.get("color1") or cfg.get("bg_color1") or tpl.bg_color1 or "#0a0a0a",
+                        "color2": cfg.get("color2") or cfg.get("bg_color2") or tpl.bg_color2 or "#1a0a00",
+                        "text_color": cfg.get("textColor") or cfg.get("text_color") or tpl.text_color or "#ffffff",
+                    }
+                else:
+                    sl["custom_colors"] = {
+                        "accent": tpl.accent_color or "#FF5C00",
+                        "color1": tpl.bg_color1 or "#0a0a0a",
+                        "color2": tpl.bg_color2 or "#1a0a00",
+                        "text_color": tpl.text_color or "#ffffff",
+                    }
+
     # Submit background render
     _render_status[content_item_id] = "queued"
     _thread_pool.submit(_do_render, content_item_id, slides, brand)
 
     return {
-        "detail": f"Video render started for content item {content_item_id} ({len(slides)} slides)",
+        "detail": f"Video render started for content item {content_item_id} ({len(slides)} slides, قالب: {tpl_name})",
         "slides_count": len(slides),
+        "template_id": template_id,
         "poll_url": f"/api/video/{content_item_id}/status",
     }
 

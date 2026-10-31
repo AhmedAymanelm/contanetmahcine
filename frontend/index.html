@@ -1486,6 +1486,46 @@
 
       </main>
     </div>
+
+<!-- Video Template Picker Modal (For Reels & Video Slideshows) -->
+<div id="video-template-picker-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); z-index:9999; align-items:center; justify-content:center; opacity:0; transition: opacity 0.3s;">
+    <div style="background:var(--panel); width:90%; max-width:960px; max-height:88vh; border-radius:24px; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.7); overflow:hidden; transform: scale(0.95); transition: transform 0.3s; border:1px solid rgba(255,255,255,0.1);" id="video-template-picker-content">
+        
+        <!-- Header -->
+        <div style="padding:22px 28px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,rgba(255,92,0,0.12),rgba(124,58,237,0.06));">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#FF5C00,#e11d48); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 18px rgba(255,92,0,0.4);">🎬</div>
+                <div>
+                    <h2 style="margin:0; font-size:20px; font-weight:800; color:#fff;">اختر قالب الريلز المناسب للفيديو</h2>
+                    <span style="color:var(--muted); font-size:13px;">اختر من القوالب التي صممتها بالألوان والشرائح ليتم تطبيقها على ريلز هذا الخبر</span>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <a href="#page-visual-designer" onclick="closeVideoTemplatePickerModal(); go(document.querySelector('[data-page=page-visual-designer]')); loadVisualTemplates();" class="btn ghost" style="padding:7px 14px; font-size:12px; font-weight:700; border-color:rgba(255,92,0,0.4); color:#FF5C00;">
+                    + تصميم قالب جديد ↗
+                </a>
+                <button onclick="closeVideoTemplatePickerModal()" style="background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#fff'" onmouseout="this.style.background='none'; this.style.color='var(--muted)'">×</button>
+            </div>
+        </div>
+
+        <!-- Templates Grid (Scrollable) -->
+        <div style="padding:24px 28px; overflow-y:auto; flex:1;">
+            <div id="video-template-picker-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:20px;">
+                <!-- Injected dynamically by JS -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding:16px 28px; border-top:1px solid var(--line); background:var(--panel-2); display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:12px; color:var(--muted);">
+                💡 يتم استخدام ألوان وشرائح القالب المختار في رندرة شرائح الفيديو
+            </div>
+            <button onclick="closeVideoTemplatePickerModal()" class="btn ghost" style="padding:8px 18px; font-size:13px;">إلغاء</button>
+        </div>
+
+    </div>
+</div>
+
 <!-- Template Picker Modal -->
 <div id="template-picker-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); z-index:9999; align-items:center; justify-content:center; opacity:0; transition: opacity 0.3s;">
     <div style="background:var(--panel); width:90%; max-width:1000px; max-height:85vh; border-radius:24px; display:flex; flex-direction:column; box-shadow:0 25px 50px rgba(0,0,0,0.5); overflow:hidden; transform: scale(0.95); transition: transform 0.3s;" id="template-picker-content">
@@ -1687,7 +1727,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="js/main.js?v=20261031_04"></script>
+<script src="js/main.js?v=20261031_05"></script>
 
 <!-- ════════════════════════════════ ANALYTICS PAGE ════════════════════════════ -->
 <style>

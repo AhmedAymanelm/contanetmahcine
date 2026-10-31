@@ -172,17 +172,26 @@ def _slide_html(slide: dict, cairo_css: str, reveal: float = 1.0, pfill: float =
     elif is_outro:
         slide_accent, slide_accent_light, bg_tint = palette[1]
 
+    # Override with selected visual template colors if provided
+    bg_base = BG
+    custom_c = slide.get("custom_colors")
+    if custom_c:
+        slide_accent = custom_c.get("accent") or slide_accent
+        slide_accent_light = slide_accent
+        bg_tint = custom_c.get("color2") or bg_tint
+        bg_base = custom_c.get("color1") or bg_base
+
     css_base = (
         "* { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }"
         "html, body { width:1080px; height:1920px; overflow:hidden; }"
-        "body { background:" + BG + "; position:relative; overflow:hidden; }"
+        "body { background:" + bg_base + "; position:relative; overflow:hidden; }"
     )
 
     # ── Background gradient layers ────────────────────────────────────────
     bg_layers = (
         # Base dark gradient
         '<div style="position:absolute;inset:0;'
-        'background:linear-gradient(160deg,' + BG + ' 0%,' + bg_tint + ' 50%,' + BG + ' 100%);"></div>'
+        'background:linear-gradient(160deg,' + bg_base + ' 0%,' + bg_tint + ' 50%,' + bg_base + ' 100%);"></div>'
         # Accent glow (top-right)
         '<div style="position:absolute;top:-300px;right:-200px;width:800px;height:800px;'
         'border-radius:50%;background:radial-gradient(circle,' + slide_accent + '12 0%,transparent 70%);'
